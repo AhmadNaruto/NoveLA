@@ -62,7 +62,6 @@ luajvm = "3.0.1"
 snakeyaml = "2.6"
 
 okhttp = "5.4.0"
-okhttp-interceptor-logging = "5.0.0-alpha.14"
 
 readability4j = "1.0.8"
 
@@ -97,7 +96,7 @@ androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref =
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 
 #Networking
-okhttp-interceptor-logging = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp-interceptor-logging" }
+okhttp-interceptor-logging = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 okhttp-interceptor-brotli = { module = "com.squareup.okhttp3:okhttp-brotli", version.ref = "okhttp" }
 
