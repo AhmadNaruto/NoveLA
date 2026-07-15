@@ -209,6 +209,7 @@ internal class ReaderSession(
                 bookUrl,
                 System.currentTimeMillis()
             )
+            readerRepository.upsertReadingHistory(bookUrl, chapterUrl)
         }
         initReaderTTSObservers()
     }
@@ -364,6 +365,7 @@ internal class ReaderSession(
         readerTextToSpeech.shutdownTts()
         scope.cancel()
         NarratorMediaControlsService.stop(context)
+        runCatching { FloatingTtsService.stop(context) }
     }
 
     fun requestTtsStop() {

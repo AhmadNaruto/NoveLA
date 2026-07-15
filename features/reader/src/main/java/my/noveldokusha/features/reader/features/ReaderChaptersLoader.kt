@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -73,6 +74,8 @@ internal class ReaderChaptersLoader(
     private @Volatile var _hasLoadingError = false
     private var autoResetJob: kotlinx.coroutines.Job? = null
     private var errorRetryCount = 0
+    private var failedChapterIndex: Int = -1
+    private @Volatile var retryInProgress = false
     private @Volatile var pendingPruneChapterIndex: Int? = null
 
     var hasLoadingError: Boolean
@@ -86,10 +89,12 @@ internal class ReaderChaptersLoader(
                 val delayMs = (5_000L * errorRetryCount).coerceAtMost(60_000L)
                 autoResetJob = launch {
                     delay(delayMs)
+                    ensureActive()
                     _hasLoadingError = false
                     autoResetJob = null
-                    Timber.d("Auto-reset hasLoadingError after ${delayMs/1000}s timeout (attempt $errorRetryCount), resuming preload")
-                    tryLoadNext()
+                    Timber.d("Auto-reset hasLoadingError after ${delayMs/1000}s timeout (attempt $errorRetryCount), retrying chapter $failedChapterIndex")
+                    val idx = failedChapterIndex
+                    if (idx >= 0) retryChapter(idx) else tryLoadNext()
                 }
             } else {
                 errorRetryCount = 0
@@ -181,15 +186,23 @@ internal class ReaderChaptersLoader(
     }
 
     fun retryChapter(chapterIndex: Int) {
+        if (retryInProgress) {
+            Timber.d("retryChapter: already in progress, skipping chapter $chapterIndex")
+            return
+        }
+        retryInProgress = true
+        failedChapterIndex = -1
         if (chapterIndex < 0 || chapterIndex >= orderedChapters.size) {
             Timber.e("retryChapter: invalid chapterIndex $chapterIndex, size ${orderedChapters.size}")
+            retryInProgress = false
             return
         }
 
         launch(Dispatchers.Main.immediate) {
+            try {
             val chapterUrl = orderedChapters[chapterIndex].url
 
-            hasLoadingError = false
+            _hasLoadingError = false
             chaptersStats.remove(chapterUrl)
             loadedChapters.remove(chapterUrl)
             loaderQueue.remove(LoadChapter.Type.Next)
@@ -230,6 +243,9 @@ internal class ReaderChaptersLoader(
             if (success == true && !hasLoadingError) {
                 Timber.d("retryChapter: auto-resuming preload for next chapter")
                 tryLoadNext()
+            }
+            } finally {
+                retryInProgress = false
             }
         }
     }
@@ -544,10 +560,12 @@ internal class ReaderChaptersLoader(
         when (val res = readerRepository.downloadChapter(chapter.url)) {
             is Response.Success -> {
                 if (!isValidChapterContent(res.data)) {
+                    failedChapterIndex = chapterIndex
                     withContext(Dispatchers.Main.immediate) {
                         hasLoadingError = true
                         Timber.w("Chapter content invalid (possibly Cloudflare or Login), stopping auto-loading. Preview: ${res.data.take(160)}")
                     }
+                    readerRepository.deleteChapterBody(chapter.url)
                     maintainPosition {
                         // 1. Сначала подготавливаем сообщения
                         val preview = res.data.take(400).ifBlank { "<empty body>" }
@@ -556,21 +574,13 @@ internal class ReaderChaptersLoader(
                         else
                             "Content error: Cloudflare, empty chapter, or login required. Try opening in browser.\n\nCode snippet: ${preview.take(100)}..."
 
-                        // 2. Атомарно модифицируем список данных, не дёргая адаптер на каждое удаление
-                        // (Предполагается, что remove/insert у тебя работают напрямую с внутренним массивом)
-                        val updatedItems = items.toMutableList().apply {
-                            remove(itemProgressBar)
-                            remove(itemTitle)
-                            removeAll { it is ReaderItem.Divider && it.chapterIndex == chapterIndex }
-                            // Добавляем ошибку вместо удаленного прогресс-бара
-                            add(ReaderItem.Error(chapterIndex = chapterIndex, chapterUrl = chapter.url, text = userMessage))
-                        }
+                        // 2. Модифицируем список на месте
+                        items.remove(itemProgressBar)
+                        items.remove(itemTitle)
+                        items.removeAll { it is ReaderItem.Divider && it.chapterIndex == chapterIndex }
+                        items.add(ReaderItem.Error(chapterIndex = chapterIndex, chapterUrl = chapter.url, text = userMessage))
 
-                        // 3. Перезаписываем список в адаптере целиком
-                        items.clear()
-                        items.addAll(updatedItems)
-
-                        // 4. Только теперь уведомляем UI (внутри или сразу после этого блока)
+                        // 3. Уведомляем UI
                         readerViewHandlersActions.doForceUpdateListViewState()
                     }
                     return@_addChapterInternal false
@@ -613,7 +623,7 @@ internal class ReaderChaptersLoader(
 
                             if (batchTranslator != null) {
                                 val bodyTexts = itemsOriginal.filterIsInstance<ReaderItem.Body>().map { it.text }
-                                val bodyTextToIndex = bodyTexts.withIndex().associate { (idx, text) -> text to idx }
+                                val textToIndices = bodyTexts.withIndex().groupBy({ it.value }, { it.index })
 
                                 // Load existing cache entry (single row per chapter+language)
                                 val existingEntry = withContext(Dispatchers.IO) {
@@ -647,12 +657,12 @@ internal class ReaderChaptersLoader(
                                         Timber.d("Using full DB cache for chapter ${chapter.title} (${cachedBody.size} body translations)")
                                         itemsOriginal.map { item ->
                                             if (item is ReaderItem.Body) {
-                                                val idx = bodyTextToIndex[item.text] ?: return@map item
-                                                item.copy(textTranslated = cachedBody[idx] ?: item.text)
+                                                val indices = textToIndices[item.text] ?: return@map item
+                                                item.copy(textTranslated = indices.firstNotNullOfOrNull { cachedBody[it] } ?: item.text)
                                             } else item
                                         }
                                     } else {
-                                        val missingTexts = missingIndices.map { bodyTexts[it] }
+                                        val missingTexts = missingIndices.map { bodyTexts[it] }.distinct()
                                         Timber.d("DB cache partial: ${cachedBody.size}/${bodyTexts.size}, translating ${missingTexts.size} missing body paragraphs")
                                         val extraTranslations = withContext(Dispatchers.IO) {
                                             kotlinx.coroutines.withTimeout(60_000L) {
@@ -671,8 +681,8 @@ internal class ReaderChaptersLoader(
 
                                         itemsOriginal.map { item ->
                                             if (item is ReaderItem.Body) {
-                                                val idx = bodyTextToIndex[item.text] ?: return@map item
-                                                item.copy(textTranslated = fullBody[idx] ?: item.text)
+                                                val indices = textToIndices[item.text] ?: return@map item
+                                                item.copy(textTranslated = indices.firstNotNullOfOrNull { fullBody[it] } ?: item.text)
                                             } else item
                                         }
                                     }
@@ -744,6 +754,7 @@ internal class ReaderChaptersLoader(
                 } catch (e: Exception) {
                     if (e is kotlinx.coroutines.CancellationException) throw e
                     Timber.e(e, "Translation failed for chapter ${chapter.title}: ${e.message}")
+                    failedChapterIndex = chapterIndex
                     withContext(Dispatchers.Main.immediate) {
                         chaptersStats[chapter.url] = ChapterStats(
                             chapter = chapter,
@@ -811,6 +822,7 @@ internal class ReaderChaptersLoader(
                 return@_addChapterInternal true
             }
             is Response.Error -> {
+                failedChapterIndex = chapterIndex
                 withContext(Dispatchers.Main.immediate) {
                     chaptersStats[chapter.url] = ChapterStats(
                         chapter = chapter,
