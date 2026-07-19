@@ -6,6 +6,7 @@
     <string name="title_settings">Settings</string>
     <string name="title_history">History</string>
     <string name="no_history_yet">No reading history yet</string>
+    <string name="no_books_in_library">No books in library</string>
     <string name="clear_all_history">Clear all history</string>
     <string name="reader_no_more_chapters">༺  Last chapter  ༻</string>
     <string name="reader_first_chapter">༺  First chapter  ༻</string>
@@ -157,6 +158,7 @@
     <string name="loading_data">Loading data</string>
     <string name="pin_or_unpin_source">Pin or unpin source</string>
     <string name="allow_text_selection">Text selection</string>
+    <string name="tts_highlight">TTS Highlight</string>
     <string name="last_read">Last read</string>
     <string name="title">Title</string>
     <string name="unread_chapters">Unread chapters</string>
