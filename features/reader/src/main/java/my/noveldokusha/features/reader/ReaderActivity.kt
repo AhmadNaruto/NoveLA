@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import timber.log.Timber
 import android.view.WindowManager
 import android.widget.AbsListView
@@ -14,6 +15,11 @@ import androidx.activity.viewModels
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
@@ -22,9 +28,13 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.doOnNextLayout
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.distinctUntilChanged
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -45,6 +55,9 @@ import my.noveldokusha.core.utils.Extra_Boolean
 import my.noveldokusha.core.utils.Extra_String
 import my.noveldokusha.core.utils.dpToPx
 import my.noveldokusha.core.utils.fadeIn
+import my.noveldokusha.data.AppRepository
+import my.noveldokusha.core.models.RegexRule
+import my.noveldokusha.settings.RegexCleanupSettingsViewModel
 import my.noveldokusha.features.reader.domain.ChapterState
 import my.noveldokusha.features.reader.domain.ReaderItem
 import my.noveldokusha.features.reader.domain.ReaderItemAdapter
@@ -54,6 +67,7 @@ import my.noveldokusha.features.reader.manager.ReaderManager
 import my.noveldokusha.features.reader.services.NarratorMediaControlsService
 import my.noveldokusha.features.reader.tools.FontsLoader
 import my.noveldokusha.features.reader.ui.ReaderScreen
+import my.noveldokusha.features.reader.ui.ReaderScreenState
 import my.noveldokusha.features.reader.ui.ReaderViewHandlersActions
 import my.noveldokusha.navigation.NavigationRoutes
 import my.noveldokusha.reader.R
@@ -96,7 +110,24 @@ class ReaderActivity : BaseActivity() {
     @Inject
     internal lateinit var readerManager: ReaderManager
 
+    @Inject
+    internal lateinit var appRepository: AppRepository
+
     private var listIsScrolling = false
+    // Время последнего события скролла: используется как watchdog для сброса
+    // «залипшего» listIsScrolling, если fling был прерван (notifyDataSetChanged
+    // штормом/подгрузкой главы) и IDLE-событие так и не пришло.
+    private var lastScrollEventTime = 0L
+    // Последний scrollState (IDLE/TOUCH_SCROLL/FLING): watchdog сбрасывает залипший
+    // listIsScrolling только для прерванного FLING. При TOUCH_SCROLL палец может лежать
+    // неподвижно дольше порога (чтение/выделение) — сброс дёргал бы список под пальцем.
+    private var lastScrollState = AbsListView.OnScrollListener.SCROLL_STATE_IDLE
+    // Последний абзац, для которого был выполнен полный rebind (notifyDataSetChanged).
+    // currentReaderItem эмитит на каждый PLAYING/LOADING того же абзаца — повторный
+    // rebind не нужен, пока позиция не сменилась (подсветка рисуется в getView).
+    private var lastReboundChapterIndex = -1
+    private var lastReboundChapterItemPosition = -1
+    private var lastReboundPlayState: Utterance.PlayState? = null
     private val fadeInTextLiveData = MutableLiveData(false)
     // Предотвращает загрузку следующей главы до первого реального скролла пользователя.
     // Сбрасывается в false при каждом открытии Activity, устанавливается в true только при
@@ -120,6 +151,7 @@ class ReaderActivity : BaseActivity() {
                 currentFontSize = { appPreferences.READER_FONT_SIZE.value },
                 currentLineHeight = { appPreferences.READER_LINE_HEIGHT.value },
                 currentParagraphSpacing = { appPreferences.READER_PARAGRAPH_SPACING.value },
+                currentLetterSpacing = { appPreferences.READER_LETTER_SPACING.value },
                 currentTypeface = { fontsLoader.getTypeFaceNORMAL(appPreferences.READER_FONT_FAMILY.value) },
                 currentTypefaceBold = { fontsLoader.getTypeFaceBOLD(appPreferences.READER_FONT_FAMILY.value) },
                 currentSpeakerActiveItem = { viewModel.readerSpeaker.currentTextPlaying.value },
@@ -274,6 +306,7 @@ class ReaderActivity : BaseActivity() {
                 scrollToReadingPositionOptional(
                     chapterIndex = it.itemPos.chapterIndex,
                     chapterItemPosition = it.itemPos.chapterItemPosition,
+                    playState = it.playState,
                 )
             }
 
@@ -320,6 +353,11 @@ class ReaderActivity : BaseActivity() {
             .asLiveData()
             .observe(this) { viewAdapter.listView.notifyDataSetChanged() }
 
+        // Notify manually letter spacing changed for list view
+        snapshotFlow { viewModel.state.settings.style.letterSpacing.value }.drop(1)
+            .asLiveData()
+            .observe(this) { viewAdapter.listView.notifyDataSetChanged() }
+
         // Notify manually selectable text changed for list view
         snapshotFlow { viewModel.state.settings.isTextSelectable.value }.drop(1)
             .asLiveData()
@@ -355,6 +393,37 @@ class ReaderActivity : BaseActivity() {
             }
 
         setContent {
+            val regexCleanupViewModel: RegexCleanupSettingsViewModel = viewModel(
+                key = "regexCleanupSettings",
+                factory = viewModelFactory {
+                    initializer {
+                        RegexCleanupSettingsViewModel(
+                            appPreferences = appPreferences,
+                            appRepository = appRepository,
+                            stateHandler = SavedStateHandle(
+                                mapOf("bookUrl" to viewModel.bookUrl)
+                            )
+                        )
+                    }
+                }
+            )
+
+            var regexRulesSnapshot by remember { mutableStateOf<List<RegexRule>?>(null) }
+            LaunchedEffect(viewModel.state.settings.selectedSetting.value) {
+                val selected = viewModel.state.settings.selectedSetting.value
+                if (selected == ReaderScreenState.Settings.Type.RegexRules) {
+                    regexRulesSnapshot = appPreferences.effectiveRegexRules(viewModel.bookUrl)
+                } else {
+                    val before = regexRulesSnapshot
+                    regexRulesSnapshot = null
+                    if (before != null &&
+                        before != appPreferences.effectiveRegexRules(viewModel.bookUrl)
+                    ) {
+                        viewModel.reloadReader()
+                    }
+                }
+            }
+
             Theme(themeProvider) {
                 readerTheme {
                     SetSystemBarTransparent()
@@ -366,6 +435,7 @@ class ReaderActivity : BaseActivity() {
                     onTextSizeChanged = { appPreferences.READER_FONT_SIZE.value = it },
                     onLineHeightChanged = { appPreferences.READER_LINE_HEIGHT.value = it },
                     onParagraphSpacingChanged = { appPreferences.READER_PARAGRAPH_SPACING.value = it },
+                    onLetterSpacingChanged = { appPreferences.READER_LETTER_SPACING.value = it },
                     onSelectableTextChange = { appPreferences.READER_SELECTABLE_TEXT.value = it },
                     onKeepScreenOn = { appPreferences.READER_KEEP_SCREEN_ON.value = it },
                     onDarkModeSelected = { appPreferences.THEME_DARK_MODE.value = it.name; recreate() },
@@ -384,6 +454,7 @@ class ReaderActivity : BaseActivity() {
                             navigationRoutes.webView(this, url = url).let(::startActivity)
                         }
                     },
+                    regexCleanupViewModel = regexCleanupViewModel,
                     readerContent = {
                         AndroidView(factory = { viewBind.root })
                     },
@@ -408,6 +479,7 @@ class ReaderActivity : BaseActivity() {
                     visibleItemCount: Int,
                     totalItemCount: Int
                 ) {
+                    lastScrollEventTime = SystemClock.elapsedRealtime()
                     updateCurrentReadingPosSavingState(
                         firstVisibleItemIndex = viewAdapter.listView.fromPositionToIndex(
                             viewBind.listView.firstVisiblePosition
@@ -422,6 +494,8 @@ class ReaderActivity : BaseActivity() {
                 }
 
                 override fun onScrollStateChanged(view: AbsListView?, scrollState: Int) {
+                    lastScrollEventTime = SystemClock.elapsedRealtime()
+                    lastScrollState = scrollState
                     listIsScrolling = scrollState != AbsListView.OnScrollListener.SCROLL_STATE_IDLE
                     if (scrollState == AbsListView.OnScrollListener.SCROLL_STATE_FLING ||
                         scrollState == AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL
@@ -431,6 +505,18 @@ class ReaderActivity : BaseActivity() {
                     // When the user lifts their finger, check if we need to load more chapters
                     if (!listIsScrolling) {
                         updateReadingState()
+                        // TTS catch-up: после окончания жеста сразу возвращаем подсветку
+                        // на экран, не дожидаясь следующей эмиссии абзаца (может быть
+                        // через секунды). Само-скролл не дёргает: optional-путь ничего
+                        // не делает, если текущий абзац уже видим.
+                        if (viewModel.readerSpeaker.isSpeaking.value) {
+                            val playing = viewModel.readerSpeaker.currentTextPlaying.value
+                            scrollToReadingPositionOptional(
+                                chapterIndex = playing.itemPos.chapterIndex,
+                                chapterItemPosition = playing.itemPos.chapterItemPosition,
+                                playState = playing.playState,
+                            )
+                        }
                     }
                 }
             })
@@ -522,13 +608,41 @@ class ReaderActivity : BaseActivity() {
             }
     }
 
-    private fun scrollToReadingPositionOptional(chapterIndex: Int, chapterItemPosition: Int) {
-        // Always update the view to show current TTS item highlighting
-        viewAdapter.listView.notifyDataSetChanged()
+    private fun scrollToReadingPositionOptional(
+        chapterIndex: Int,
+        chapterItemPosition: Int,
+        playState: Utterance.PlayState,
+    ) {
+        // Always update the view to show current TTS item highlighting.
+        // Полный rebind — только при смене абзаца или его состояния: currentReaderItem
+        // эмитит на каждый PLAYING/LOADING того же абзаца, повторный
+        // notifyDataSetChanged на каждой эмиссии вызывает rebind-шторм
+        // (Skipped frames). Подсветка нового абзаца рисуется в getView, поэтому
+        // одного rebind на смену позиции достаточно. playState включён в ключ,
+        // т.к. LOADING и PLAYING одного абзаца рисуются адаптером по-разному.
+        if (chapterIndex != lastReboundChapterIndex ||
+            chapterItemPosition != lastReboundChapterItemPosition ||
+            playState != lastReboundPlayState
+        ) {
+            lastReboundChapterIndex = chapterIndex
+            lastReboundChapterItemPosition = chapterItemPosition
+            lastReboundPlayState = playState
+            viewAdapter.listView.notifyDataSetChanged()
+        }
 
         // If user is scrolling, don't auto-scroll
         if (listIsScrolling) {
-            return
+            // Fling мог быть прерван (шторм notifyDataSetChanged/подгрузка главы) без
+            // финального IDLE — гейт «залипает» и follow-скролл молча отключается.
+            // Сбрасываем только прерванный fling: при TOUCH_SCROLL палец может лежать
+            // неподвижно дольше порога, и сброс дёргал бы список под ним.
+            if (lastScrollState == AbsListView.OnScrollListener.SCROLL_STATE_FLING &&
+                SystemClock.elapsedRealtime() - lastScrollEventTime > 500L
+            ) {
+                listIsScrolling = false
+            } else {
+                return
+            }
         }
 
         // Check if the TTS item is already visible on screen
@@ -599,7 +713,6 @@ class ReaderActivity : BaseActivity() {
         val newOffsetPx = 200.dpToPx(this)
         viewAdapter.listView.notifyDataSetChanged()
         viewBind.listView.smoothScrollToPositionFromTop(itemPosition, newOffsetPx, 500)
-        viewAdapter.listView.notifyDataSetChanged()
     }
 
     private fun scrollToReadingPositionImmediately(chapterIndex: Int, chapterItemPosition: Int) {

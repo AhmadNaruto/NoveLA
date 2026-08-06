@@ -24,6 +24,7 @@ import my.noveldokusha.features.reader.domain.ReaderItem
 import my.noveldokusha.features.reader.domain.ReaderState
 import my.noveldokusha.features.reader.domain.ReadingChapterPosStats
 import my.noveldokusha.features.reader.domain.indexOfReaderItem
+import my.noveldokusha.features.reader.tools.applyUserRegexRules
 import my.noveldokusha.features.reader.tools.textToItemsConverter
 import my.noveldokusha.features.reader.ui.ReaderViewHandlersActions
 import my.noveldokusha.feature.local_database.DAOs.ChapterTranslationDao
@@ -56,8 +57,7 @@ internal class ReaderChaptersLoader(
     override val coroutineContext: CoroutineContext = SupervisorJob() + Dispatchers.Main.immediate
 
     private sealed interface LoadChapter {
-        enum class Type { RestartInitial, Initial, Previous, Next }
-        data class RestartInitialChapter(val state: ChapterState) : LoadChapter
+        enum class Type { Initial, Previous, Next }
         data class Initial(val chapterIndex: Int) : LoadChapter
         data object Previous : LoadChapter
         data object Next : LoadChapter
@@ -126,7 +126,8 @@ internal class ReaderChaptersLoader(
         val itemIndex = indexOfReaderItem(
             list = items,
             chapterIndex = chapterIndex,
-            chapterItemPosition = chapterItemPosition
+            chapterItemPosition = chapterItemPosition,
+            debugSource = "getItemContext"
         )
         val item = items.getOrNull(itemIndex) ?: return null
         if (item !is ReaderItem.Position) return null
@@ -158,10 +159,18 @@ internal class ReaderChaptersLoader(
         launch { chapterLoaderFlow.emit(LoadChapter.Initial(chapterIndex = chapterIndex)) }
     }
 
-    @Synchronized fun tryLoadRestartedInitial(chapterLastState: ChapterState) {
-        if (LoadChapter.Type.RestartInitial in loaderQueue) return
-        loaderQueue.add(LoadChapter.Type.RestartInitial)
-        launch { chapterLoaderFlow.emit(LoadChapter.RestartInitialChapter(state = chapterLastState)) }
+    fun restartInitial(chapterLastState: ChapterState) {
+        coroutineContext.cancelChildren()
+        loaderQueue.clear()
+        launch(Dispatchers.Main.immediate) {
+            items.clear()
+            readerViewHandlersActions.doForceUpdateListViewState()
+            loadedChapters.clear()
+            hasLoadingError = false
+            readerState = ReaderState.INITIAL_LOAD
+            startChapterLoaderWatcher()
+            loadRestartedInitialChapter(chapterLastState)
+        }
     }
 
     @Synchronized fun tryLoadPrevious() {
@@ -259,19 +268,6 @@ internal class ReaderChaptersLoader(
         }
     }
 
-    fun reload() {
-        coroutineContext.cancelChildren()
-        loaderQueue.clear()
-        launch(Dispatchers.Main.immediate) {
-            items.clear()
-            readerViewHandlersActions.doForceUpdateListViewState()
-            loadedChapters.clear()
-            hasLoadingError = false
-            readerState = ReaderState.INITIAL_LOAD
-            startChapterLoaderWatcher()
-        }
-    }
-
     private fun startChapterLoaderWatcher() {
         launch {
             chapterLoaderFlow.collect {
@@ -287,10 +283,6 @@ internal class ReaderChaptersLoader(
                     is LoadChapter.Previous -> {
                         loadPreviousChapter()
                         removeQueueItem(LoadChapter.Type.Previous)
-                    }
-                    is LoadChapter.RestartInitialChapter -> {
-                        loadRestartedInitialChapter(chapterLastState = it.state)
-                        removeQueueItem(LoadChapter.Type.RestartInitial)
                     }
                 }
             }
@@ -595,12 +587,13 @@ internal class ReaderChaptersLoader(
                     return@_addChapterInternal false
                 }
 
+                val regexRules = regexRulesProvider()
                 val itemsOriginal = textToItemsConverter(
                     chapterUrl = chapter.url,
                     chapterIndex = chapterIndex,
                     chapterItemPositionDisplacement = chapterItemPosition,
                     text = res.data,
-                    userRegexRules = regexRulesProvider(),
+                    userRegexRules = regexRules,
                 )
                 chapterItemPosition += itemsOriginal.size
 
@@ -797,6 +790,19 @@ internal class ReaderChaptersLoader(
 
                 val finalItemTitle = itemTitle.copy(textTranslated = titleTranslated)
 
+                // Apply regex cleanup to the translated text too, just like the
+                // original text. Only real translations are cleaned: fallbacks to
+                // the already-cleaned original (textTranslated == text) are skipped
+                // to avoid applying the same rule twice.
+                val itemsCleaned = items.map { item ->
+                    if (item is ReaderItem.Body) {
+                        val translated = item.textTranslated
+                        if (translated != null && translated != item.text) {
+                            item.copy(textTranslated = applyUserRegexRules(translated, regexRules))
+                        } else item
+                    } else item
+                }
+
                 // Do NOT use maintainPosition for success block — it would call
                 // setSelection(titleIndex) via doMaintainStartPosition and override
                 // the scroll position set by setInitialPosition later.
@@ -811,7 +817,7 @@ internal class ReaderChaptersLoader(
                             if (idx != -1) this@ReaderChaptersLoader.items[idx] = finalItemTitle
                         }
                         itemTranslationAttribution?.let { insert(it) }
-                        insertAll(items)
+                        insertAll(itemsCleaned)
                         insert(ReaderItem.Divider(chapterIndex = chapterIndex))
                         readerViewHandlersActions.doForceUpdateListViewState()
                     }
@@ -823,7 +829,7 @@ internal class ReaderChaptersLoader(
                         val idx = backingList.indexOf(itemTitle)
                         if (idx != -1) backingList[idx] = finalItemTitle
                         itemTranslationAttribution?.let { backingList.add(it) }
-                        backingList.addAll(items)
+                        backingList.addAll(itemsCleaned)
                         backingList.add(ReaderItem.Divider(chapterIndex = chapterIndex))
                         readerViewHandlersActions.forceUpdateListViewState?.invoke()
                     }
@@ -863,6 +869,7 @@ internal class ReaderChaptersLoader(
     }
 
     suspend fun pruneItems(currentChapterIndex: Int) = withContext(Dispatchers.Main.immediate) {
+        Timber.d("TTS-JUMP pruneItems: current=$currentChapterIndex itemsBefore=${items.size}")
         if (readerState == ReaderState.LOADING) {
             pendingPruneChapterIndex = currentChapterIndex
             return@withContext
@@ -882,6 +889,10 @@ internal class ReaderChaptersLoader(
         }
 
         if (toRemoveItems.isEmpty()) return@withContext
+        Timber.d(
+            "TTS-JUMP pruneItems: window=[$minKeep..$maxKeep] removing n=${toRemoveItems.size} " +
+                "chapters=${toRemoveChapterIndices.sorted()} itemsAfter=${items.size - toRemoveItems.size}"
+        )
 
         val listView = readerViewHandlersActions.listView
         val savedFirstVisible = listView?.firstVisiblePosition ?: 0

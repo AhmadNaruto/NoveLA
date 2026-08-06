@@ -62,6 +62,8 @@ class ChaptersActivity : BaseActivity() {
                     onPressBack = ::finish,
                     onSelectedDeleteDownloads = viewModel::deleteDownloadsSelected,
                     onSelectedDownload = viewModel::downloadSelected,
+                    onSelectedTranslate = viewModel::translateSelected,
+                    onSelectedDeleteTranslations = viewModel::deleteSelectedTranslations,
                     onSelectedSetRead = viewModel::setAsReadSelected,
                     onSelectedSetUnread = viewModel::setAsUnreadSelected,
                     onSelectedSetReadUpToChapterRead = viewModel::setAsReadUpToSelected,
@@ -79,6 +81,7 @@ class ChaptersActivity : BaseActivity() {
                     onChangeCover = onDoAskForImage { viewModel.saveImageAsCover(it) },
                     onOpenInBrowser = { navigationRoutes.webView(this, url = it).let(::startActivity) },
                     onGlobalSearchClick = { navigationRoutes.globalSearch(this, text = it).let(::startActivity) },
+                    onDownloadNext100Chapters = viewModel::downloadNext100Chapters,
                     onDownloadAllChapters = viewModel::downloadAllChapters,
                     onMigrateBook = {
                         navigationRoutes.novelMigration(

@@ -143,7 +143,7 @@ internal class ReaderSession(
         readerState = ReaderState.INITIAL_LOAD,
         readerViewHandlersActions = readerViewHandlersActions,
         chapterTranslationDao = chapterTranslationDao,
-        regexRulesProvider = { appPreferences.USER_REGEX_CLEANUP_RULES.value },
+        regexRulesProvider = { appPreferences.effectiveRegexRules(bookUrl) },
     )
 
     val items = readerChaptersLoader.getItems()
@@ -277,7 +277,6 @@ internal class ReaderSession(
                         if (readerChaptersLoader.isLastChapter(chapterIndex)) return@withContext
                         if (readerChaptersLoader.hasLoadingError) return@withContext
                         val nextChapterIndex = chapterIndex + 1
-                        val chapterItem = readerChaptersLoader.orderedChapters[nextChapterIndex]
                         if (readerChaptersLoader.isChapterContentReady(nextChapterIndex)) {
                             readerTextToSpeech.readChapterStartingFromStart(
                                 chapterIndex = nextChapterIndex
@@ -395,8 +394,8 @@ internal class ReaderSession(
         runCatching { FloatingTtsService.stop(context) }
     }
 
-    fun reloadReader() {
-        readerChaptersLoader.reload()
+    fun reloadReader(chapterLastState: ChapterState) {
+        readerChaptersLoader.restartInitial(chapterLastState)
         readerTextToSpeech.stop()
     }
 
@@ -420,10 +419,12 @@ internal class ReaderSession(
             chapterIndex >= ttsCurrentChapterIndex + 1
         ) {
             Timber.d("Auto-stop TTS: user on chapter $chapterIndex, TTS was on $ttsCurrentChapterIndex")
+            // Останавливаем, но НЕ перезаписываем позицию чтения на «видимый»
+            // пользователем элемент. forceResetState(видимый mid-абзац) затирала активный
+            // item, и при последующем resume/автопереходе чтение начиналось с середины
+            // новой главы, пропуская её Title и первый абзац. Остановка без сброса
+            // сохраняет позицию, и автопереход возобновляется с правильного места.
             readerTextToSpeech.stop()
-            readerTextToSpeech.forceResetState(
-                items.getOrNull(itemIndex) as? ReaderItem.Position
-            )
         }
 
         if (chapterIndex != lastChapterIndex) {

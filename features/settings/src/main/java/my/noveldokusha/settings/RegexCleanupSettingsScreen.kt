@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Rule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,7 +43,9 @@ import my.noveldokusha.core.models.RegexRule
 fun RegexCleanupSettingsScreen(
     viewModel: RegexCleanupSettingsViewModel,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    applyStatusBarPadding: Boolean = true,
+    compactHeader: Boolean = false
 ) {
     val state by viewModel.uiState
     val filteredRules = viewModel.filteredRules
@@ -50,6 +54,7 @@ fun RegexCleanupSettingsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .then(if (applyStatusBarPadding) Modifier.statusBarsPadding() else Modifier)
             .background(MaterialTheme.colorScheme.background)
     ) {
         // ── TopBar ─────────────────────────────────────────────────────────
@@ -63,7 +68,7 @@ fun RegexCleanupSettingsScreen(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 IconButton(
                     onClick = onNavigateBack,
@@ -75,12 +80,35 @@ fun RegexCleanupSettingsScreen(
                         tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
-                Text(
-                    text = stringResource(id = R.string.regex_cleanup_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Medium
-                )
+                if (compactHeader) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Outlined.Rule,
+                                contentDescription = stringResource(
+                                    id = if (viewModel.isGlobal) R.string.regex_cleanup_title
+                                    else R.string.regex_cleanup_novel_rules
+                                ),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = stringResource(
+                            id = if (viewModel.isGlobal) R.string.regex_cleanup_title
+                            else R.string.regex_cleanup_novel_rules
+                        ),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
             Surface(
@@ -104,6 +132,62 @@ fun RegexCleanupSettingsScreen(
                         text = stringResource(id = R.string.add_new_rule),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        // ── Novel Header & Actions (персональный режим) ───────────────────
+        if (!viewModel.isGlobal) {
+            Text(
+                text = stringResource(
+                    id = R.string.regex_cleanup_novel_title_format,
+                    viewModel.novelTitle.value.ifEmpty { viewModel.bookUrl.orEmpty() }
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
+                    .padding(bottom = 6.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { viewModel.onMoveRulesToGlobal() },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.regex_cleanup_move_to_global),
+                        style = MaterialTheme.typography.labelMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                OutlinedButton(
+                    onClick = { viewModel.onRemoveNovelRules() },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.regex_cleanup_remove_novel_rules),
+                        style = MaterialTheme.typography.labelMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

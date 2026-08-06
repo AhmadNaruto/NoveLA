@@ -30,6 +30,7 @@ import my.noveldokusha.core.AppCoroutineScope
 import my.noveldokusha.core.AppFileResolver
 import my.noveldokusha.core.Toasty
 import my.noveldokusha.core.appPreferences.AppPreferences
+import my.noveldokusha.core.appPreferences.resolveTranslationEnabled
 import my.noveldokusha.core.domain.ChapterPagination
 import my.noveldokusha.core.isContentUri
 import my.noveldokusha.core.isLocalUri
@@ -133,7 +134,7 @@ internal class ChaptersViewModel @Inject constructor(
     fun translateBookInfo() {
         if (isTranslatingInfo.value) return
         viewModelScope.launch {
-            val targetLang = appPreferences.GLOBAL_TRANSLATION_PREFERRED_TARGET.value
+            val targetLang = appPreferences.translationTargetForBook(bookUrl)
             if (targetLang.isBlank()) {
                 toasty.show(R.string.translate_target_lang_not_set)
                 return@launch
@@ -229,12 +230,22 @@ internal class ChaptersViewModel @Inject constructor(
         // Подписываемся на переведённые названия глав из БД
         viewModelScope.launch {
             combine(
+                combine(
+                    bookUrlFlow,
+                    appPreferences.TRANSLATION_BOOK_ENABLED_MAP.flow(),
+                ) { url, bookEnabled -> url to bookEnabled },
+                appPreferences.TRANSLATION_BOOK_LANG_PAIR.flow(),
                 appPreferences.GLOBAL_TRANSLATION_ENABLED.flow(),
-                appPreferences.GLOBAL_TRANSLATION_PREFERRED_TARGET.flow()
-            ) { enabled, targetLang -> enabled to targetLang }
+                appPreferences.GLOBAL_TRANSLATION_PREFERRED_TARGET.flow(),
+                appPreferences.TRANSLATION_GLOBAL_MODE.flow()
+            ) { (url, bookEnabled), bookPairs, globalEnabled, globalTarget, globalMode ->
+                val enabled = resolveTranslationEnabled(globalMode, globalEnabled, bookEnabled, url)
+                val target = if (globalMode) globalTarget else bookPairs[url]?.target ?: ""
+                enabled to target
+            }
                 .flatMapLatest { (enabled, targetLang) ->
                     if (enabled) {
-                        chapterTranslationDao.getTranslatedTitlesFlow(bookUrl, targetLang)
+                        chapterTranslationDao.getTranslatedTitlesFlow(bookUrlFlow.value, targetLang)
                     } else {
                         flowOf(emptyList())
                     }
@@ -536,6 +547,31 @@ internal class ChaptersViewModel @Inject constructor(
         }
     }
 
+    fun downloadNext100Chapters() {
+        if (state.isLocalSource.value) return
+        val allChapters = state.chapters.toList().sortedBy { it.chapter.position }
+        val lastIndex = allChapters.indexOfLast { it.downloaded }
+        val nextChapters = allChapters.drop(lastIndex + 1).take(100)
+        if (nextChapters.isEmpty()) {
+            toasty.show(R.string.download_all_cached)
+            return
+        }
+        val chapterUrls = nextChapters.map { it.chapter.url }
+        viewModelScope.launch {
+            when (val result = downloadManager.enqueue(
+                bookTitle = bookTitle,
+                bookUrl = bookUrl,
+                chapterUrls = chapterUrls,
+            )) {
+                is EnqueueResult.Added -> toasty.show(R.string.download_added_to_queue)
+                is EnqueueResult.ChaptersAdded -> toasty.show(R.string.download_chapters_added)
+                is EnqueueResult.Resumed -> toasty.show(R.string.download_resumed)
+                is EnqueueResult.AlreadyQueued -> toasty.show(R.string.download_already_queued)
+                is EnqueueResult.AllCached -> toasty.show(R.string.download_all_cached)
+            }
+        }
+    }
+
     fun downloadAllChapters() {
         if (state.isLocalSource.value) return
         val allChapters = state.chapters.toList().sortedBy { it.chapter.position }
@@ -579,6 +615,37 @@ internal class ChaptersViewModel @Inject constructor(
         }
     }
 
+    fun translateSelected() {
+        val pair = appPreferences.translationPairForBook(bookUrl)
+        val sourceLang = pair.source
+        val targetLang = pair.target
+        if (!appPreferences.translationEnabledForBook(bookUrl) || sourceLang.isBlank() || targetLang.isBlank()) {
+            toasty.show(R.string.translation_not_configured)
+            return
+        }
+
+        val selectedUrls = state.selectedChaptersUrl.keys.toSet()
+        val sortedChapters = state.chapters
+            .filter { selectedUrls.contains(it.chapter.url) }
+            .sortedBy { it.chapter.position }
+
+        val chapterUrls = sortedChapters.map { it.chapter.url }
+        viewModelScope.launch {
+            when (val result = downloadManager.enqueue(
+                bookTitle = bookTitle,
+                bookUrl = bookUrl,
+                chapterUrls = chapterUrls,
+                translateMode = true,
+            )) {
+                is EnqueueResult.Added,
+                is EnqueueResult.ChaptersAdded,
+                EnqueueResult.Resumed,
+                EnqueueResult.AlreadyQueued -> toasty.show(R.string.translation_queued)
+                EnqueueResult.AllCached -> toasty.show(R.string.translation_nothing_to_translate)
+            }
+        }
+    }
+
     fun deleteDownloadsSelected() {
         if (state.isLocalSource.value) return
         val list = state.selectedChaptersUrl.toList()
@@ -590,6 +657,13 @@ internal class ChaptersViewModel @Inject constructor(
     fun deleteTranslationsForBook() {
         appScope.launch {
             chapterTranslationDao.deleteTranslationsByBookUrls(listOf(bookUrl))
+        }
+    }
+
+    fun deleteSelectedTranslations() {
+        val urls = state.selectedChaptersUrl.keys.toList()
+        appScope.launch {
+            urls.chunked(500).forEach { chapterTranslationDao.deleteChapterTranslationsByUrls(it) }
         }
     }
 

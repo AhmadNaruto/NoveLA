@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import my.noveldokusha.core.AppCoroutineScope
 import my.noveldokusha.core.AppFileResolver
+import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.core.fileImporter
 import my.noveldokusha.core.utils.normalizeBookUrl
 import my.noveldokusha.feature.local_database.AppDatabase
@@ -30,6 +31,7 @@ class LibraryBooksRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val appFileResolver: AppFileResolver,
     private val appCoroutineScope: AppCoroutineScope,
+    private val appPreferences: AppPreferences,
 ) {
     val getBooksInLibraryWithContextFlow by lazy {
         libraryDao.getBooksInLibraryWithContextFlow()
@@ -108,6 +110,7 @@ class LibraryBooksRepository @Inject constructor(
             // 4. Delete the book record itself
             libraryDao.remove(bookUrl)
         }
+        clearPerNovelData(listOf(bookUrl))
     }
 
     /**
@@ -123,6 +126,34 @@ class LibraryBooksRepository @Inject constructor(
                 chapterDao.removeAllFromBooks(chunk)
                 libraryDao.removeBooksByUrls(chunk)
             }
+        }
+        clearPerNovelData(bookUrls)
+    }
+
+    /**
+     * Removes per-novel preferences (regex cleanup rules and translation prompts)
+     * for books that are being deleted, so no orphaned data is left behind.
+     */
+    fun clearPerNovelData(bookUrls: List<String>) {
+        if (bookUrls.isEmpty()) return
+        val urlSet = bookUrls.toHashSet()
+
+        val prompts = appPreferences.TRANSLATION_NOVEL_PROMPTS.value
+        val filteredPrompts = prompts.filterKeys { it !in urlSet }
+        if (filteredPrompts.size != prompts.size) {
+            appPreferences.TRANSLATION_NOVEL_PROMPTS.value = filteredPrompts
+        }
+
+        val pairs = appPreferences.TRANSLATION_BOOK_LANG_PAIR.value
+        val filteredPairs = pairs.filterKeys { it !in urlSet }
+        if (filteredPairs.size != pairs.size) {
+            appPreferences.TRANSLATION_BOOK_LANG_PAIR.value = filteredPairs
+        }
+
+        val rules = appPreferences.USER_REGEX_CLEANUP_RULES_PER_NOVEL.value
+        val filteredRules = rules.filterKeys { it !in urlSet }
+        if (filteredRules.size != rules.size) {
+            appPreferences.USER_REGEX_CLEANUP_RULES_PER_NOVEL.value = filteredRules
         }
     }
 
@@ -256,5 +287,34 @@ class LibraryBooksRepository @Inject constructor(
                     downloadTaskDao.insert(task.copy(bookUrl = newUrl))
                 }
             }
+
+            // Переносим пер-новелльные настройки на новый ключ URL.
+            rekeyPerNovelPref(
+                oldUrl, newUrl,
+                { appPreferences.TRANSLATION_BOOK_LANG_PAIR.value },
+                { appPreferences.TRANSLATION_BOOK_LANG_PAIR.value = it }
+            )
+            rekeyPerNovelPref(
+                oldUrl, newUrl,
+                { appPreferences.TRANSLATION_NOVEL_PROMPTS.value },
+                { appPreferences.TRANSLATION_NOVEL_PROMPTS.value = it }
+            )
+            rekeyPerNovelPref(
+                oldUrl, newUrl,
+                { appPreferences.USER_REGEX_CLEANUP_RULES_PER_NOVEL.value },
+                { appPreferences.USER_REGEX_CLEANUP_RULES_PER_NOVEL.value = it }
+            )
         }
+
+    private fun <T> rekeyPerNovelPref(
+        oldUrl: String,
+        newUrl: String,
+        read: () -> Map<String, T>,
+        write: (Map<String, T>) -> Unit,
+    ) {
+        val current = read().toMutableMap()
+        val moved = current.remove(oldUrl) ?: return
+        current[newUrl] = moved
+        write(current)
+    }
 }

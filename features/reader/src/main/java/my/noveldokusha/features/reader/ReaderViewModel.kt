@@ -104,6 +104,7 @@ internal class ReaderViewModel @Inject constructor(
                 textSize = appPreferences.READER_FONT_SIZE.state(viewModelScope),
                 lineHeight = appPreferences.READER_LINE_HEIGHT.state(viewModelScope),
                 paragraphSpacing = appPreferences.READER_PARAGRAPH_SPACING.state(viewModelScope),
+                letterSpacing = appPreferences.READER_LETTER_SPACING.state(viewModelScope),
             )
         ),
         showInvalidChapterDialog = mutableStateOf(false)
@@ -152,8 +153,7 @@ internal class ReaderViewModel @Inject constructor(
 
     fun reloadReader() {
         val currentChapter = readingCurrentChapter.copy()
-        readerSession.reloadReader()
-        chaptersLoader.tryLoadRestartedInitial(currentChapter)
+        readerSession.reloadReader(currentChapter)
     }
 
     fun updateInfoViewTo(itemIndex: Int, userHasScrolled: Boolean = false) =

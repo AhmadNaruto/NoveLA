@@ -30,10 +30,12 @@ import androidx.compose.material.icons.filled.RemoveDone
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.PublishedWithChanges
 import androidx.compose.material.icons.outlined.SelectAll
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -86,6 +88,8 @@ internal fun ChaptersScreen(
     onPressBack: () -> Unit,
     onSelectedDeleteDownloads: () -> Unit,
     onSelectedDownload: () -> Unit,
+    onSelectedTranslate: () -> Unit = {},
+    onSelectedDeleteTranslations: () -> Unit = {},
     onSelectedSetRead: () -> Unit,
     onSelectedSetUnread: () -> Unit,
     onSelectedSetReadUpToChapterRead: () -> Unit,
@@ -103,6 +107,7 @@ internal fun ChaptersScreen(
     onChangeCover: () -> Unit,
     onOpenInBrowser: (url: String) -> Unit,
     onGlobalSearchClick: (input: String) -> Unit,
+    onDownloadNext100Chapters: () -> Unit,
     onDownloadAllChapters: () -> Unit,
     onMigrateBook: () -> Unit = {},
     onDeleteTranslations: () -> Unit = {},
@@ -204,6 +209,7 @@ internal fun ChaptersScreen(
                                         onSearchBookInDatabase = onSearchBookInDatabase,
                                         onResumeReading = onResumeReading,
                                         onChangeCover = onChangeCover,
+                                        onDownloadNext100Chapters = onDownloadNext100Chapters,
                                         onDownloadAllChapters = onDownloadAllChapters,
                                         onMigrateBook = onMigrateBook,
                                         onDeleteTranslations = onDeleteTranslations,
@@ -319,6 +325,20 @@ internal fun ChaptersScreen(
                                 Icon(
                                     Icons.Outlined.CloudDownload,
                                     stringResource(id = R.string.download_selected_chapters)
+                                )
+                            }
+                        }
+                        IconButton(onClick = onSelectedTranslate) {
+                            Icon(
+                                Icons.Outlined.Translate,
+                                stringResource(id = R.string.translate_selected_chapters)
+                            )
+                        }
+                        if (state.isLocalSource.value) {
+                            IconButton(onClick = onSelectedDeleteTranslations) {
+                                Icon(
+                                    Icons.Outlined.DeleteSweep,
+                                    stringResource(id = R.string.delete_selected_chapters_translations)
                                 )
                             }
                         }

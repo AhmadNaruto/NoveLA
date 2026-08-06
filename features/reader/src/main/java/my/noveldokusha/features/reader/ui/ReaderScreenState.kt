@@ -46,6 +46,7 @@ internal data class ReaderScreenState(
             val textSize: State<Float>,
             val lineHeight: State<Float>,
             val paragraphSpacing: State<Float>,
+            val letterSpacing: State<Float>,
         )
 
         @Stable
@@ -63,7 +64,7 @@ internal data class ReaderScreenState(
 
         @Immutable
         enum class Type {
-            None, LiveTranslation, TextToSpeech, Style, More
+            None, LiveTranslation, TextToSpeech, Style, More, RegexRules
         }
     }
 }

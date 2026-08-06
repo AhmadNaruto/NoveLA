@@ -101,6 +101,11 @@
     <string name="reload">Reload</string>
     <string name="remove_selected_chapters_downloads">Remove selected chapters\' downloads</string>
     <string name="download_selected_chapters">Download selected chapters</string>
+    <string name="translate_selected_chapters">Translate selected chapters</string>
+    <string name="delete_selected_chapters_translations">Delete translations of selected chapters</string>
+    <string name="translation_not_configured">Translation is disabled or not configured</string>
+    <string name="translation_queued">Added to translation queue</string>
+    <string name="translation_nothing_to_translate">Nothing to translate</string>
     <string name="set_as_read_selected_chapters">Set as read selected chapters</string>
     <string name="set_as_read_up_to_selected_chapter">Set as read up to selected chapter</string>
     <string name="set_as_Unread_up_to_selected_chapter">Set as Unread up to selected chapter</string>
@@ -126,6 +131,12 @@
     <string name="language_target_empty_text">Target</string>
     <string name="language_clear_selection">Clear selection</string>
     <string name="live_translation">Live translation</string>
+    <string name="translation_mode_title">Translation mode</string>
+    <string name="translation_mode_settings_description">Per-novel language pair, or one pair for all novels</string>
+    <string name="translation_mode_per_novel">This novel</string>
+    <string name="translation_mode_global">All novels</string>
+    <string name="translation_select_pair_to_enable">Select source and target languages to start translating</string>
+    <string name="translation_toggle_off_hint">Translation is off for this novel. Turn it on to translate.</string>
     <string name="provider_name">Provider: %s</string>
     <string name="language_selection">Language</string>
     <string name="language_search">Select language</string>
@@ -181,6 +192,7 @@
     <string name="text_size">Text size</string>
     <string name="line_height">Line height</string>
     <string name="paragraph_spacing">Paragraph spacing</string>
+    <string name="letter_spacing">Letter spacing</string>
     <string name="name">Name</string>
     <string name="save_current_voice">Save current voice</string>
     <string name="save_current_voice_parameters">Save current voice and parameters</string>
@@ -415,6 +427,12 @@
     <string name="invalid_regex_pattern_with">Invalid regex pattern: %s</string>
     <string name="regex_cleanup_title">Regex</string>
     <string name="enabled">Enabled</string>
+    <string name="regex_cleanup_novel_rules">Regex rules (this novel)</string>
+    <string name="regex_cleanup_novel_title_format">Novel: %s</string>
+    <string name="regex_cleanup_move_to_global">Move to global</string>
+    <string name="regex_cleanup_move_to_global_description">Append this novel\'s rules to the global list and clear the novel-specific ones</string>
+    <string name="regex_cleanup_remove_novel_rules">Delete novel rules</string>
+    <string name="regex_cleanup_remove_novel_rules_description">Remove all regex rules specific to this novel. Global rules still apply.</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">Last read</string>
@@ -547,6 +565,7 @@
 
     <!-- Download Manager -->
     <string name="download_added_to_queue">Added to download queue</string>
+    <string name="download_next_100_chapters">Download next 100 chapters</string>
     <string name="download_all_chapters">Download all chapters</string>
     <string name="download_progress">Downloading %1$s: %2$s</string>
     <string name="download_pause">Pause</string>

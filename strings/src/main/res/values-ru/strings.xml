@@ -190,6 +190,12 @@
 
     <string name="download_selected_chapters">Загрузить выбранные главы</string>
 
+    <string name="translate_selected_chapters">Перевести выбранные главы</string>
+    <string name="delete_selected_chapters_translations">Удалить перевод выбранных глав</string>
+    <string name="translation_not_configured">Перевод выключен или не настроен</string>
+    <string name="translation_queued">Добавлено в очередь перевода</string>
+    <string name="translation_nothing_to_translate">Нечего переводить</string>
+
     <string name="set_as_read_selected_chapters">Отметить выбранные главы как прочитанные</string>
 
     <string name="set_as_read_up_to_selected_chapter">Отметить как прочитанное до выбранной главы</string>
@@ -239,6 +245,16 @@
     <string name="language_clear_selection">Очистить выбор</string>
 
     <string name="live_translation">Живой перевод</string>
+
+    <string name="translation_mode_title">Режим перевода</string>
+
+    <string name="translation_mode_settings_description">Своя языковая пара для каждой новеллы или одна для всех</string>
+
+    <string name="translation_mode_per_novel">Эта новелла</string>
+
+    <string name="translation_mode_global">Все новеллы</string>
+    <string name="translation_select_pair_to_enable">Выберите язык источника и перевода, чтобы начать перевод</string>
+    <string name="translation_toggle_off_hint">Перевод выключен для этой новеллы. Включите его, чтобы переводить.</string>
 
     <string name="creating_backup">Создание резервной копии</string>
 
@@ -629,6 +645,18 @@
 
     <string name="regex_cleanup_title">Регулярки</string>
 
+    <string name="regex_cleanup_novel_rules">Регэксп-правила (эта новелла)</string>
+
+    <string name="regex_cleanup_novel_title_format">Новелла: %s</string>
+
+    <string name="regex_cleanup_move_to_global">Перенести в глобальные</string>
+
+    <string name="regex_cleanup_move_to_global_description">Дописать правила новеллы в конец глобального списка и очистить персональные</string>
+
+    <string name="regex_cleanup_remove_novel_rules">Удалить правила новеллы</string>
+
+    <string name="regex_cleanup_remove_novel_rules_description">Удалить все регэксп-правила, заданные только для этой новеллы. Глобальные продолжат действовать.</string>
+
     <string name="search_patterns_hint">Поиск по шаблону…</string>
 
     <string name="description">Описание</string>
@@ -921,6 +949,7 @@
 
     <string name="download_all_cached">Все главы уже скачаны</string>
 
+    <string name="download_next_100_chapters">Скачать следующие 100 глав</string>
     <string name="download_all_chapters">Скачать все главы</string>
 
 
@@ -1099,6 +1128,7 @@
     <string name="loading">Загрузка…</string>
     <string name="no_category">Без категории</string>
     <string name="paragraph_spacing">Интервал между абзацами</string>
+    <string name="letter_spacing">Межбуквенный интервал</string>
     <string name="rename_category">Переименовать</string>
     <string name="seconds_format">%d с</string>
     <string name="sort_ascending">По возрастанию</string>

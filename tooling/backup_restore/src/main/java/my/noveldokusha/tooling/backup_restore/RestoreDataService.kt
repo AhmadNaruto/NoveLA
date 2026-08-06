@@ -24,6 +24,7 @@ import my.noveldokusha.coreui.states.text
 import my.noveldokusha.coreui.states.title
 import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.core.appPreferences.NovelPromptData
+import my.noveldokusha.core.appPreferences.TranslationLangPair
 import my.noveldokusha.core.models.RegexRule
 import my.noveldokusha.core.isCoverValid
 import my.noveldokusha.data.AppRepository
@@ -299,7 +300,8 @@ class RestoreDataService : Service() {
                         appDatabase = newDatabase,
                         context = context,
                         appFileResolver = appFileResolver,
-                        appCoroutineScope = appCoroutineScope
+                        appCoroutineScope = appCoroutineScope,
+                        appPreferences = AppPreferences(context)
                     )
                     fun close() = newDatabase.closeDatabase()
                     fun delete() {
@@ -663,6 +665,42 @@ class RestoreDataService : Service() {
                     Timber.d("mergeToSettings: Restored ${promptsMap.size} novel prompts")
                 }
 
+                if (settingsJson.has("TRANSLATION_BOOK_LANG_PAIR")) {
+                    val pairsObj = settingsJson.getJSONObject("TRANSLATION_BOOK_LANG_PAIR")
+                    val pairsMap = mutableMapOf<String, TranslationLangPair>()
+                    for (key in pairsObj.keys()) {
+                        val value = pairsObj.get(key)
+                        if (value is JSONObject) {
+                            pairsMap[key] = TranslationLangPair(
+                                source = value.optString("source", ""),
+                                target = value.optString("target", ""),
+                            )
+                        }
+                    }
+                    appPreferences.TRANSLATION_BOOK_LANG_PAIR.value = pairsMap
+                    Timber.d("mergeToSettings: Restored ${pairsMap.size} novel lang pairs")
+                }
+
+                if (settingsJson.has("TRANSLATION_GLOBAL_MODE")) {
+                    appPreferences.TRANSLATION_GLOBAL_MODE.value = settingsJson.getBoolean("TRANSLATION_GLOBAL_MODE")
+                    Timber.d("mergeToSettings: Restored TRANSLATION_GLOBAL_MODE")
+                }
+
+                if (settingsJson.has("GLOBAL_TRANSLATION_ENABLED")) {
+                    appPreferences.GLOBAL_TRANSLATION_ENABLED.value = settingsJson.getBoolean("GLOBAL_TRANSLATION_ENABLED")
+                    Timber.d("mergeToSettings: Restored GLOBAL_TRANSLATION_ENABLED")
+                }
+
+                if (settingsJson.has("GLOBAL_TRANSLATION_PREFERRED_SOURCE")) {
+                    appPreferences.GLOBAL_TRANSLATION_PREFERRED_SOURCE.value = settingsJson.getString("GLOBAL_TRANSLATION_PREFERRED_SOURCE")
+                    Timber.d("mergeToSettings: Restored GLOBAL_TRANSLATION_PREFERRED_SOURCE")
+                }
+
+                if (settingsJson.has("GLOBAL_TRANSLATION_PREFERRED_TARGET")) {
+                    appPreferences.GLOBAL_TRANSLATION_PREFERRED_TARGET.value = settingsJson.getString("GLOBAL_TRANSLATION_PREFERRED_TARGET")
+                    Timber.d("mergeToSettings: Restored GLOBAL_TRANSLATION_PREFERRED_TARGET")
+                }
+
                 if (settingsJson.has("USER_REGEX_CLEANUP_RULES")) {
                     val rulesArray = settingsJson.getJSONArray("USER_REGEX_CLEANUP_RULES")
                     val rules = (0 until rulesArray.length()).map { i ->
@@ -676,6 +714,25 @@ class RestoreDataService : Service() {
                     }
                     appPreferences.USER_REGEX_CLEANUP_RULES.value = rules
                     Timber.d("mergeToSettings: Restored ${rules.size} regex rules")
+                }
+
+                if (settingsJson.has("USER_REGEX_CLEANUP_RULES_PER_NOVEL")) {
+                    val novelObj = settingsJson.getJSONObject("USER_REGEX_CLEANUP_RULES_PER_NOVEL")
+                    val novelMap = mutableMapOf<String, List<RegexRule>>()
+                    for (key in novelObj.keys()) {
+                        val rulesArray = novelObj.getJSONArray(key)
+                        novelMap[key] = (0 until rulesArray.length()).map { i ->
+                            val obj = rulesArray.getJSONObject(i)
+                            RegexRule(
+                                pattern = obj.getString("pattern"),
+                                replacement = obj.optString("replacement", ""),
+                                isEnabled = obj.optBoolean("isEnabled", true),
+                                description = obj.optString("description", "")
+                            )
+                        }
+                    }
+                    appPreferences.USER_REGEX_CLEANUP_RULES_PER_NOVEL.value = novelMap
+                    Timber.d("mergeToSettings: Restored ${novelMap.size} novels regex rules")
                 }
 
                 Timber.d("mergeToSettings: Settings merge completed")
