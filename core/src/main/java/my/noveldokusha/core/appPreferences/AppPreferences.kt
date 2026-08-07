@@ -327,6 +327,19 @@ class AppPreferences @Inject constructor(
         override var value by SharedPreference_String(name, preferences, "FFFF6D00")
     }
 
+    val MANUAL_HIGHLIGHT_ENABLED = object : Preference<Boolean>("MANUAL_HIGHLIGHT_ENABLED") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
+
+    // Позиция плавающей кнопки ручной подсветки (px), -1 — стартовая позиция по центру снизу
+    val MANUAL_HIGHLIGHT_POS_X = object : Preference<Float>("MANUAL_HIGHLIGHT_POS_X") {
+        override var value by SharedPreference_Float(name, preferences, -1f)
+    }
+
+    val MANUAL_HIGHLIGHT_POS_Y = object : Preference<Float>("MANUAL_HIGHLIGHT_POS_Y") {
+        override var value by SharedPreference_Float(name, preferences, -1f)
+    }
+
     val CHAPTERS_SORT_ASCENDING = object : Preference<TernaryState>("CHAPTERS_SORT_ASCENDING") {
         override var value by SharedPreference_Enum(
             name,
@@ -395,6 +408,16 @@ class AppPreferences @Inject constructor(
     val BOOKS_GRID_COLUMNS = object : Preference<Int>("BOOKS_GRID_COLUMNS") {
         override var value by SharedPreference_Int(name, preferences, 3)
     }
+    // Позиция полосы источника на карточке книги в библиотеке:
+    // кромка обложки (OnCover) или плашка под обложкой (BelowCover — дефолт).
+    val LIBRARY_SOURCE_STRIP_POSITION =
+        object : Preference<SourceStripPosition>("LIBRARY_SOURCE_STRIP_POSITION") {
+            override var value by SharedPreference_Enum(
+                name,
+                preferences,
+                SourceStripPosition.BelowCover
+            ) { enumValueOf(it) }
+        }
     val SOURCE_SORT_ORDER = object : Preference<SortOrder>("SOURCE_SORT_ORDER") {
         override var value by SharedPreference_Enum(
             name,
