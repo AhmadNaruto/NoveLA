@@ -22,7 +22,10 @@ internal data class ChaptersScreenState(
     val isRefreshable: State<Boolean>,
     val genres: MutableState<List<String>>,
     val rating: MutableState<String>,
+    val status: MutableState<String>,
+    val lastUpdateDate: MutableState<String>,
     val translatedChapterTitles: MutableState<Map<String, String>>,
+    val chapterSizes: MutableState<Map<String, ChapterSize>>,
     val downloadTask: MutableState<DownloadTaskState?>,
 ) {
 
@@ -49,4 +52,29 @@ internal data class ChaptersScreenState(
             category = book.category,
         )
     }
+}
+
+/** Пара языков перевода, доступная для экспорта, с числом переведённых глав. */
+data class LangPair(
+    val sourceLang: String,
+    val targetLang: String,
+    val translatedChapters: Int,
+)
+
+/** Состояние диалога экспорта книги в EPUB. */
+sealed interface ExportDialogState {
+    data object Hidden : ExportDialogState
+
+    /** Выбор контента для экспорта: оригинал или один из переводов. */
+    data class ContentChoice(
+        val bookUrl: String,
+        val bookTitle: String,
+        val totalChapters: Int,
+        val downloadedChapters: Int,
+        val availableTranslations: List<LangPair>,
+        val exportDirectoryName: String?,
+    ) : ExportDialogState
+
+    /** Папка экспорта не выбрана — UI открывает SAF-пикер. */
+    data object NeedDirectory : ExportDialogState
 }

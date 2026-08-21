@@ -83,6 +83,13 @@ class ChaptersActivity : BaseActivity() {
                     onGlobalSearchClick = { navigationRoutes.globalSearch(this, text = it).let(::startActivity) },
                     onDownloadNext100Chapters = viewModel::downloadNext100Chapters,
                     onDownloadAllChapters = viewModel::downloadAllChapters,
+                    onExport = viewModel::onExportClicked,
+                    onExportContentChosen = viewModel::onExportContentChosen,
+                    onExportDirectorySaved = viewModel::onExportDirectorySaved,
+                    onExportDialogDismiss = viewModel::onExportDialogDismiss,
+                    exportDialogState = viewModel.exportDialogState.value,
+                    exportMessage = viewModel.exportMessage.value,
+                    onExportMessageShown = { viewModel.exportMessage.value = null },
                     onMigrateBook = {
                         navigationRoutes.novelMigration(
                             this,
@@ -107,9 +114,8 @@ class ChaptersActivity : BaseActivity() {
 
     private fun onOpenLastActiveChapter() {
         lifecycleScope.launch {
-            val lastReadChapter = viewModel.getLastReadChapter()
-                ?: viewModel.state.chapters.minByOrNull { it.chapter.position }?.chapter?.url
-                ?: return@launch
+            // Bug1c: без lastRead не открываем главу 1 молча — остаёмся на списке глав.
+            val lastReadChapter = viewModel.getLastReadChapter() ?: return@launch
 
             openBookAtChapter(chapterUrl = lastReadChapter)
         }

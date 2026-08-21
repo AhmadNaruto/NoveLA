@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.CheckCircle
@@ -28,12 +29,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import my.noveldokusha.core.appPreferences.SourceStripPosition
 import my.noveldokusha.coreui.R
 import my.noveldokusha.coreui.components.BookImageButtonView
 import my.noveldokusha.coreui.components.BookRatingBadge
+import my.noveldokusha.coreui.components.toContentTypeBadgeIcon
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import my.noveldokusha.coreui.theme.ImageBorderShape
 import my.noveldokusha.coreui.theme.isLightTheme
 import my.noveldokusha.coreui.theme.Grey0
@@ -109,6 +115,24 @@ internal fun LibraryPageBody(
                         sourceStripUnreadCount = notReadCount,
                         sourceStripSourceName = getSourceName(it.book.url),
                         sourceStripOnCover = sourceStripPosition == SourceStripPosition.OnCover,
+                        topLeftBadge = {
+                            // Маленький полупрозрачный «бабл» — иконка типа контента читается на любой обложке
+                            Box(
+                                modifier = Modifier
+                                    .padding(4.dp)
+                                    .size(20.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(it.book.contentType.toContentTypeBadgeIcon()),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        },
                         topRightBadge = { BookRatingBadge(rating = it.book.rating) },
                         forceCache = true
                     )

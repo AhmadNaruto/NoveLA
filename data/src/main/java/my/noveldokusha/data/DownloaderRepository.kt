@@ -117,6 +117,36 @@ class DownloaderRepository @Inject constructor(
         }
     }
 
+    /**
+     * Статус книги (например, Ongoing/Completed), парсится с сайта источника.
+     * Возвращает null, если источник не поддерживает статус.
+     */
+    suspend fun bookStatus(
+        bookUrl: String,
+    ): Response<String?> = withContext(Dispatchers.IO) {
+        val scrap = scraper.getCompatibleSourceCatalog(bookUrl)
+            ?: return@withContext Response.Success(null)
+
+        my.noveldokusha.network.tryFlatConnect {
+            scrap.getBookStatus(bookUrl)
+        }
+    }
+
+    /**
+     * Дата последнего обновления книги, парсится с сайта источника.
+     * Возвращает null, если источник не поддерживает дату.
+     */
+    suspend fun bookLastUpdate(
+        bookUrl: String,
+    ): Response<String?> = withContext(Dispatchers.IO) {
+        val scrap = scraper.getCompatibleSourceCatalog(bookUrl)
+            ?: return@withContext Response.Success(null)
+
+        my.noveldokusha.network.tryFlatConnect {
+            scrap.getBookLastUpdate(bookUrl)
+        }
+    }
+
     suspend fun bookDescription(
         bookUrl: String,
     ): Response<String?> = withContext(Dispatchers.IO) {
@@ -186,9 +216,30 @@ class DownloaderRepository @Inject constructor(
                         }
                     ).use { it.toDocument(source.charset) }
 
+                    // Манхва/манга: если источник извлёк упорядоченный список URL
+                    // страниц (getPageList), глава рендерится как картинки —
+                    // HTML-тело не нужно.
+                    val pages = source.getChapterPages(doc)
+                    if (!pages.isNullOrEmpty()) {
+                        val pageData = my.noveldokusha.scraper.ChapterDownload(
+                            body = "",
+                            title = null,
+                            pages = pages
+                        )
+                        return@tryFlatConnect Response.Success(pageData)
+                    }
+
                     // Если getChapterText вернул null или пустую строку — выходим из блока скрапера
                     val body = source.getChapterText(doc)?.takeIf { it.isNotBlank() }
-                        ?: return@also
+                        ?: run {
+                            // Ни страниц (getPageList), ни тела — глава не скачается
+                            // («Empty content» в fetchChapterForDownload). Пишем с id
+                            // источника, чтобы было видно, чей плагин не отдаёт главу.
+                            Timber.w(
+                                "bookChapter: source ${source.id} returned no pages and no body for $chapterUrl"
+                            )
+                            return@also
+                        }
 
                     val data = my.noveldokusha.scraper.ChapterDownload(
                         body = body,

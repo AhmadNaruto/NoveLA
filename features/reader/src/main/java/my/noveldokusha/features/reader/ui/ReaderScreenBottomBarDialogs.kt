@@ -26,6 +26,7 @@ internal fun ReaderScreenBottomBarDialogs(
     settings: ReaderScreenState.Settings,
     regexCleanupViewModel: RegexCleanupSettingsViewModel?,
     onTextFontChanged: (String) -> Unit,
+    onTextColorChanged: (String) -> Unit,
     onTextSizeChanged: (Float) -> Unit,
     onLineHeightChanged: (Float) -> Unit,
     onParagraphSpacingChanged: (Float) -> Unit,
@@ -62,6 +63,7 @@ internal fun ReaderScreenBottomBarDialogs(
                             onDarkModeChange = onDarkModeSelected,
                             onAppThemeChange = onAppThemeSelected,
                             onTextFontChange = onTextFontChanged,
+                            onTextColorChanged = onTextColorChanged,
                             onTextSizeChange = onTextSizeChanged,
                             onLineHeightChange = onLineHeightChanged,
                             onParagraphSpacingChange = onParagraphSpacingChanged,
@@ -69,14 +71,6 @@ internal fun ReaderScreenBottomBarDialogs(
                         )
                     }
                     ReaderScreenState.Settings.Type.More -> MoreSettingDialog(
-                        allowTextSelection = settings.isTextSelectable.value,
-                        onAllowTextSelectionChange = onSelectableTextChange,
-                        keepScreenOn = settings.keepScreenOn.value,
-                        onKeepScreenOn = onKeepScreenOn,
-                        fullScreen = settings.fullScreen.value,
-                        onFullScreen = onFullScreen,
-                        singleTapToOpenSettings = settings.isSingleTapToOpenSettings.value,
-                        onSingleTapToOpenSettingsChange = onSingleTapToOpenSettingsChange,
                         ttsHighlightEnabled = settings.ttsHighlight.isEnabled.value,
                         onTtsHighlightEnabledChange = onTtsHighlightEnabledChange,
                         ttsHighlightColor = settings.ttsHighlight.highlightColor.value,

@@ -42,10 +42,13 @@ internal class ReaderViewModel @Inject constructor(
     override var chapterUrl by StateExtra_String(stateHandler)
     override var introScrollToSpeaker by StateExtra_Boolean(stateHandler)
 
-    private val readerSession = readerManager.initiateOrGetSession(
-        bookUrl = bookUrl,
-        chapterUrl = chapterUrl
-    )
+    private val readerSession = run {
+        Timber.d("ReaderStart: initiating session bookUrl=$bookUrl chapterUrl=$chapterUrl")
+        readerManager.initiateOrGetSession(
+            bookUrl = bookUrl,
+            chapterUrl = chapterUrl
+        )
+    }
 
     private val readingPosStats = readerSession.readingStats
 
@@ -102,6 +105,7 @@ internal class ReaderViewModel @Inject constructor(
                             .collect { withContext(Dispatchers.Main) { state.value = it } }
                     }
                 },
+                textColor = appPreferences.READER_TEXT_COLOR.state(viewModelScope),
                 textFont = appPreferences.READER_FONT_FAMILY.state(viewModelScope),
                 textSize = appPreferences.READER_FONT_SIZE.state(viewModelScope),
                 lineHeight = appPreferences.READER_LINE_HEIGHT.state(viewModelScope),

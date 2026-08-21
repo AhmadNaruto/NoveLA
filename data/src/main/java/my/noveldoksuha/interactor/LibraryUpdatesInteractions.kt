@@ -184,12 +184,27 @@ class LibraryUpdatesInteractions @Inject constructor(
             }
         }
 
-        // Загружаем и сохраняем рейтинг книги только если он ещё не заполнен
-        if (activeBook.rating.isBlank()) {
-            downloaderRepository.bookRating(bookUrl = activeBook.url).onSuccess { rating ->
-                if (!rating.isNullOrBlank()) {
-                    libraryDao.updateRating(activeBook.url, rating)
-                }
+        // Рейтинг запрашиваем при каждом обновлении: источник мог пересчитать оценку,
+        // а у книги с низким рейтингом строчная проверка на «пусто» не дала бы освежить её.
+        downloaderRepository.bookRating(bookUrl = activeBook.url).onSuccess { rating ->
+            if (!rating.isNullOrBlank()) {
+                libraryDao.updateRating(activeBook.url, rating)
+            }
+        }
+
+        // Статус запрашиваем при каждом обновлении: «продолжается»/«завершена» может измениться
+        // в любой момент, и хранить устаревшее значение до переустановки приложения нельзя.
+        downloaderRepository.bookStatus(activeBook.url).onSuccess { s ->
+            if (!s.isNullOrBlank()) {
+                libraryDao.updateStatus(activeBook.url, s)
+            }
+        }
+
+        // Дату обновления запрашиваем при каждом обновлении: она смещается вместе с новыми главами,
+        // поэтому единожды записанное значение быстро теряет смысл.
+        downloaderRepository.bookLastUpdate(activeBook.url).onSuccess { s ->
+            if (!s.isNullOrBlank()) {
+                libraryDao.updateLastUpdateDate(activeBook.url, s)
             }
         }
 
@@ -267,7 +282,7 @@ class LibraryUpdatesInteractions @Inject constructor(
 
         // Добавляем главы первой страницы
         firstPage.chapters.forEachIndexed { idx, ch ->
-            allChapters.add(Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = idx))
+            allChapters.add(Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = idx, uploaded = ch.uploaded))
         }
 
         // Загружаем оставшиеся страницы 2..totalPages
@@ -283,7 +298,7 @@ class LibraryUpdatesInteractions @Inject constructor(
             val offset = allChapters.size
             pageData.chapters.forEachIndexed { idx, ch ->
                 allChapters.add(
-                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx)
+                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx, uploaded = ch.uploaded)
                 )
             }
         }
@@ -334,7 +349,7 @@ class LibraryUpdatesInteractions @Inject constructor(
         Timber.d("[parsePage incremental] \"${book.title}\" — new chapters from lastPage=$lastKnownPage: ${newFromLastPage.size}")
         newFromLastPage.forEachIndexed { idx, ch ->
             chaptersToAdd.add(
-                Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = positionOffset + idx)
+                Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = positionOffset + idx, uploaded = ch.uploaded)
             )
         }
         positionOffset += chaptersToAdd.size
@@ -354,7 +369,7 @@ class LibraryUpdatesInteractions @Inject constructor(
             val offset = positionOffset
             pageData.chapters.forEachIndexed { idx, ch ->
                 chaptersToAdd.add(
-                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx)
+                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx, uploaded = ch.uploaded)
                 )
             }
             positionOffset += pageData.chapters.size
@@ -463,6 +478,20 @@ class LibraryUpdatesInteractions @Inject constructor(
                         downloaderRepository.bookRating(bookUrl = canonical).toSuccessOrNull()?.data?.let { rating ->
                             if (!rating.isNullOrBlank()) {
                                 libraryDao.updateRating(canonical, rating)
+                            }
+                        }
+                    }
+                    if (book.status.isBlank()) {
+                        downloaderRepository.bookStatus(bookUrl = canonical).toSuccessOrNull()?.data?.let { s ->
+                            if (!s.isNullOrBlank()) {
+                                libraryDao.updateStatus(canonical, s)
+                            }
+                        }
+                    }
+                    if (book.lastUpdateDate.isBlank()) {
+                        downloaderRepository.bookLastUpdate(bookUrl = canonical).toSuccessOrNull()?.data?.let { s ->
+                            if (!s.isNullOrBlank()) {
+                                libraryDao.updateLastUpdateDate(canonical, s)
                             }
                         }
                     }

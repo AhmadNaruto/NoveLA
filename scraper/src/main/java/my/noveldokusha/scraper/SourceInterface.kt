@@ -27,11 +27,26 @@ sealed interface SourceInterface {
     val requiresLogin: Boolean get() = false
     val charset: String get() = "UTF-8"
 
+    /**
+     * Метка типа контента источника ("manga"/"novel"/"").
+     * Для Lua-плагинов — глобальная переменная content_type в корне скрипта;
+     * "" = не указано → новелла.
+     */
+    val contentType: String get() = ""
+
     fun resolveName(context: android.content.Context): String =
         name ?: if (nameStrId != 0) context.getString(nameStrId) else "Unknown"
     suspend fun transformChapterUrl(url: String): String = url
 
     suspend fun getChapterText(doc: Document): String? = null
+
+    /**
+     * Chapters rendered as a plain ordered list of page images (manga/manhwa).
+     * Returns the page URLs extracted from the fetched chapter [doc], or null
+     * when the source has no page-list support for this chapter — callers then
+     * fall back to the legacy HTML [getChapterText] path.
+     */
+    suspend fun getChapterPages(doc: Document): List<String>? = null
 
     interface Base : SourceInterface
     interface Catalog : SourceInterface {
@@ -58,6 +73,20 @@ sealed interface SourceInterface {
          * null → рейтинг неизвестен.
          */
         suspend fun getBookRating(bookUrl: String): Response<String?> = Response.Success(null)
+
+        /**
+         * Возвращает статус книги (например "Ongoing"/"Completed") как строку с сайта источника.
+         * Реализуется в Lua через getBookStatus().
+         * null → статус неизвестен.
+         */
+        suspend fun getBookStatus(bookUrl: String): Response<String?> = Response.Success(null)
+
+        /**
+         * Возвращает дату последнего обновления книги как строку с сайта источника.
+         * Реализуется в Lua через getBookLastUpdate().
+         * null → дата неизвестна.
+         */
+        suspend fun getBookLastUpdate(bookUrl: String): Response<String?> = Response.Success(null)
 
         suspend fun getChapterList(bookUrl: String): Response<List<ChapterResult>>
         suspend fun getCatalogList(index: Int): Response<PagedList<BookResult>>

@@ -154,6 +154,10 @@
 
     <string name="filter">Фильтр</string>
 
+    <string name="content_type_manga">Манга</string>
+    <string name="content_type_novel">Новелла</string>
+    <string name="filter_all">Все</string>
+
     <string name="read">Прочитано</string>
 
     <string name="sort">Сортировка</string>
@@ -277,6 +281,8 @@
     <string name="data_restored">Данные восстановлены</string>
 
     <string name="completed">Завершено</string>
+    <string name="book_last_update_format">Обновлено: %s</string>
+    <string name="book_status_format">Статус: %s</string>
 
     <string name="loading_data">Загрузка данных</string>
 
@@ -304,9 +310,7 @@
 
     <string name="date_added">Дата добавления</string>
 
-    <string name="ascending">По возрастанию</string>
 
-    <string name="descending">По убыванию</string>
 
     <string name="voices">Голоса</string>
 
@@ -351,9 +355,7 @@
 
     <string name="tts_total_chapter">Всего глава</string>
 
-    <string name="tts_wpm">слов/мин</string>
 
-    <string name="tts_remaining">осталось</string>
 
     <string name="tts_hours_abbr">ч</string>
 
@@ -404,13 +406,9 @@
 
     <string name="by_chapter_name">По названию главы</string>
 
-    <string name="theme_name_light">Светлая</string>
 
-    <string name="theme_name_dark">Темная</string>
 
-    <string name="theme_name_grey">Серая</string>
 
-    <string name="theme_name_black">Черная</string>
 
     <string name="translation_services">Сервисы перевода</string>
 
@@ -845,9 +843,9 @@
 
     <string name="llm_tokens_auto">Авто</string>
 
-    <string name="dark_mode">Тёмный режим</string>
 
     <string name="color_scheme">Цветовая схема</string>
+    <string name="reader_text_color">Цвет текста</string>
 
 
 
@@ -1147,9 +1145,7 @@
     <string name="letter_spacing">Межбуквенный интервал</string>
     <string name="rename_category">Переименовать</string>
     <string name="seconds_format">%d с</string>
-    <string name="sort_ascending">По возрастанию</string>
     <string name="sort_by_name">По названию</string>
-    <string name="sort_descending">По убыванию</string>
     <string name="cloudflare_challenge_timeout">Тайм-аут проверки Cloudflare</string>
     <string name="timeout_seconds">Тайм-аут (сек.)</string>
 
@@ -1176,5 +1172,85 @@
     <string name="theme_name_yinyang">Инь Янь</string>
     <string name="theme_name_yotsuba">Yotsuba</string>
 
+    <string name="manga_reader_chapter_failed">Не удалось загрузить главу. Проверьте соединение и попробуйте снова.</string>
+    <string name="manga_reader_no_pages">В главе нет страниц</string>
+    <string name="manga_reader_retry">Повторить</string>
+    <string name="manga_mode_paged">Постранично</string>
+    <string name="manga_mode_webtoon">Лента (вебтун)</string>
+    <string name="manga_nav_swipe">Свайпы</string>
+    <string name="manga_nav_tap_edges">Тапы по краям</string>
+    <string name="manga_nav_both">Свайпы и тапы</string>
+    <string name="manga_reader_tapping_inverted">Инверсия тапов</string>
+    <string name="manga_zoom_start_automatic">Автоматически</string>
+    <string name="manga_zoom_start_left">Слева</string>
+    <string name="manga_zoom_start_center">По центру</string>
+    <string name="manga_zoom_start_right">Справа</string>
+    <string name="manga_reader_settings">Настройки читалки</string>
+    <string name="manga_reader_general">Общие</string>
+    <string name="manga_reader_controls">Управление</string>
+    <string name="manga_reader_auto_scroll">Автопрокрутка</string>
+    <string name="manga_reader_reading_mode">Режим чтения</string>
+    <string name="manga_reader_transitions_pager">Перелистывание (пейджер)</string>
+    <string name="manga_reader_transitions_webtoon">Переходы страниц (webtoon)</string>
+    <string name="manga_reader_show_page_number">Показывать номер страницы</string>
+    <string name="manga_reader_keep_screen_on">Не выключать экран</string>
+    <string name="manga_reader_fullscreen">Полный экран</string>
+    <string name="manga_reader_prev_chapter">Предыдущая глава</string>
+    <string name="manga_reader_next_chapter">Следующая глава</string>
+    <string name="manga_reader_chapter_loading">Загрузка главы…</string>
+    <string name="manga_reader_page_of">%1$d / %2$d</string>
+    <string name="manga_reader_end_of_book">Вы дочитали книгу до конца</string>
+    <string name="manga_reader_invalid_chapter">Эту главу нельзя открыть в манга-ридере.</string>
+    <string name="manga_reader_download_on_open">Скачивать главу при открытии</string>
+    <string name="manga_webtoon_side_padding">Боковой отступ</string>
+    <string name="manga_custom_color_filter">Пользовательский цветовой фильтр</string>
+    <string name="manga_color_filter_mode">Режим фильтра</string>
+    <string name="manga_color_filter_mode_normal">Обычный</string>
+    <string name="manga_color_filter_mode_multiply">Умножение</string>
+    <string name="manga_color_filter_mode_screen">Экран</string>
+    <string name="manga_color_filter_mode_overlay">Перекрытие</string>
+    <string name="manga_color_filter_mode_lighten">Осветление</string>
+    <string name="manga_color_filter_mode_darken">Затемнение</string>
+    <string name="manga_color_filter_alpha">Прозрачность</string>
+    <string name="manga_color_filter_red">Красный</string>
+    <string name="manga_color_filter_green">Зелёный</string>
+    <string name="manga_color_filter_blue">Синий</string>
+    <string name="manga_color_filter_custom">Свой фильтр</string>
+    <string name="manga_custom_brightness">Пользовательская яркость</string>
+    <string name="manga_reader_chapter_list">Список глав</string>
+    <string name="manga_reader_chapter_list_current">Текущая</string>
+    <string name="manga_reader_chapter_list_empty">Нет глав</string>
+    <string name="manga_reader_open_in_browser">Открыть в браузере</string>
+    <string name="manga_autoscroll_speed_value">%1$d dp/с</string>
+    <string name="manga_grayscale">Оттенки серого</string>
+    <string name="manga_inverted_colors">Инвертированные цвета</string>
+
+    <!-- machine-translated, manual review required -->
+    <string name="type">Тип</string>
+    <string name="tts_highlight">Подсветка TTS</string>
+    <string name="tts_floating_glow">Свечение</string>
+    <string name="tts_glow_auto">Авто</string>
+    <string name="tts_glow_on">Вкл</string>
+    <string name="tts_glow_off">Выкл</string>
+    <string name="wtr_lab_lang_id">Индонезийский</string>
+    <string name="wtr_lab_lang_tr">Турецкий</string>
+    <string name="wtr_lab_lang_none">Нет</string>
+
+    <!-- Book Export -->
+    <string name="export">Экспорт</string>
+    <string name="export_original">Оригинал</string>
+    <string name="export_translation">Перевод (%1$s → %2$s)</string>
+    <string name="export_folder">Папка: %s</string>
+    <string name="export_change_folder">Изменить</string>
+    <string name="export_not_fully_downloaded">Книга скачана не полностью (%1$d из %2$d). Экспортировать доступные главы?</string>
+    <string name="export_no_chapters">Нет скачанных глав</string>
+    <string name="export_no_translated_chapters">Нет переведённых глав</string>
+    <string name="export_started">Экспорт запущен</string>
+    <string name="book_export_channel_name">Экспорт книги</string>
+    <string name="book_export_progress">Экспорт: %1$d/%2$d глав</string>
+    <string name="book_export_complete">Экспортировано: %1$s</string>
+    <string name="book_export_cancel">Отмена</string>
+    <string name="book_export_no_chapters">Нет глав для экспорта</string>
+    <string name="book_export_failed">Ошибка экспорта</string>
 </resources>
 

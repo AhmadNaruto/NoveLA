@@ -16,6 +16,7 @@ dependencies {
     implementation(projects.navigation)
     implementation(projects.tooling.localDatabase)
     implementation(projects.tooling.textTranslator.domain)
+    implementation(projects.tooling.applicationWorkers)
 
     implementation(projects.tooling.novelMigration)
     implementation(libs.material)
@@ -33,4 +34,7 @@ dependencies {
 
     implementation(libs.timber)
 
+    testImplementation(libs.test.junit)
+    testImplementation(libs.test.mockito.kotlin)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
