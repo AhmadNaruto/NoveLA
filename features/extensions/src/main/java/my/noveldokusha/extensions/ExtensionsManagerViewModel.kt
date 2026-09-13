@@ -319,9 +319,9 @@ class ExtensionsManagerViewModel @Inject constructor(
                     imageUrl = extInfo.iconUrl,
                     codeUrl  = extInfo.codeUrl
                 )
-                // Шаг 2б: Сохранить codeUrl в settings как JSON,
+                // Шаг 2б: Сохранить codeUrl и content_type в settings как JSON,
                 // чтобы LuaSourceLoader знал откуда перескачать при следующем запуске
-                val settingsJson = Gson().toJson(mapOf("codeUrl" to extInfo.codeUrl))
+                val settingsJson = Gson().toJson(mapOf("codeUrl" to extInfo.codeUrl, "content_type" to extInfo.contentType))
                 extensionManager.updateExtensionSettings(extensionId, settingsJson)
 
                 Timber.d("Installed extension: ${extInfo.name}")
@@ -449,11 +449,13 @@ class ExtensionsManagerViewModel @Inject constructor(
             val version = luaField(finalCode, "version", "1.0.0")
             val language = luaField(finalCode, "language", "en")
             val icon = luaField(finalCode, "icon")
+            val contentType = luaField(finalCode, "content_type", "novel")
 
             if (extensionManager.isExtensionInstalled(storageId)) {
                 // Идемпотентный реимпорт того же файла — обновляем скрипт без создания дубля.
                 luaSourceLoader.saveScript(storageId, finalCode)
-                extensionManager.updateExtensionSettings(storageId, """{"sourceType": "local"}""")
+                val settingsJson = Gson().toJson(mapOf("sourceType" to "local", "content_type" to contentType))
+                extensionManager.updateExtensionSettings(storageId, settingsJson)
                 luaSourceProvider.reload()
                 return@withLock
             }
@@ -478,7 +480,8 @@ class ExtensionsManagerViewModel @Inject constructor(
                 imageUrl = icon.ifBlank { null },
                 codeUrl = null
             )
-            extensionManager.updateExtensionSettings(storageId, """{"sourceType": "local"}""")
+            val localSettings = Gson().toJson(mapOf("sourceType" to "local", "content_type" to contentType))
+            extensionManager.updateExtensionSettings(storageId, localSettings)
             luaSourceProvider.reload()
         }
     }
@@ -534,6 +537,7 @@ class ExtensionsManagerViewModel @Inject constructor(
         val newVersion = luaField(code, "version", "1.0.0")
         val newLanguage = luaField(code, "language", "en")
         val newIcon = luaField(code, "icon")
+        val newContentType = luaField(code, "content_type", "novel")
         val oldCodeUrl = getCodeUrl(id)
 
         extensionManager.installExtensionFromInfo(
@@ -544,6 +548,10 @@ class ExtensionsManagerViewModel @Inject constructor(
             imageUrl = newIcon.ifBlank { null },
             codeUrl = oldCodeUrl
         )
+        val settingsMap = mutableMapOf<String, Any>()
+        if (!oldCodeUrl.isNullOrBlank()) settingsMap["codeUrl"] = oldCodeUrl
+        settingsMap["content_type"] = newContentType
+        extensionManager.updateExtensionSettings(id, Gson().toJson(settingsMap))
         luaSourceProvider.reload()
         closeLuaEditor()
     }

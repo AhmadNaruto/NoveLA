@@ -158,11 +158,12 @@ private fun UnifiedExtensionsScreen(
                     .filter { state.selectedLanguages.isEmpty() || it.language in state.selectedLanguages }
                     .filter { state.selectedContentType.isEmpty() || it.contentType == state.selectedContentType || (state.selectedContentType == "novel" && it.contentType.isEmpty()) }
 
-                val localInstalledExtensions = remember(state.extensions, state.availableExtensions, state.selectedLanguages) {
+                val localInstalledExtensions = remember(state.extensions, state.availableExtensions, state.selectedLanguages, state.selectedContentType) {
                     val ids = filteredExtensions.map { it.id }.toSet()
                     state.extensions
                         .filter { it.id !in ids }
                         .filter { state.selectedLanguages.isEmpty() || it.language in state.selectedLanguages }
+                        .filter { state.selectedContentType.isEmpty() || it.contentType == state.selectedContentType || (state.selectedContentType == "novel" && it.contentType.isEmpty()) }
                         .map { installed ->
                             ExtensionInfo(
                                 id = installed.id,
@@ -176,7 +177,8 @@ private fun UnifiedExtensionsScreen(
                                 language = installed.language,
                                 isInstalled = true,
                                 isEnabled = installed.enabled,
-                                isLocal = true
+                                isLocal = true,
+                                contentType = installed.contentType
                             )
                         }
                 }
