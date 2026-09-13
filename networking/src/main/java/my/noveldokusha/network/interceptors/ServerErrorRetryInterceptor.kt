@@ -10,7 +10,7 @@ import java.io.IOException
  * Ретраит только GET-запросы (идемпотентные).
  */
 class ServerErrorRetryInterceptor(
-    private val maxRetries: Int = 3,
+    private val maxRetries: Int = 4,
     private val initialBackoffMs: Long = 500
 ) : Interceptor {
 
@@ -54,7 +54,8 @@ class ServerErrorRetryInterceptor(
     private fun isRetryable(code: Int): Boolean = code in RETRYABLE_CODES
 
     companion object {
-        // ponytail: 502/503/504 — typical transient CDN errors. 429 omitted — handled by CloudFareVerificationInterceptor.
-        private val RETRYABLE_CODES = setOf(502, 503, 504)
+        // ponytail: 502/503/504 — typical transient CDN errors. 429 — rate limit
+        // from CDN (not CF challenge — CF-interop handles those separately).
+        private val RETRYABLE_CODES = setOf(429, 502, 503, 504)
     }
 }
