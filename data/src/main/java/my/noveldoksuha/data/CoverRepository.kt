@@ -8,6 +8,7 @@ import my.noveldokusha.core.atomicWrite
 import my.noveldokusha.core.isCoverValid
 import my.noveldokusha.core.isHttpsUrl
 import my.noveldokusha.core.isImage
+import my.noveldokusha.core.utils.refererFor
 import my.noveldokusha.network.NetworkClient
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -32,7 +33,11 @@ class CoverRepository @Inject constructor(
             if (isCoverValid(coverFile)) return@withLock true
 
             val bytes = try {
-                networkClient.get(remoteUrl).use { response ->
+                // Пустой Referer недопустим: isHttpsUrl — лишь префиксная проверка,
+                // поэтому для некорректного URL (например "https://") refererFor вернёт "".
+                val headers = refererFor(remoteUrl).takeIf { it.isNotEmpty() }
+                    ?.let { mapOf("Referer" to it) } ?: emptyMap()
+                networkClient.getWithHeaders(remoteUrl, headers).use { response ->
                     if (!response.isSuccessful) return@withLock false
                     response.body?.bytes()
                 }
@@ -51,4 +56,5 @@ class CoverRepository @Inject constructor(
             }
         }
     }
+
 }

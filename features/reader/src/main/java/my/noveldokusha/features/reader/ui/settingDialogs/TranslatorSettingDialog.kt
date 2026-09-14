@@ -8,25 +8,23 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
+
+import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRightAlt
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ViewColumn
 import androidx.compose.material.icons.outlined.AutoStories
-import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.ViewColumn
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Psychology
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -40,10 +38,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,13 +53,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import my.noveldokusha.core.appPreferences.TranslationLangPair
+import my.noveldokusha.core.appPreferences.TranslationSettingsResolver.ActiveTranslatorLevel
+import my.noveldokusha.coreui.components.LanguageButton
+import my.noveldokusha.coreui.components.LanguageSearchDialog
 import my.noveldokusha.coreui.theme.colorAccent
 import my.noveldokusha.features.reader.features.LiveTranslationSettingData
 import my.noveldokusha.reader.R
-import my.noveldokusha.text_translator.domain.TranslationModelState
 
 @Composable
 internal fun TranslatorSettingDialog(
@@ -117,14 +117,59 @@ internal fun TranslatorSettingDialog(
                 ModeToggle(state = state)
             }
 
-            // ── Подсказка состояния: переключатель и пара независимы. ──
-            when {
-                !state.translationGlobalMode.value && !state.enable.value ->
-                    Text(
-                        text = stringResource(R.string.translation_toggle_off_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // ── Статус перевода: активный переводчик или «все выключены». ──
+            val level = state.activeTranslatorLevel.value
+            val levelActive = level != ActiveTranslatorLevel.NONE
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = if (levelActive) colorAccent().copy(alpha = 0.12f)
+                else MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                ) {
+                    Icon(
+                        imageVector = when (level) {
+                            ActiveTranslatorLevel.PER_NOVEL -> Icons.Outlined.AutoStories
+                            ActiveTranslatorLevel.PLUGIN -> Icons.Outlined.Extension
+                            ActiveTranslatorLevel.GLOBAL -> Icons.Outlined.Public
+                            ActiveTranslatorLevel.NONE -> Icons.Outlined.Block
+                        },
+                        contentDescription = null,
+                        tint = if (levelActive) colorAccent() else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = when (level) {
+                            ActiveTranslatorLevel.PER_NOVEL -> stringResource(
+                                R.string.active_translator_label,
+                                stringResource(R.string.translation_mode_per_novel),
+                            )
+                            ActiveTranslatorLevel.PLUGIN -> stringResource(
+                                R.string.active_translator_label,
+                                state.activePluginName.value ?: "",
+                            )
+                            ActiveTranslatorLevel.GLOBAL -> stringResource(
+                                R.string.active_translator_label,
+                                stringResource(R.string.translation_mode_global),
+                            )
+                            ActiveTranslatorLevel.NONE -> stringResource(R.string.translators_all_off)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (levelActive) colorAccent() else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            // ── Подсказка состояния: переключатель и пара независимы. ──
+            // «Перевод выключен» показываем только когда реально не переводит НИКТО
+            // (level == NONE): иначе при выключенном пер-новел, но включённом плагине
+            // подсказка противоречила бы полоске «Активный переводчик: <плагин>».
+            when {
                 !state.translationGlobalMode.value && (state.source.value == null || state.target.value == null) ->
                     Text(
                         text = stringResource(R.string.translation_select_pair_to_enable),
@@ -139,7 +184,10 @@ internal fun TranslatorSettingDialog(
             HorizontalDivider()
 
             // ── Language selection ──────────────────────────────────────
-            LanguageSelector(state = state)
+            LanguageSelector(
+                state = state,
+                onRemovePair = state.onRemovePair,
+            )
 
             // ── Display options ────────────────────────────────────────
             DisplayOptionsSection(state = state)
@@ -256,7 +304,10 @@ private fun ProviderSelector(state: LiveTranslationSettingData) {
 }
 
 @Composable
-private fun LanguageSelector(state: LiveTranslationSettingData) {
+private fun LanguageSelector(
+    state: LiveTranslationSettingData,
+    onRemovePair: (TranslationLangPair) -> Unit = {},
+) {
     var showSourceDialog by rememberSaveable { mutableStateOf(false) }
     var showTargetDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -301,6 +352,11 @@ private fun LanguageSelector(state: LiveTranslationSettingData) {
             selected = state.source.value,
             onSelect = { state.onSourceChange(it); showSourceDialog = false },
             onDismiss = { showSourceDialog = false },
+            favoriteLanguages = state.favoriteLanguages,
+            onToggleFavorite = state.onToggleFavorite,
+            recentPairs = state.recentPairs,
+            onApplyRecentPair = state.onApplyRecentPair,
+            onRemovePair = onRemovePair,
         )
     }
 
@@ -310,136 +366,13 @@ private fun LanguageSelector(state: LiveTranslationSettingData) {
             selected = state.target.value,
             onSelect = { state.onTargetChange(it); showTargetDialog = false },
             onDismiss = { showTargetDialog = false },
+            favoriteLanguages = state.favoriteLanguages,
+            onToggleFavorite = state.onToggleFavorite,
+            recentPairs = state.recentPairs,
+            onApplyRecentPair = state.onApplyRecentPair,
+            onRemovePair = onRemovePair,
         )
     }
-}
-
-@Composable
-private fun LanguageButton(
-    label: String,
-    active: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-    ) {
-        Icon(
-            Icons.Filled.Language,
-            contentDescription = null,
-            tint = if (active) colorAccent() else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun LanguageSearchDialog(
-    languages: List<TranslationModelState>,
-    selected: TranslationModelState?,
-    onSelect: (TranslationModelState?) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var query by rememberSaveable { mutableStateOf("") }
-
-    val filtered = remember(query, languages) {
-        if (query.isBlank()) languages
-        else languages.filter {
-            it.displayName.contains(query, ignoreCase = true) ||
-            it.language.contains(query, ignoreCase = true)
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = stringResource(R.string.language_search),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    placeholder = { Text(stringResource(R.string.language_search_hint)) },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        cursorColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-                )
-                Spacer(Modifier.height(8.dp))
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 300.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    filtered.forEach { item ->
-                        val isSelected = selected?.language == item.language
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(enabled = item.available) {
-                                    onSelect(if (isSelected) null else item)
-                                }
-                                .padding(vertical = 6.dp, horizontal = 4.dp),
-                        ) {
-                            Text(
-                                text = "${item.displayName} (${item.language})",
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.weight(1f),
-                                color = when {
-                                    !item.available -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                                    isSelected -> colorAccent()
-                                    else -> MaterialTheme.colorScheme.onSurface
-                                },
-                            )
-                            if (isSelected) {
-                                Icon(
-                                    Icons.Outlined.CheckCircle,
-                                    contentDescription = null,
-                                    tint = colorAccent(),
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            }
-                        }
-                    }
-
-                    if (filtered.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.language_no_results),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 12.dp),
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.close))
-            }
-        },
-    )
 }
 
 @Composable

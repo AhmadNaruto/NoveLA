@@ -260,8 +260,6 @@
 
     <string name="translation_mode_global">Все новеллы</string>
     <string name="translation_select_pair_to_enable">Выберите язык источника и перевода, чтобы начать перевод</string>
-    <string name="translation_toggle_off_hint">Перевод выключен для этой новеллы. Включите его, чтобы переводить.</string>
-
     <string name="creating_backup">Создание резервной копии</string>
 
     <string name="copying_database">Копирование базы данных</string>
@@ -846,6 +844,27 @@
 
     <string name="color_scheme">Цветовая схема</string>
     <string name="reader_text_color">Цвет текста</string>
+    <string name="reader_import_font">Импорт шрифта</string>
+    <string name="reader_fonts_imported">Импортированные</string>
+    <string name="reader_delete_font">Удалить шрифт</string>
+    <string name="reader_background">Фон</string>
+    <string name="reader_background_auto">Авто</string>
+    <string name="reader_background_custom">Своя картинка…</string>
+    <string name="reader_background_delete">Удалить</string>
+    <string name="reader_background_preset_paper">Бумага</string>
+    <string name="reader_background_preset_twilight">Сумерки</string>
+    <string name="reader_background_preset_night">Ночь</string>
+    <string name="reader_background_preset_ocean">Океан</string>
+    <string name="reader_background_preset_forest">Изумруд</string>
+    <string name="reader_background_preset_rose">Роза</string>
+    <string name="reader_background_preset_cream">Крем</string>
+    <string name="reader_background_preset_linen">Лён</string>
+    <string name="reader_background_preset_mist">Дымка</string>
+    <string name="reader_background_preset_sage">Шалфей</string>
+    <string name="reader_background_preset_dusk">Закат</string>
+    <string name="reader_background_preset_cocoa">Какао</string>
+    <string name="reader_background_preset_arctic">Арктика</string>
+    <string name="reader_background_preset_midnight">Полночь</string>
 
 
 
@@ -993,6 +1012,13 @@
     <string name="language_search">Выбрать язык</string>
     <string name="language_search_hint">Поиск языков…</string>
     <string name="language_no_results">Языки не найдены</string>
+    <string name="language_favorites">Избранное</string>
+    <string name="language_recent_pairs">Недавние пары</string>
+    <string name="language_recent_pairs_empty">Выбери языки — пара появится здесь для быстрого применения</string>
+    <string name="language_favorite_add">Добавить в избранное</string>
+    <string name="language_favorite_remove">Убрать из избранного</string>
+    <string name="language_all_languages">Все языки</string>
+    <string name="language_no_favorites">Избранного пока нет — нажми на звезду у языка</string>
     <string name="novel_prompt_title">Промпт для новеллы</string>
     <string name="novel_prompt_placeholder">Опционально: кастомный системный промпт для этой новеллы</string>
     <string name="novel_prompt_description_reader">Задать кастомный системный промпт для этой новеллы</string>
@@ -1252,5 +1278,24 @@
     <string name="book_export_cancel">Отмена</string>
     <string name="book_export_no_chapters">Нет глав для экспорта</string>
     <string name="book_export_failed">Ошибка экспорта</string>
+
+    <!-- Per-plugin translation settings -->
+    <string name="extension_translation_settings">Открыть настройки перевода</string>
+    <string name="plugin_translation_settings_title">Перевод (плагин)</string>
+    <string name="plugin_translation_enabled">Включить перевод плагина</string>
+    <string name="plugin_translation_swap_languages">Поменять языки местами</string>
+    <string name="plugin_translation_scope_standard">Стандартно (главы)</string>
+    <string name="plugin_translation_scope_full">Полный (главы + книга)</string>
+    <string name="plugin_translation_scope_standard_description">Переводит текст глав и заголовки глав.</string>
+    <string name="plugin_translation_scope_full_description">Также переводит и сохраняет название и описание новеллы.</string>
+    <string name="plugin_translation_prompt_label">Промпт</string>
+    <string name="plugin_translation_prompt_hint">Опционально: свой системный промпт для Gemini/OpenAI</string>
+    <string name="plugin_translation_hide_section">Скрытие перевода</string>
+    <string name="plugin_translation_hide_library">В библиотеке</string>
+    <string name="plugin_translation_hide_history">В истории</string>
+    <string name="plugin_translation_hide_catalog">В каталоге</string>
+    <string name="plugin_translation_hide_search">В поиске</string>
+    <string name="active_translator_label">Активный переводчик: %s</string>
+    <string name="translators_all_off">Переводчики отключены</string>
 </resources>
 

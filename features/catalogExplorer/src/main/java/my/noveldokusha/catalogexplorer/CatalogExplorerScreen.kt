@@ -1,6 +1,7 @@
 package my.noveldokusha.catalogexplorer
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,17 +52,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import my.noveldokusha.strings.R
+import my.noveldokusha.strings.R as StringsR
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import my.noveldokusha.coreui.components.ChipOption
 import my.noveldokusha.coreui.components.LanguageFilterChips
 import my.noveldokusha.navigation.NavigationRouteViewModel
-import my.noveldokusha.catalogexplorer.AddByUrlDialog
+import my.noveldokusha.coreui.components.AddByUrlDialog
 import my.noveldokusha.extensions.ExtensionsScreen
 import my.noveldokusha.extensions.ExtensionsManagerViewModel
 import my.noveldokusha.extensions.ExtensionsScreenEvent
+import my.noveldokusha.extensions.PluginTranslationSettingsDialog
 import my.noveldokusha.tooling.novel_migration.ui.MigrationTabContent
+import androidx.compose.material3.FilterChip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,6 +78,16 @@ fun CatalogExplorerScreen(
 
     val extensionsViewModel = hiltViewModel<ExtensionsManagerViewModel>()
     val extensionsState by extensionsViewModel.state.collectAsStateWithLifecycle()
+    val pluginEnabledMap by extensionsViewModel.pluginEnabledMap.collectAsStateWithLifecycle()
+
+    // Карта catalog.id → extensionId для установленных плагинов: каталог Lua-источника
+    // имеет metadata.id = extension.id либо "lua_${extension.id}".
+    val translationSettingsExtensionIds = remember(extensionsState.extensions) {
+        extensionsState.extensions
+            .filter { it.installed }
+            .flatMap { ext -> listOf(ext.id to ext.id, "lua_${ext.id}" to ext.id) }
+            .toMap()
+    }
 
     val context = LocalContext.current
     var extensionsChipsVisible by rememberSaveable { mutableStateOf(false) }
@@ -86,6 +100,14 @@ fun CatalogExplorerScreen(
             val code = input.bufferedReader().readText()
             val fileName = uri.lastPathSegment?.substringAfterLast('/') ?: "local.lua"
             extensionsViewModel.importLuaFromText(fileName, code)
+        }
+    }
+
+    // Стабильная лямбда: содержит только переадресацию события в VM, без захвата
+    // рекомпозируемого состояния. Позволяет CatalogList оставаться skippable (P2).
+    val onTranslationSettingsClick: (String) -> Unit = remember {
+        { extensionId: String ->
+            extensionsViewModel.onEvent(ExtensionsScreenEvent.OnExtensionConfigure(extensionId))
         }
     }
 
@@ -220,13 +242,32 @@ fun CatalogExplorerScreen(
 
                 // Language filter chips row
                 if (uiState.selectedTabIndex == 0) {
-                    LanguageFilterChips(
-                        selected = uiState.selectedLanguages,
-                        all = availableLanguages.map { ChipOption(id = it.code, label = it.name) },
-                        onToggle = viewModel::toggleSourceLanguage,
-                        onClearAll = viewModel::clearLanguageFilter,
-                        visible = uiState.showLanguageChips,
-                    )
+                    Column {
+                        LanguageFilterChips(
+                            selected = uiState.selectedLanguages,
+                            all = availableLanguages.map { ChipOption(id = it.code, label = it.name) },
+                            onToggle = viewModel::toggleSourceLanguage,
+                            onClearAll = viewModel::clearLanguageFilter,
+                            visible = uiState.showLanguageChips,
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        ) {
+                            val contentTypeOptions = listOf(
+                                "" to stringResource(StringsR.string.all_categories),
+                                "manga" to stringResource(StringsR.string.content_type_manga),
+                                "novel" to stringResource(StringsR.string.content_type_novel),
+                            )
+                            contentTypeOptions.forEach { (value, label) ->
+                                FilterChip(
+                                    selected = uiState.selectedContentType == value,
+                                    onClick = { viewModel.toggleContentType(value) },
+                                    label = { Text(label) },
+                                )
+                            }
+                        }
+                    }
                 } else {
                     LanguageFilterChips(
                         selected = extensionsState.selectedLanguages,
@@ -242,13 +283,11 @@ fun CatalogExplorerScreen(
             when (uiState.selectedTabIndex) {
                 0 -> {
                     // Browse tab content
-                    val filteredSources = remember(uiState.sourcesList, uiState.selectedLanguages) {
-                        if (uiState.selectedLanguages.isEmpty()) {
-                            uiState.sourcesList
-                        } else {
-                            uiState.sourcesList.filter {
-                                it.catalog.isLocalSource || it.catalog.languageTag in uiState.selectedLanguages
-                            }
+                    val filteredSources = remember(uiState.sourcesList, uiState.selectedLanguages, uiState.selectedContentType) {
+                        uiState.sourcesList.filter { item ->
+                            val langOk = uiState.selectedLanguages.isEmpty() || item.catalog.isLocalSource || item.catalog.languageTag in uiState.selectedLanguages
+                            val typeOk = uiState.selectedContentType.isEmpty() || item.catalog.contentType == uiState.selectedContentType || (uiState.selectedContentType == "novel" && item.catalog.contentType.isEmpty())
+                            langOk && typeOk
                         }
                     }
                     CatalogList(
@@ -257,7 +296,10 @@ fun CatalogExplorerScreen(
                         sourcesList = filteredSources,
                         onDatabaseClick = onDatabaseClick,
                         onSourceClick = onSourceClick,
-                        onSourceSetPinned = viewModel::onSourceSetPinned
+                        onSourceSetPinned = viewModel::onSourceSetPinned,
+                        translationSettingsExtensionIds = translationSettingsExtensionIds,
+                        onTranslationSettingsClick = onTranslationSettingsClick,
+                        pluginEnabledMap = pluginEnabledMap,
                     )
                 }
                 1 -> {
@@ -288,6 +330,15 @@ fun CatalogExplorerScreen(
         }
     )
 
+    // Диалог настроек перевода плагина — рендерится на уровне экрана, вне вкладок.
+    extensionsState.translationSettingsExtensionId?.let { extensionId ->
+        PluginTranslationSettingsDialog(
+            extensionId = extensionId,
+            viewModel = extensionsViewModel,
+            onDismiss = { extensionsViewModel.onEvent(ExtensionsScreenEvent.OnTranslationSettingsDismiss) },
+        )
+    }
+
     // Add by URL dialog
     if (uiState.showAddByUrlDialog) {
         AddByUrlDialog(
@@ -296,7 +347,7 @@ fun CatalogExplorerScreen(
                 viewModel.addNovelsByUrls(urls)
                 viewModel.setShowAddByUrlDialog(false)
             },
-            scraper = viewModel.scraperRepository.scraper
+            isUrlSupported = viewModel.scraperRepository.scraper::isUrlSupported
         )
     }
 }

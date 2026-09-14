@@ -45,6 +45,7 @@ class SourceCatalogActivity : BaseActivity() {
         setContent {
             Theme(themeProvider = themeProvider) {
                 SourceCatalogScreen(
+                    viewModel = viewModel,
                     state = viewModel.state,
                     onSearchTextInputChange = viewModel.state.searchTextInput::value::set,
                     onSearchTextInputSubmit = viewModel::onSearchText,
@@ -59,6 +60,8 @@ class SourceCatalogActivity : BaseActivity() {
                     onPressBack             = { backPressedCallback.handleOnBackPressed() },
                     onOpenFilterSheet       = { viewModel.state.isFilterSheetOpen.value = true },
                     onApplyFilters          = viewModel::onApplyFilters,
+                    getLibraryBadge         = viewModel::getLibraryBadge,
+                    libraryBadgeData        = viewModel.libraryBadgeData,
                 )
             }
         }

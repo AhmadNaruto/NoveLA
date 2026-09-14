@@ -233,6 +233,27 @@
     <string name="dark_mode_black">黑色</string>
     <string name="color_scheme">配色方案</string>
     <string name="reader_text_color">文字颜色</string>
+    <string name="reader_import_font">导入字体</string>
+    <string name="reader_fonts_imported">已导入</string>
+    <string name="reader_delete_font">删除字体</string>
+    <string name="reader_background">背景</string>
+    <string name="reader_background_auto">自动</string>
+    <string name="reader_background_custom">自定义图片…</string>
+    <string name="reader_background_delete">删除</string>
+    <string name="reader_background_preset_paper">纸张</string>
+    <string name="reader_background_preset_twilight">暮色</string>
+    <string name="reader_background_preset_night">夜间</string>
+    <string name="reader_background_preset_ocean">海洋</string>
+    <string name="reader_background_preset_forest">祖母绿</string>
+    <string name="reader_background_preset_rose">玫瑰</string>
+    <string name="reader_background_preset_cream">奶油</string>
+    <string name="reader_background_preset_linen">亚麻</string>
+    <string name="reader_background_preset_mist">薄雾</string>
+    <string name="reader_background_preset_sage">鼠尾草</string>
+    <string name="reader_background_preset_dusk">黄昏</string>
+    <string name="reader_background_preset_cocoa">可可</string>
+    <string name="reader_background_preset_arctic">北极</string>
+    <string name="reader_background_preset_midnight">午夜</string>
     <string name="translation_services">翻译服务</string>
     <string name="gemini_api_key">Gemini API 密钥</string>
     <string name="active_google_gemini_api">已启用：Google Gemini API</string>
@@ -540,6 +561,13 @@
     <string name="language_search">选择语言</string>
     <string name="language_search_hint">搜索语言…</string>
     <string name="language_no_results">未找到语言</string>
+    <string name="language_favorites">收藏</string>
+    <string name="language_recent_pairs">最近配对</string>
+    <string name="language_recent_pairs_empty">选择语言 — 配对将显示在此处以快速应用</string>
+    <string name="language_favorite_add">添加到收藏</string>
+    <string name="language_favorite_remove">从收藏中移除</string>
+    <string name="language_all_languages">所有语言</string>
+    <string name="language_no_favorites">暂无收藏 - 点击语言旁的星标</string>
     <string name="novel_prompt_title">小说专属提示</string>
     <string name="novel_prompt_placeholder">可选：此小说的自定义系统提示</string>
     <string name="novel_prompt_description_reader">为此小说设置自定义系统提示</string>
@@ -689,7 +717,6 @@
     <string name="translation_not_configured">翻译已禁用或未配置</string>
     <string name="translation_queued">已加入翻译队列</string>
     <string name="translation_select_pair_to_enable">选择源语言和目标语言以开始翻译</string>
-    <string name="translation_toggle_off_hint">本书的翻译已关闭。开启后即可翻译。</string>
     <string name="translation_nothing_to_translate">没有可翻译的内容</string>
     <string name="translation_mode_title">翻译模式</string>
     <string name="translation_mode_settings_description">每本书单独的语言对，或所有书籍共用一个语言对</string>
@@ -742,6 +769,7 @@
     <string name="manga_reader_controls">控制</string>
     <string name="manga_reader_download_on_open">打开时下载章节</string>
     <string name="manga_reader_end_of_book">你已读完整本书</string>
+    <string name="manga_reader_no_pages">本章没有页面</string>
     <string name="manga_reader_fullscreen">全屏</string>
     <string name="manga_reader_general">常规</string>
     <string name="manga_reader_invalid_chapter">此章节无法在漫画阅读器中打开。</string>
@@ -773,7 +801,27 @@
     <string name="book_export_channel_name">图书导出</string>
     <string name="book_export_progress">正在导出：%1$d/%2$d 章</string>
     <string name="book_export_complete">已导出：%1$s</string>
+    <string name="export_started">已开始导出</string>
     <string name="book_export_cancel">取消</string>
     <string name="book_export_no_chapters">没有可导出的章节</string>
     <string name="book_export_failed">导出失败</string>
+
+    <!-- Per-plugin translation settings -->
+    <string name="extension_translation_settings">打开翻译设置</string>
+    <string name="plugin_translation_settings_title">翻译（插件）</string>
+    <string name="plugin_translation_enabled">启用插件翻译</string>
+    <string name="plugin_translation_swap_languages">交换语言</string>
+    <string name="plugin_translation_scope_standard">标准（章节）</string>
+    <string name="plugin_translation_scope_full">完整（章节 + 书籍）</string>
+    <string name="plugin_translation_scope_standard_description">翻译章节文本和章节标题。</string>
+    <string name="plugin_translation_scope_full_description">同时翻译并保存小说标题和简介。</string>
+    <string name="plugin_translation_prompt_label">提示词</string>
+    <string name="plugin_translation_prompt_hint">可选：为 Gemini/OpenAI 自定义系统提示词</string>
+    <string name="plugin_translation_hide_section">隐藏翻译标题</string>
+    <string name="plugin_translation_hide_library">在图书馆</string>
+    <string name="plugin_translation_hide_history">在历史记录</string>
+    <string name="plugin_translation_hide_catalog">在目录</string>
+    <string name="plugin_translation_hide_search">在搜索</string>
+    <string name="active_translator_label">当前翻译器：%s</string>
+    <string name="translators_all_off">翻译器已关闭</string>
 </resources>

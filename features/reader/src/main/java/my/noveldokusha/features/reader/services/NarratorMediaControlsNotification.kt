@@ -17,12 +17,17 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
 import androidx.core.graphics.drawable.toBitmap
-import coil.Coil
-import coil.request.ImageRequest
-import coil.request.SuccessResult
-import coil.size.Size
+import coil3.SingletonImageLoader
+import coil3.asDrawable
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.size.Size
 import dagger.hilt.android.qualifiers.ApplicationContext
 import my.noveldokusha.core.AppFileResolver
+import my.noveldokusha.core.utils.formatDuration
+import my.noveldokusha.core.utils.refererFor
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -97,15 +102,16 @@ internal class NarratorMediaControlsNotification @Inject constructor(
         if (coverUrl.isNullOrBlank()) return null
         return withContext(Dispatchers.IO) {
             try {
-                val imageLoader = Coil.imageLoader(context)
+                val imageLoader = SingletonImageLoader.get(context)
                 val localCover = appFileResolver.resolvedBookImagePath(bookUrl, coverUrl, isCover = true)
+                val referer = (localCover as? String)?.takeIf { it.startsWith("http://") || it.startsWith("https://") }?.let(::refererFor)
                 val request = ImageRequest.Builder(context)
                     .data(localCover)
                     .size(Size(512, 512))
-                    .allowHardware(false)
+                    .apply { if (!referer.isNullOrEmpty()) httpHeaders(NetworkHeaders.Builder().set("Referer", referer).build()) }
                     .build()
                 val bitmap = when (val result = imageLoader.execute(request)) {
-                    is SuccessResult -> result.drawable.toBitmap()
+                    is SuccessResult -> result.image.asDrawable(context.resources).toBitmap()
                     else -> null
                 } ?: return@withContext null
                 // Копия, которой мы владеем: coil может переиспользовать тот же битмап
@@ -472,15 +478,3 @@ internal class NarratorMediaControlsNotification @Inject constructor(
     }
 }
 
-private fun formatDuration(seconds: Int): String {
-    val total = seconds.coerceAtLeast(0)
-    val h = total / 3600
-    val m = (total % 3600) / 60
-    val s = total % 60
-
-    return if (h > 0) {
-        "%d:%02d:%02d".format(h, m, s)
-    } else {
-        "%d:%02d".format(m, s)
-    }
-}

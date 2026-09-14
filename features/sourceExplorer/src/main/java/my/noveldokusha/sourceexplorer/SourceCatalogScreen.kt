@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import my.noveldokusha.coreui.components.AnimatedTransition
 import my.noveldokusha.coreui.components.BooksVerticalView
+import my.noveldokusha.coreui.components.InLibraryBadge
 import my.noveldokusha.coreui.components.ToolbarMode
 import my.noveldokusha.coreui.components.TopAppBarSearch
 import my.noveldokusha.core.utils.actionCopyToClipboard
@@ -43,10 +45,14 @@ import my.noveldokusha.coreui.states.IteratorState
 import my.noveldokusha.coreui.theme.colorAccent
 import my.noveldokusha.feature.local_database.BookMetadata
 import my.noveldokusha.scraper.ActiveFilters
+import my.noveldokusha.coreui.components.LibraryBadgeMaps
+import my.noveldokusha.coreui.components.LibraryBadgeState
+import my.noveldokusha.strings.R as StringsR
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 internal fun SourceCatalogScreen(
+    viewModel: SourceCatalogViewModel,
     state: SourceCatalogScreenState,
     onSearchTextInputChange: (String) -> Unit,
     onSearchTextInputSubmit: (String) -> Unit,
@@ -59,11 +65,16 @@ internal fun SourceCatalogScreen(
     onPressBack: () -> Unit,
     onOpenFilterSheet: () -> Unit,
     onApplyFilters: (ActiveFilters) -> Unit,
+    getLibraryBadge: (String, String) -> LibraryBadgeState? = { _, _ -> null },
+    libraryBadgeData: State<LibraryBadgeMaps> = androidx.compose.runtime.mutableStateOf(LibraryBadgeMaps()),
 ) {
     val context by rememberUpdatedState(newValue = LocalContext.current)
     val focusRequester = remember { FocusRequester() }
     val focusManager by rememberUpdatedState(newValue = LocalFocusManager.current)
     val hasActiveFilters = !state.activeFilters.value.isEmpty
+
+    // Reactive dependency: reading libraryBadgeData.value triggers recomposition when library changes.
+    libraryBadgeData.value
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -83,14 +94,19 @@ internal fun SourceCatalogScreen(
                                             ?: if (state.sourceCatalogNameStrId.value != 0)
                                                 stringResource(id = state.sourceCatalogNameStrId.value)
                                             else ""
+                                        val (contentTypeLabel, contentTypeColor) = when (state.sourceContentType) {
+                                            "manga" -> stringResource(StringsR.string.content_type_manga) to MaterialTheme.colorScheme.primary
+                                            else -> stringResource(StringsR.string.content_type_novel) to MaterialTheme.colorScheme.tertiary
+                                        }
                                         Text(
                                             text = title,
                                             style = MaterialTheme.typography.headlineMedium,
                                             maxLines = 1
                                         )
                                         Text(
-                                            text = stringResource(R.string.catalog),
-                                            style = MaterialTheme.typography.titleSmall
+                                            text = "$contentTypeLabel · ${stringResource(R.string.catalog)}",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = contentTypeColor
                                         )
                                     }
                                 },
@@ -166,17 +182,25 @@ internal fun SourceCatalogScreen(
                     onReload = state.fetchIterator::reloadFailedLastLoad,
                     onCopyError = context::actionCopyToClipboard,
                     onWebViewOpen = onOpenSourceWebPage,
-                    innerPadding = innerPadding
+                    innerPadding = innerPadding,
+                    translatedTitles = state.translatedTitles,
+                    topLeftBadge = { bookMeta ->
+                        val badge = getLibraryBadge(bookMeta.url, bookMeta.title)
+                        if (badge != null) {
+                            InLibraryBadge(
+                                inSameSource = badge.inSameSource,
+                                sourceCount = badge.sourceCount
+                            )
+                        }
+                    },
                 )
             }
         )
 
         if (state.isFilterSheetOpen.value && state.hasFilters) {
-            FilterBottomSheet(
-                filterList    = state.filterList.value,
-                activeFilters = state.activeFilters.value,
-                onApply       = onApplyFilters,
-                onDismiss     = { state.isFilterSheetOpen.value = false }
+            FilterSheetWrapper(
+                viewModel = viewModel,
+                onDismiss = { state.isFilterSheetOpen.value = false },
             )
         }
     }

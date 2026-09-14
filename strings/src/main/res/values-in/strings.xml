@@ -233,6 +233,27 @@
     <string name="dark_mode_black">Hitam</string>
     <string name="color_scheme">Skema Warna</string>
     <string name="reader_text_color">Warna Teks</string>
+    <string name="reader_import_font">Impor font</string>
+    <string name="reader_fonts_imported">Diimpor</string>
+    <string name="reader_delete_font">Hapus font</string>
+    <string name="reader_background">Latar belakang</string>
+    <string name="reader_background_auto">Otomatis</string>
+    <string name="reader_background_custom">Gambar kustom…</string>
+    <string name="reader_background_delete">Hapus</string>
+    <string name="reader_background_preset_paper">Kertas</string>
+    <string name="reader_background_preset_twilight">Senja</string>
+    <string name="reader_background_preset_night">Malam</string>
+    <string name="reader_background_preset_ocean">Samudra</string>
+    <string name="reader_background_preset_forest">Zamrud</string>
+    <string name="reader_background_preset_rose">Mawar</string>
+    <string name="reader_background_preset_cream">Krim</string>
+    <string name="reader_background_preset_linen">Linen</string>
+    <string name="reader_background_preset_mist">Kabut</string>
+    <string name="reader_background_preset_sage">Sage</string>
+    <string name="reader_background_preset_dusk">Sore</string>
+    <string name="reader_background_preset_cocoa">Kakao</string>
+    <string name="reader_background_preset_arctic">Arktik</string>
+    <string name="reader_background_preset_midnight">Tengah malam</string>
     <string name="translation_services">Layanan Terjemahan</string>
     <string name="gemini_api_key">Kunci API Gemini</string>
     <string name="active_google_gemini_api">Aktif: Google Gemini API</string>
@@ -540,6 +561,13 @@
     <string name="language_search">Pilih bahasa</string>
     <string name="language_search_hint">Cari bahasa…</string>
     <string name="language_no_results">Tidak ada bahasa ditemukan</string>
+    <string name="language_favorites">Favorit</string>
+    <string name="language_recent_pairs">Pasangan terbaru</string>
+    <string name="language_recent_pairs_empty">Pilih bahasa — pasangan akan muncul di sini untuk penerapan cepat</string>
+    <string name="language_favorite_add">Tambahkan ke favorit</string>
+    <string name="language_favorite_remove">Hapus dari favorit</string>
+    <string name="language_all_languages">Semua bahasa</string>
+    <string name="language_no_favorites">Belum ada favorit - ketuk bintang pada bahasa</string>
     <string name="novel_prompt_title">Prompt khusus untuk novel</string>
     <string name="novel_prompt_placeholder">Opsional: prompt sistem kustom untuk novel ini</string>
     <string name="novel_prompt_description_reader">Tetapkan prompt sistem kustom untuk novel ini</string>
@@ -683,7 +711,6 @@
 <string name="translation_mode_per_novel">Novel ini</string>
 <string name="translation_mode_global">Semua novel</string>
 <string name="translation_select_pair_to_enable">Pilih bahasa sumber dan target untuk mulai menerjemahkan</string>
-<string name="translation_toggle_off_hint">Terjemahan mati untuk novel ini. Aktifkan untuk menerjemahkan.</string>
 <string name="tts_highlight">Sorotan TTS</string>
 <string name="manual_highlight">Sorotan manual</string>
 <string name="manual_highlight_start">Mulai sorotan manual</string>
@@ -746,7 +773,8 @@
 <string name="manga_custom_brightness">Kecerahan kustom</string>
 <string name="manga_reader_chapter_list">Daftar bab</string>
 <string name="manga_reader_chapter_list_current">Saat ini</string>
-<string name="manga_reader_chapter_list_empty">Tidak ada bab</string>
+    <string name="manga_reader_chapter_list_empty">Tidak ada bab</string>
+    <string name="manga_reader_no_pages">Tidak ada halaman di bab ini</string>
 <string name="manga_reader_open_in_browser">Buka di peramban</string>
 <string name="manga_autoscroll_speed_value">%1$d dp/s</string>
 <string name="manga_grayscale">Skala abu-abu</string>
@@ -765,4 +793,24 @@
     <string name="book_export_cancel">Batal</string>
     <string name="book_export_no_chapters">Tidak ada bab untuk diekspor</string>
     <string name="book_export_failed">Ekspor gagal</string>
+    <string name="export_started">Ekspor dimulai</string>
+
+    <!-- Per-plugin translation settings -->
+    <string name="extension_translation_settings">Buka pengaturan terjemahan</string>
+    <string name="plugin_translation_settings_title">Terjemahan (plugin)</string>
+    <string name="plugin_translation_enabled">Aktifkan terjemahan plugin</string>
+    <string name="plugin_translation_swap_languages">Tukar bahasa</string>
+    <string name="plugin_translation_scope_standard">Standar (bab)</string>
+    <string name="plugin_translation_scope_full">Lengkap (bab + buku)</string>
+    <string name="plugin_translation_scope_standard_description">Menerjemahkan teks bab dan judul bab.</string>
+    <string name="plugin_translation_scope_full_description">Juga menerjemahkan dan menyimpan judul serta deskripsi novel.</string>
+    <string name="plugin_translation_prompt_label">Prompt</string>
+    <string name="plugin_translation_prompt_hint">Opsional: prompt sistem kustom untuk Gemini/OpenAI</string>
+    <string name="plugin_translation_hide_section">Sembunyikan judul terjemahan</string>
+    <string name="plugin_translation_hide_library">Di perpustakaan</string>
+    <string name="plugin_translation_hide_history">Di riwayat</string>
+    <string name="plugin_translation_hide_catalog">Di katalog</string>
+    <string name="plugin_translation_hide_search">Di pencarian</string>
+    <string name="active_translator_label">Penerjemah aktif: %s</string>
+    <string name="translators_all_off">Penerjemah nonaktif</string>
 </resources>

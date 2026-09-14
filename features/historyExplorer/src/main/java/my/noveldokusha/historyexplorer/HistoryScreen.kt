@@ -47,9 +47,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import coil3.compose.AsyncImage
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
+import coil3.request.ImageRequest
 import my.noveldokusha.core.rememberResolvedBookImagePath
+import my.noveldokusha.core.utils.refererFor
 import my.noveldokusha.feature.local_database.BookMetadata
 import my.noveldokusha.navigation.NavigationRouteViewModel
 import my.noveldokusha.strings.R as StringsR
@@ -189,10 +192,19 @@ private fun HistoryItemCard(
         verticalAlignment = Alignment.Top,
     ) {
         val coverImageModel = rememberResolvedBookImagePath(item.bookUrl, item.bookCoverUrl)
+        val referer = (coverImageModel as? String)?.takeIf { it.startsWith("http://") || it.startsWith("https://") }?.let(::refererFor)
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(coverImageModel)
-                .crossfade(true)
+                .apply {
+                    if (!referer.isNullOrEmpty()) {
+                        httpHeaders(
+                            NetworkHeaders.Builder()
+                                .set("Referer", referer)
+                                .build()
+                        )
+                    }
+                }
                 .build(),
             contentDescription = item.bookTitle,
             modifier = Modifier
@@ -211,6 +223,16 @@ private fun HistoryItemCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
+
+            if (!item.sourceName.isNullOrBlank()) {
+                Text(
+                    text = item.sourceName,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
 
             Spacer(Modifier.height(4.dp))
 
@@ -274,3 +296,5 @@ private fun relativeTime(epochMillis: Long): String {
         else -> stringResource(StringsR.string.time_years_ago, days / 365)
     }
 }
+
+

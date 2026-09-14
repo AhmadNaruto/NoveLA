@@ -140,12 +140,20 @@
     <string name="translation_mode_per_novel">This novel</string>
     <string name="translation_mode_global">All novels</string>
     <string name="translation_select_pair_to_enable">Select source and target languages to start translating</string>
-    <string name="translation_toggle_off_hint">Translation is off for this novel. Turn it on to translate.</string>
+    <string name="active_translator_label">Active translator: %s</string>
+    <string name="translators_all_off">Translators are off</string>
     <string name="provider_name">Provider: %s</string>
     <string name="language_selection">Language</string>
     <string name="language_search">Select language</string>
     <string name="language_search_hint">Search languages…</string>
     <string name="language_no_results">No languages found</string>
+    <string name="language_favorites">Favorites</string>
+    <string name="language_recent_pairs">Recent pairs</string>
+    <string name="language_recent_pairs_empty">Select languages — a pair will appear here for quick apply</string>
+    <string name="language_favorite_add">Add to favorites</string>
+    <string name="language_favorite_remove">Remove from favorites</string>
+    <string name="language_all_languages">All languages</string>
+    <string name="language_no_favorites">No favorites yet - tap the star on a language</string>
     <string name="novel_prompt_title">Novel-specific prompt</string>
     <string name="novel_prompt_placeholder">Optional: custom system prompt for this novel</string>
     <string name="novel_prompt_description_reader">Set a custom system prompt for this novel</string>
@@ -279,6 +287,27 @@
     <string name="dark_mode_black">Black</string>
     <string name="color_scheme">Color Scheme</string>
     <string name="reader_text_color">Text Color</string>
+    <string name="reader_import_font">Import font</string>
+    <string name="reader_fonts_imported">Imported</string>
+    <string name="reader_delete_font">Delete font</string>
+    <string name="reader_background">Background</string>
+    <string name="reader_background_auto">Auto</string>
+    <string name="reader_background_custom">Custom image…</string>
+    <string name="reader_background_delete">Delete</string>
+    <string name="reader_background_preset_paper">Paper</string>
+    <string name="reader_background_preset_twilight">Twilight</string>
+    <string name="reader_background_preset_night">Night</string>
+    <string name="reader_background_preset_ocean">Ocean</string>
+    <string name="reader_background_preset_forest">Emerald</string>
+    <string name="reader_background_preset_rose">Rose</string>
+    <string name="reader_background_preset_cream">Cream</string>
+    <string name="reader_background_preset_linen">Linen</string>
+    <string name="reader_background_preset_mist">Mist</string>
+    <string name="reader_background_preset_sage">Sage</string>
+    <string name="reader_background_preset_dusk">Dusk</string>
+    <string name="reader_background_preset_cocoa">Cocoa</string>
+    <string name="reader_background_preset_arctic">Arctic</string>
+    <string name="reader_background_preset_midnight">Midnight</string>
     <string name="translation_services">Translation Services</string>
     <string name="gemini_api_key">Gemini API Key</string>
     <string name="active_google_gemini_api">Active: Google Gemini API</string>
@@ -667,6 +696,7 @@
     <string name="installing">Installing…</string>
     <string name="install">Install</string>
     <string name="update">Update</string>
+    <string name="update_all">Update all</string>
     <string name="retry">Retry</string>
     <string name="top">↑ Top</string>
     <string name="copy">Copy</string>
@@ -767,5 +797,22 @@
     <string name="book_export_cancel">Cancel</string>
     <string name="book_export_no_chapters">No chapters to export</string>
     <string name="book_export_failed">Export failed</string>
+
+    <!-- Per-plugin translation settings -->
+    <string name="extension_translation_settings">Open translation settings</string>
+    <string name="plugin_translation_settings_title">Translation (plugin)</string>
+    <string name="plugin_translation_enabled">Enable plugin translation</string>
+    <string name="plugin_translation_swap_languages">Swap languages</string>
+    <string name="plugin_translation_scope_standard">Standard (chapters)</string>
+    <string name="plugin_translation_scope_full">Full (chapters + book)</string>
+    <string name="plugin_translation_scope_standard_description">Translates chapter text and chapter titles.</string>
+    <string name="plugin_translation_scope_full_description">Also translates and saves the novel title and description.</string>
+    <string name="plugin_translation_prompt_label">Prompt</string>
+    <string name="plugin_translation_prompt_hint">Optional: custom system prompt for Gemini/OpenAI</string>
+    <string name="plugin_translation_hide_section">Hide translated titles</string>
+    <string name="plugin_translation_hide_library">In library</string>
+    <string name="plugin_translation_hide_history">In history</string>
+    <string name="plugin_translation_hide_catalog">In catalog</string>
+    <string name="plugin_translation_hide_search">In search</string>
 
 </resources>

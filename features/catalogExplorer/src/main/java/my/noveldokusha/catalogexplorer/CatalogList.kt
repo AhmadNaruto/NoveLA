@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -44,6 +45,11 @@ import my.noveldokusha.scraper.fixtures.fixturesDatabaseList
 import my.noveldokusha.core.getLanguageDisplayName
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.Alignment
+import my.noveldokusha.coreui.theme.colorAccent
+import my.noveldokusha.strings.R as StringsR
 
 @OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -54,6 +60,9 @@ internal fun CatalogList(
     onDatabaseClick: (DatabaseInterface) -> Unit,
     onSourceClick: (SourceInterface.Catalog) -> Unit,
     onSourceSetPinned: (id: String, pinned: Boolean) -> Unit,
+    translationSettingsExtensionIds: Map<String, String> = emptyMap(), // catalog.id → extensionId
+    onTranslationSettingsClick: (String) -> Unit = {}, // extensionId
+    pluginEnabledMap: Map<String, Boolean> = emptyMap(),
 ) {
     LazyColumn(
         contentPadding = PaddingValues(bottom = 300.dp),
@@ -119,10 +128,36 @@ internal fun CatalogList(
                 onClick = { onSourceClick(it.catalog) },
                 modifier = Modifier.animateItem(),
                 headlineContent = {
-                    Text(
-                        text = it.catalog.displayName(),
-                        style = MaterialTheme.typography.titleSmall,
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = it.catalog.displayName(),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        val contentType = it.catalog.contentType
+                        val labelRes = when (contentType) {
+                            "manga" -> StringsR.string.content_type_manga
+                            else -> StringsR.string.content_type_novel
+                        }
+                        val bgColor = when (contentType) {
+                            "manga" -> colorAccent().copy(alpha = 0.12f)
+                            else -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
+                        }
+                        val fgColor = when (contentType) {
+                            "manga" -> colorAccent()
+                            else -> MaterialTheme.colorScheme.tertiary
+                        }
+                        Text(
+                            text = stringResource(labelRes),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = fgColor,
+                            modifier = Modifier
+                                .background(bgColor, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 4.dp, vertical = 1.dp),
+                        )
+                    }
                 },
                 supportingContent = {
                     val languageCode = it.catalog.languageTag
@@ -180,6 +215,20 @@ internal fun CatalogList(
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
+                                )
+                            }
+                        }
+                        val extensionId = translationSettingsExtensionIds[it.catalog.id]
+                        if (extensionId != null && it.catalog.contentType != "manga") {
+                            // Открываем настройки под catalog.id (ключ чтения каскада) — для
+                            // Lua-плагинов он равен metadata.id ("lua_<ext.id>" или кастомному id).
+                            // Для манга-источников переводить нечего (контент — картинки), поэтому
+                            // иконка настройки переводчика скрывается.
+                            IconButton(onClick = { onTranslationSettingsClick(it.catalog.id) }) {
+                                Icon(
+                                    Icons.Filled.Translate,
+                                    contentDescription = stringResource(my.noveldokusha.strings.R.string.extension_translation_settings),
+                                    tint = if (extensionId != null && pluginEnabledMap[extensionId] == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }

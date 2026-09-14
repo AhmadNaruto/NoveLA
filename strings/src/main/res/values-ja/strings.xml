@@ -233,6 +233,27 @@
     <string name="dark_mode_black">ブラック</string>
     <string name="color_scheme">カラースキーム</string>
     <string name="reader_text_color">文字色</string>
+    <string name="reader_import_font">フォントをインポート</string>
+    <string name="reader_fonts_imported">インポート済み</string>
+    <string name="reader_delete_font">フォントを削除</string>
+    <string name="reader_background">背景</string>
+    <string name="reader_background_auto">自動</string>
+    <string name="reader_background_custom">カスタム画像…</string>
+    <string name="reader_background_delete">削除</string>
+    <string name="reader_background_preset_paper">紙</string>
+    <string name="reader_background_preset_twilight">薄明</string>
+    <string name="reader_background_preset_night">夜</string>
+    <string name="reader_background_preset_ocean">海</string>
+    <string name="reader_background_preset_forest">エメラルド</string>
+    <string name="reader_background_preset_rose">ローズ</string>
+    <string name="reader_background_preset_cream">クリーム</string>
+    <string name="reader_background_preset_linen">リネン</string>
+    <string name="reader_background_preset_mist">霞</string>
+    <string name="reader_background_preset_sage">セージ</string>
+    <string name="reader_background_preset_dusk">黄昏</string>
+    <string name="reader_background_preset_cocoa">ココア</string>
+    <string name="reader_background_preset_arctic">北極</string>
+    <string name="reader_background_preset_midnight">真夜中</string>
     <string name="translation_services">翻訳サービス</string>
     <string name="gemini_api_key">Gemini APIキー</string>
     <string name="active_google_gemini_api">アクティブ：Google Gemini API</string>
@@ -540,6 +561,13 @@
     <string name="language_search">言語を選択</string>
     <string name="language_search_hint">言語を検索…</string>
     <string name="language_no_results">言語が見つかりません</string>
+    <string name="language_favorites">お気に入り</string>
+    <string name="language_recent_pairs">最近のペア</string>
+    <string name="language_recent_pairs_empty">言語を選択 — ペアがここに表示され、すばやく適用できます</string>
+    <string name="language_favorite_add">お気に入りに追加</string>
+    <string name="language_favorite_remove">お気に入りから削除</string>
+    <string name="language_all_languages">すべての言語</string>
+    <string name="language_no_favorites">お気に入りはまだありません - 言語の星をタップ</string>
     <string name="novel_prompt_title">小説固有のプロンプト</string>
     <string name="novel_prompt_placeholder">オプション: この小説用のカスタムシステムプロンプト</string>
     <string name="novel_prompt_description_reader">この小説用のカスタムシステムプロンプトを設定</string>
@@ -694,7 +722,6 @@
 <string name="translation_mode_per_novel">この小説</string>
 <string name="translation_mode_global">すべての小説</string>
 <string name="translation_select_pair_to_enable">翻訳を開始するにはソース言語とターゲット言語を選択してください</string>
-<string name="translation_toggle_off_hint">この小説では翻訳がオフになっています。翻訳するにはオンにしてください。</string>
 <string name="tts_highlight">TTSハイライト</string>
 <string name="manual_highlight">手動ハイライト</string>
 <string name="manual_highlight_start">手動ハイライトを開始</string>
@@ -737,7 +764,8 @@
 <string name="manga_reader_next_chapter">次の章</string>
 <string name="manga_reader_chapter_loading">章を読み込み中…</string>
 <string name="manga_reader_page_of">%1$d / %2$d</string>
-<string name="manga_reader_end_of_book">本の最後に到達しました</string>
+    <string name="manga_reader_end_of_book">本の最後に到達しました</string>
+    <string name="manga_reader_no_pages">この章にはページがありません</string>
 <string name="manga_reader_invalid_chapter">この章はマンガリーダーで開くことができません。</string>
 <string name="manga_reader_download_on_open">開いたときに章をダウンロード</string>
 <string name="manga_webtoon_side_padding">左右の余白</string>
@@ -773,7 +801,27 @@
     <string name="book_export_channel_name">書籍のエクスポート</string>
     <string name="book_export_progress">エクスポート中: %1$d/%2$d 章</string>
     <string name="book_export_complete">エクスポート完了: %1$s</string>
+    <string name="export_started">エクスポートを開始しました</string>
     <string name="book_export_cancel">キャンセル</string>
     <string name="book_export_no_chapters">エクスポートする章がありません</string>
     <string name="book_export_failed">エクスポートに失敗しました</string>
+
+    <!-- Per-plugin translation settings -->
+    <string name="extension_translation_settings">翻訳設定を開く</string>
+    <string name="plugin_translation_settings_title">翻訳（プラグイン）</string>
+    <string name="plugin_translation_enabled">プラグイン翻訳を有効にする</string>
+    <string name="plugin_translation_swap_languages">言語を入れ替える</string>
+    <string name="plugin_translation_scope_standard">標準（章）</string>
+    <string name="plugin_translation_scope_full">完全（章＋書籍）</string>
+    <string name="plugin_translation_scope_standard_description">章の本文と章のタイトルを翻訳します。</string>
+    <string name="plugin_translation_scope_full_description">小説のタイトルと説明も翻訳して保存します。</string>
+    <string name="plugin_translation_prompt_label">プロンプト</string>
+    <string name="plugin_translation_prompt_hint">任意：Gemini/OpenAI用のカスタムシステムプロンプト</string>
+    <string name="plugin_translation_hide_section">翻訳タイトルを非表示</string>
+    <string name="plugin_translation_hide_library">ライブラリ</string>
+    <string name="plugin_translation_hide_history">履歴</string>
+    <string name="plugin_translation_hide_catalog">カタログ</string>
+    <string name="plugin_translation_hide_search">検索</string>
+    <string name="active_translator_label">アクティブな翻訳者: %s</string>
+    <string name="translators_all_off">翻訳者はオフです</string>
 </resources>

@@ -11,6 +11,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import timber.log.Timber
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +48,20 @@ data class TranslationLangPair(
     val target: String = "",
 )
 
+@Serializable
+data class FilterPreset(
+    val name: String,
+    val filterJson: String,
+    val createdAt: Long = System.currentTimeMillis(),
+)
+
+@Serializable
+data class FilterHistoryEntry(
+    val filterKey: String,
+    val value: String,
+    val timestamp: Long = System.currentTimeMillis(),
+)
+
 // Новелла «включена», только если пара полная (выбраны оба языка).
 val TranslationLangPair.isComplete: Boolean
     get() = source.isNotBlank() && target.isNotBlank()
@@ -81,6 +96,29 @@ internal fun decodeTranslationPairMap(raw: String): Map<String, TranslationLangP
         result
     } catch (_: Exception) { emptyMap() }
 
+internal fun encodeTranslationPairs(pairs: List<TranslationLangPair>): String {
+    val arr = org.json.JSONArray()
+    pairs.forEach { pair ->
+        arr.put(org.json.JSONObject().apply {
+            put("source", pair.source)
+            put("target", pair.target)
+        })
+    }
+    return arr.toString()
+}
+
+internal fun decodeTranslationPairs(json: String): List<TranslationLangPair> =
+    try {
+        val arr = org.json.JSONArray(json)
+        (0 until arr.length()).map { i ->
+            val obj = arr.getJSONObject(i)
+            TranslationLangPair(
+                source = obj.optString("source", ""),
+                target = obj.optString("target", ""),
+            )
+        }
+    } catch (_: Exception) { emptyList() }
+
 internal fun encodeEnabledMap(map: Map<String, Boolean>): String {
     val obj = org.json.JSONObject()
     map.forEach { (url, enabled) -> obj.put(url, enabled) }
@@ -97,25 +135,97 @@ internal fun decodeEnabledMap(raw: String): Map<String, Boolean> =
         result
     } catch (_: Exception) { emptyMap() }
 
-// Персональный режим: новелла включена собственным переключателем
-// (TRANSLATION_BOOK_ENABLED_MAP), независимым от пары языков.
+// Включение перевода — три независимых уровня, каждый лишь «соглашается»
+// переводить, но НЕ запрещает остальным:
+//   1) пер-новел (TRANSLATION_BOOK_ENABLED_MAP[bookUrl] == true);
+//   2) пер-плагин (TRANSLATION_PLUGIN_ENABLED_MAP[sourceId] == true, только с известным sourceId);
+//   3) глобальный (активен глобальный режим И включён глобальный перевод).
+// Перевод ВКЛЮЧЁН, если согласен хотя бы один уровень (OR). Выключение какого-то
+// уровня не отменяет перевод от остальных — например, выключение книги не гасит
+// включённый плагин или глобальный перевод, и наоборот. Приоритет уровней применяется
+// только к выбору пары/провайдера (см. resolveTranslationPair), но не к включению.
+fun resolveTranslationEnabled(
+    globalMode: Boolean,
+    globalEnabled: Boolean,
+    enabledMap: Map<String, Boolean>,
+    pluginMap: Map<String, Boolean>,
+    bookUrl: String,
+    sourceId: String?,
+): Boolean {
+    val perNovel = enabledMap[bookUrl] == true
+    val plugin = sourceId != null && pluginMap[sourceId] == true
+    val global = globalMode && globalEnabled
+    return perNovel || plugin || global
+}
+
+// Прежняя сигнатура без plugin-уровня: sourceId=null, каскад пропускает плагин.
 fun resolveTranslationEnabled(
     globalMode: Boolean,
     globalEnabled: Boolean,
     enabledMap: Map<String, Boolean>,
     bookUrl: String,
 ): Boolean =
-    if (globalMode) globalEnabled else enabledMap[bookUrl] == true
+    resolveTranslationEnabled(globalMode, globalEnabled, enabledMap, emptyMap(), bookUrl, null)
 
+// Каскад пары : 1) per-novel → 2) plugin(вкл) → 3) global.
+// Плагин выше глобала (как перновел выше глобала), но ниже пер-новел.
+// В глобальном режиме при включённом плагине действует пара плагина, иначе — глобальная.
+// Вне глобального режима — пара плагина применяется к его книгам, только если плагин
+// ВКЛЮЧЁН; выключенный плагин не протекает (пустая пара).
+//
+// Правила каскада (1-6):
+//   1) пер-новел (book-карта) — наивысший приоритет, НО только если пер-новел ВКЛЮЧЁН
+//      (bookEnabledMap[bookUrl] == true): выключенная новелла не отдаёт сохранённую пару
+//      плагину/глобалу (карты enable и pair независимы — выключение не стирает пару);
+//   2) включённый плагин (pluginEnabledMap[sourceId] == true) — выше глобала;
+//   3) глобальный режим/пара — ниже пер-новел и включённого плагина;
+//   4) запись per-novel ВСЕГДА в book-карту, глобальные префы сеттерами не мутируются;
+//   5) выключенный плагин не протекает: пустая пара / STANDARD scope / null provider;
+//   6) приоритет пер-новел > плагин > глобал применяется ТОЛЬКО к паре/провайдеру,
+//      но не к включению (resolveTranslationEnabled — OR).
 internal fun resolveTranslationPair(
     globalMode: Boolean,
+    globalEnabled: Boolean,
     globalSource: String,
     globalTarget: String,
     map: Map<String, TranslationLangPair>,
+    bookEnabledMap: Map<String, Boolean>,
+    pluginMap: Map<String, TranslationLangPair>,
+    pluginEnabledMap: Map<String, Boolean>,
+    bookUrl: String,
+    sourceId: String?,
+): TranslationLangPair {
+    // Пара пер-новел участвует в каскаде, только пока пер-новел ВКЛЮЧЁН.
+    val perNovelPair = if (bookEnabledMap[bookUrl] == true) map[bookUrl] else null
+    return perNovelPair
+        ?: if (globalMode) {
+            if (sourceId != null && pluginEnabledMap[sourceId] == true)
+                pluginMap[sourceId] ?: TranslationLangPair()      // плагин выше глобала
+            else if (globalEnabled)
+                TranslationLangPair(source = globalSource, target = globalTarget)  // глобал
+            else TranslationLangPair()
+        }
+        // Вне глобального режима — пара плагина применяется к его книгам,
+        // только если плагин ВКЛЮЧЁН (pluginEnabledMap[sourceId] == true).
+        // Выключенный плагин не протекает: возвращается пустая пара.
+        else if (sourceId != null && pluginEnabledMap[sourceId] == true) pluginMap[sourceId]
+            ?: TranslationLangPair()
+        else TranslationLangPair()
+}
+
+// Прежняя сигнатура без plugin-уровня: sourceId=null, каскад пропускает плагин.
+internal fun resolveTranslationPair(
+    globalMode: Boolean,
+    globalEnabled: Boolean,
+    globalSource: String,
+    globalTarget: String,
+    map: Map<String, TranslationLangPair>,
+    bookEnabledMap: Map<String, Boolean>,
     bookUrl: String,
 ): TranslationLangPair =
-    if (globalMode) TranslationLangPair(source = globalSource, target = globalTarget)
-    else map[bookUrl] ?: TranslationLangPair()
+    resolveTranslationPair(
+        globalMode, globalEnabled, globalSource, globalTarget, map, bookEnabledMap, emptyMap(), emptyMap(), bookUrl, null,
+    )
 
 // Персональный режим: пара сохраняется даже частичной — она не равна
 // выключению перевода (переключатель хранится отдельно).
@@ -231,6 +341,9 @@ class AppPreferences @Inject constructor(
         override var value by SharedPreference_Float(name, preferences, 0f)
     }
     val READER_TEXT_COLOR = object : Preference<String>("READER_TEXT_COLOR") {
+        override var value by SharedPreference_String(name, preferences, "")
+    }
+    val READER_BACKGROUND_IMAGE = object : Preference<String>("READER_BACKGROUND_IMAGE") {
         override var value by SharedPreference_String(name, preferences, "")
     }
     val READER_TEXT_TO_SPEECH_VOICE_ID =
@@ -564,7 +677,7 @@ class AppPreferences @Inject constructor(
     }
 
     val GLOBAL_TRANSLATION_PREFERRED_SOURCE =
-        object : Preference<String>("GLOBAL_TRANSLATIOR_PREFERRED_SOURCE") {
+        object : Preference<String>("GLOBAL_TRANSLATION_PREFERRED_SOURCE") {
             override var value by SharedPreference_String(name, preferences, "en")
         }
     val GLOBAL_TRANSLATION_PREFERRED_TARGET =
@@ -600,35 +713,372 @@ class AppPreferences @Inject constructor(
             )
         }
 
-    fun translationEnabledForBook(bookUrl: String): Boolean =
+    // Избранные языки перевода: список ISO-639-1 кодов, закреплённых пользователем.
+    val TRANSLATION_FAVORITE_LANGUAGES = object : Preference<List<String>>("TRANSLATION_FAVORITE_LANGUAGES") {
+        override var value by SharedPreference_Serializable<List<String>>(
+            name = name,
+            sharedPreferences = preferences,
+            defaultValue = listOf(),
+            encode = { Json.encodeToString(it) },
+            decode = { Json.decodeFromString(it) }
+        )
+    }
+
+    // Последние пары языков перевода (source → target), макс. 5 записей.
+    val TRANSLATION_RECENT_PAIRS = object : Preference<List<TranslationLangPair>>("TRANSLATION_RECENT_PAIRS") {
+        override var value by SharedPreference_Serializable<List<TranslationLangPair>>(
+            name = name,
+            sharedPreferences = preferences,
+            defaultValue = listOf(),
+            encode = { encodeTranslationPairs(it) },
+            decode = { decodeTranslationPairs(it) }
+        )
+    }
+
+    // ── Per-plugin (per-extension) translation settings ─────────────────────
+    // Каждая карта ключуется по id плагина/источника (sourceId). Пустые карты
+    // дают каскаду ровно прежнее поведение (plugin-уровень пропускается).
+
+    // Значения scope: "STANDARD" (текст глав + заголовок главы) или "FULL"
+    // (дополнительно заголовок и описание новеллы).
+    companion object {
+        const val TRANSLATION_SCOPE_STANDARD = "STANDARD"
+        const val TRANSLATION_SCOPE_FULL = "FULL"
+    }
+
+    // Персональный переключатель перевода плагина: Map<sourceId, Boolean>.
+    // Отсутствие ключа = перевод выключен (как у book-карты).
+    val TRANSLATION_PLUGIN_ENABLED_MAP =
+        object : Preference<Map<String, Boolean>>("TRANSLATION_PLUGIN_ENABLED_MAP") {
+            override var value by SharedPreference_Serializable<Map<String, Boolean>>(
+                name = name,
+                sharedPreferences = preferences,
+                defaultValue = emptyMap(),
+                encode = { encodeEnabledMap(it) },
+                decode = { decodeEnabledMap(it) }
+            )
+        }
+
+    // Пара языков перевода плагина: Map<sourceId, TranslationLangPair>.
+    val TRANSLATION_PLUGIN_LANG_PAIR =
+        object : Preference<Map<String, TranslationLangPair>>("TRANSLATION_PLUGIN_LANG_PAIR") {
+            override var value by SharedPreference_Serializable<Map<String, TranslationLangPair>>(
+                name = name,
+                sharedPreferences = preferences,
+                defaultValue = emptyMap(),
+                encode = { encodeTranslationPairMap(it) },
+                decode = { decodeTranslationPairMap(it) }
+            )
+        }
+
+    // Провайдер перевода плагина: Map<sourceId, String>. Пустое значение = глобальный провайдер.
+    val TRANSLATION_PLUGIN_PROVIDER =
+        object : Preference<Map<String, String>>("TRANSLATION_PLUGIN_PROVIDER") {
+            override var value by SharedPreference_Serializable<Map<String, String>>(
+                name = name,
+                sharedPreferences = preferences,
+                defaultValue = emptyMap(),
+                encode = { map ->
+                    val obj = org.json.JSONObject()
+                    map.forEach { (id, provider) -> obj.put(id, provider) }
+                    obj.toString()
+                },
+                decode = { raw ->
+                    try {
+                        val obj = org.json.JSONObject(raw)
+                        val result = mutableMapOf<String, String>()
+                        for (key in obj.keys()) {
+                            result[key] = obj.optString(key, "")
+                        }
+                        result
+                    } catch (_: Exception) { emptyMap() }
+                }
+            )
+        }
+
+    // Область перевода плагина: Map<sourceId, "STANDARD"|"FULL">.
+    val TRANSLATION_PLUGIN_SCOPE =
+        object : Preference<Map<String, String>>("TRANSLATION_PLUGIN_SCOPE") {
+            override var value by SharedPreference_Serializable<Map<String, String>>(
+                name = name,
+                sharedPreferences = preferences,
+                defaultValue = emptyMap(),
+                encode = { map ->
+                    val obj = org.json.JSONObject()
+                    map.forEach { (id, scope) -> obj.put(id, scope) }
+                    obj.toString()
+                },
+                decode = { raw ->
+                    try {
+                        val obj = org.json.JSONObject(raw)
+                        val result = mutableMapOf<String, String>()
+                        for (key in obj.keys()) {
+                            result[key] = obj.optString(key, TRANSLATION_SCOPE_STANDARD)
+                        }
+                        result
+                    } catch (_: Exception) { emptyMap() }
+                }
+            )
+        }
+
+    // Персональный LLM-промпт плагина: Map<sourceId, String> (только Gemini/OpenAI).
+    val TRANSLATION_PLUGIN_PROMPTS =
+        object : Preference<Map<String, String>>("TRANSLATION_PLUGIN_PROMPTS") {
+            override var value by SharedPreference_Serializable<Map<String, String>>(
+                name = name,
+                sharedPreferences = preferences,
+                defaultValue = emptyMap(),
+                encode = { map ->
+                    val obj = org.json.JSONObject()
+                    map.forEach { (id, prompt) -> obj.put(id, prompt) }
+                    obj.toString()
+                },
+                decode = { raw ->
+                    try {
+                        val obj = org.json.JSONObject(raw)
+                        val result = mutableMapOf<String, String>()
+                        for (key in obj.keys()) {
+                            result[key] = obj.optString(key, "")
+                        }
+                        result
+                    } catch (_: Exception) { emptyMap() }
+                }
+            )
+        }
+
+    // ── Per-plugin translation visibility toggles (hide translated titles in FULL mode) ──
+    // Map<sourceId, Boolean>. true = скрывать переведённые названия, показывать оригинал.
+    // Ключ отсутствует = не скрывать (default).
+
+    val TRANSLATION_PLUGIN_HIDE_LIBRARY =
+        object : Preference<Map<String, Boolean>>("TRANSLATION_PLUGIN_HIDE_LIBRARY") {
+            override var value by SharedPreference_Serializable<Map<String, Boolean>>(
+                name = name,
+                sharedPreferences = preferences,
+                defaultValue = emptyMap(),
+                encode = { encodeEnabledMap(it) },
+                decode = { decodeEnabledMap(it) }
+            )
+        }
+
+    val TRANSLATION_PLUGIN_HIDE_HISTORY =
+        object : Preference<Map<String, Boolean>>("TRANSLATION_PLUGIN_HIDE_HISTORY") {
+            override var value by SharedPreference_Serializable<Map<String, Boolean>>(
+                name = name,
+                sharedPreferences = preferences,
+                defaultValue = emptyMap(),
+                encode = { encodeEnabledMap(it) },
+                decode = { decodeEnabledMap(it) }
+            )
+        }
+
+    val TRANSLATION_PLUGIN_HIDE_CATALOG =
+        object : Preference<Map<String, Boolean>>("TRANSLATION_PLUGIN_HIDE_CATALOG") {
+            override var value by SharedPreference_Serializable<Map<String, Boolean>>(
+                name = name,
+                sharedPreferences = preferences,
+                defaultValue = emptyMap(),
+                encode = { encodeEnabledMap(it) },
+                decode = { decodeEnabledMap(it) }
+            )
+        }
+
+    val TRANSLATION_PLUGIN_HIDE_SEARCH =
+        object : Preference<Map<String, Boolean>>("TRANSLATION_PLUGIN_HIDE_SEARCH") {
+            override var value by SharedPreference_Serializable<Map<String, Boolean>>(
+                name = name,
+                sharedPreferences = preferences,
+                defaultValue = emptyMap(),
+                encode = { encodeEnabledMap(it) },
+                decode = { decodeEnabledMap(it) }
+            )
+        }
+
+    // sourceId (id плагина/источника) — необязательный третий уровень каскада:
+    // null = plugin-уровень пропускается (прежнее поведение).
+    fun translationEnabledForBook(bookUrl: String, sourceId: String? = null): Boolean =
         resolveTranslationEnabled(
             globalMode = TRANSLATION_GLOBAL_MODE.value,
             globalEnabled = GLOBAL_TRANSLATION_ENABLED.value,
             enabledMap = TRANSLATION_BOOK_ENABLED_MAP.value,
+            pluginMap = TRANSLATION_PLUGIN_ENABLED_MAP.value,
             bookUrl = bookUrl,
+            sourceId = sourceId,
         )
 
-    fun translationPairForBook(bookUrl: String): TranslationLangPair =
+    fun translationPairForBook(bookUrl: String, sourceId: String? = null): TranslationLangPair =
         resolveTranslationPair(
             globalMode = TRANSLATION_GLOBAL_MODE.value,
+            globalEnabled = GLOBAL_TRANSLATION_ENABLED.value,
             globalSource = GLOBAL_TRANSLATION_PREFERRED_SOURCE.value,
             globalTarget = GLOBAL_TRANSLATION_PREFERRED_TARGET.value,
             map = TRANSLATION_BOOK_LANG_PAIR.value,
+            bookEnabledMap = TRANSLATION_BOOK_ENABLED_MAP.value,
+            pluginMap = TRANSLATION_PLUGIN_LANG_PAIR.value,
+            pluginEnabledMap = TRANSLATION_PLUGIN_ENABLED_MAP.value,
             bookUrl = bookUrl,
+            sourceId = sourceId,
         )
 
-    fun translationSourceForBook(bookUrl: String): String =
-        translationPairForBook(bookUrl).source
+    fun translationSourceForBook(bookUrl: String, sourceId: String? = null): String =
+        translationPairForBook(bookUrl, sourceId).source
 
-    fun translationTargetForBook(bookUrl: String): String =
-        translationPairForBook(bookUrl).target
+    fun translationTargetForBook(bookUrl: String, sourceId: String? = null): String =
+        translationPairForBook(bookUrl, sourceId).target
 
-    fun setTranslationPairForBook(bookUrl: String, source: String, target: String) {
+    /**
+     * Есть ли для книги хранимая языковая пара, независимо от включения перевода.
+     *
+     * В отличие от [translationPairForBook] (каскад с гейтом enable), этот метод
+     * проверяет СУЩЕСТВОВАНИЕ сохранённой пары: пер-новел — в [TRANSLATION_BOOK_LANG_PAIR],
+     * глобал — в [GLOBAL_TRANSLATION_PREFERRED_SOURCE]/[GLOBAL_TRANSLATION_PREFERRED_TARGET].
+     * Используется в [ReaderLiveTranslation.onEnable] для проверки, можно ли включить свитч
+     * (пер-новел может быть выключен, но пара сохранена — включение должно быть возможно).
+     */
+    fun hasStoredTranslationPairForBook(bookUrl: String): Boolean =
         if (TRANSLATION_GLOBAL_MODE.value) {
-            GLOBAL_TRANSLATION_PREFERRED_SOURCE.value = source
-            GLOBAL_TRANSLATION_PREFERRED_TARGET.value = target
-            return
+            GLOBAL_TRANSLATION_PREFERRED_SOURCE.value.isNotBlank() &&
+                GLOBAL_TRANSLATION_PREFERRED_TARGET.value.isNotBlank()
         }
+        else {
+            val pair = TRANSLATION_BOOK_LANG_PAIR.value[bookUrl]
+            pair != null && pair.source.isNotBlank() && pair.target.isNotBlank()
+        }
+
+    /**
+     * Хранимая языковая пара книги, независимо от включения перевода.
+     *
+     * В отличие от [translationPairForBook] (каскад с гейтом enable), возвращает
+     * СОХРАНЁННУЮ пару активного уровня диалога: пер-новел — из [TRANSLATION_BOOK_LANG_PAIR],
+     * глобал — из [GLOBAL_TRANSLATION_PREFERRED_SOURCE]/[GLOBAL_TRANSLATION_PREFERRED_TARGET].
+     * Карты enable и pair независимы — выключение перевода не стирает пару, поэтому
+     * для ОТОБРАЖЕНИЯ языков в диалоге нужна пара без гейта. Может быть неполной/пустой —
+     * полноту проверяет вызывающая сторона ([hasStoredTranslationPairForBook]).
+     */
+    fun storedTranslationPairForBook(bookUrl: String): TranslationLangPair =
+        if (TRANSLATION_GLOBAL_MODE.value) {
+            TranslationLangPair(
+                source = GLOBAL_TRANSLATION_PREFERRED_SOURCE.value,
+                target = GLOBAL_TRANSLATION_PREFERRED_TARGET.value,
+            )
+        }
+        else {
+            TRANSLATION_BOOK_LANG_PAIR.value[bookUrl] ?: TranslationLangPair()
+        }
+
+    // Область перевода новеллы: включённый плагин (sourceId) → глобал (STANDARD).
+    // Каскад scope: пер-новел уровня нет; bookUrl зарезервирован для API-симметрии
+    // с enabled/pair, которые имеют per-novel tier, но здесь не используется.
+    // Глобальный режим: включённый плагин → scope плагина; выключенный → STANDARD.
+    // Вне глобального режима: включённый плагин → scope плагина; иначе STANDARD.
+    // Правила каскада: 1) включённый плагин отдаёт свой scope; 2) глобал (STANDARD)
+    // — fallback; 3) выключенный плагин не протекает.
+    fun translationScopeForBook(bookUrl: String, sourceId: String? = null): String {
+        if (TRANSLATION_GLOBAL_MODE.value) {
+            val pluginEnabled = sourceId?.let { TRANSLATION_PLUGIN_ENABLED_MAP.value[it] == true } ?: false
+            if (pluginEnabled) {
+                return sourceId?.let { TRANSLATION_PLUGIN_SCOPE.value[it] } ?: TRANSLATION_SCOPE_STANDARD
+            }
+            return TRANSLATION_SCOPE_STANDARD
+        }
+        // Вне глобального режима — scope плагина (sourceId), только если плагин
+        // ВКЛЮЧЁН; выключенный плагин не протекает → STANDARD.
+        return if (sourceId != null && TRANSLATION_PLUGIN_ENABLED_MAP.value[sourceId] == true)
+            TRANSLATION_PLUGIN_SCOPE.value[sourceId] ?: TRANSLATION_SCOPE_STANDARD
+        else TRANSLATION_SCOPE_STANDARD
+    }
+
+    // Провайдер перевода новеллы: включённый плагин (sourceId) → null (глобал берёт
+    // через TRANSLATION_PROVIDER). Каскад provider: пер-новел уровня нет; bookUrl
+    // зарезервирован для API-симметрии с enabled/pair, которые имеют per-novel tier,
+    // но здесь не используется.
+    // Глобальный режим: включённый плагин → provider плагина; выключенный → null.
+    // Вне глобального режима: включённый плагин → provider плагина; иначе null.
+    // Правила каскада: 1) включённый плагин отдаёт свой provider; 2) null — глобал
+    // подхватит позже через TRANSLATION_PROVIDER; 3) выключенный плагин не протекает.
+    fun translationProviderForBook(bookUrl: String, sourceId: String? = null): String? {
+        if (TRANSLATION_GLOBAL_MODE.value) {
+            val pluginEnabled = sourceId?.let { TRANSLATION_PLUGIN_ENABLED_MAP.value[it] == true } ?: false
+            if (pluginEnabled) {
+                return sourceId?.let { TRANSLATION_PLUGIN_PROVIDER.value[it]?.takeIf { s -> s.isNotBlank() } }
+            }
+            return null
+        }
+        // Вне глобального режима — провайдер плагина (sourceId), только если плагин
+        // ВКЛЮЧЁН; выключенный плагин не протекает → null (глобальный возьмётся).
+        return if (sourceId != null && TRANSLATION_PLUGIN_ENABLED_MAP.value[sourceId] == true)
+            TRANSLATION_PLUGIN_PROVIDER.value[sourceId]?.takeIf { s -> s.isNotBlank() }
+        else null
+    }
+
+    // ── Plugin-tier getters/setters ─────────────────────────────────────────
+
+    fun translationEnabledForPlugin(extensionId: String): Boolean =
+        TRANSLATION_PLUGIN_ENABLED_MAP.value[extensionId] == true
+
+    fun translationPairForPlugin(extensionId: String): TranslationLangPair =
+        TRANSLATION_PLUGIN_LANG_PAIR.value[extensionId] ?: TranslationLangPair()
+
+    fun translationProviderForPlugin(extensionId: String): String? =
+        TRANSLATION_PLUGIN_PROVIDER.value[extensionId]?.takeIf { s -> s.isNotBlank() }
+
+    fun translationScopeForPlugin(extensionId: String): String =
+        TRANSLATION_PLUGIN_SCOPE.value[extensionId] ?: TRANSLATION_SCOPE_STANDARD
+
+    fun translationPromptForPlugin(extensionId: String): String? =
+        TRANSLATION_PLUGIN_PROMPTS.value[extensionId]?.takeIf { s -> s.isNotBlank() }
+
+    // Включает/выключает перевод плагина. Пару не трогает (как у book-сеттера).
+    // Выключение хранится как явный ключ false — чтобы отличить «плагин выключен»
+    // от «плагин не настроен»: выключенный плагин не подхватывается глобальным режимом.
+    // Плагин-уровень read-path-only: глобальный режим не перенаправляет запись.
+    fun setTranslationEnabledForPlugin(extensionId: String, enabled: Boolean) {
+        val current = TRANSLATION_PLUGIN_ENABLED_MAP.value.toMutableMap()
+        current[extensionId] = enabled
+        TRANSLATION_PLUGIN_ENABLED_MAP.value = current
+    }
+
+    // Записывает пару плагина; удаляет ключ, когда оба языка пустые (как у book-сеттера).
+    fun setTranslationPairForPlugin(extensionId: String, source: String, target: String) {
+        TRANSLATION_PLUGIN_LANG_PAIR.value = updateTranslationPairMap(
+            map = TRANSLATION_PLUGIN_LANG_PAIR.value,
+            bookUrl = extensionId,
+            source = source,
+            target = target,
+        )
+    }
+
+    // Пустой провайдер удаляет ключ — плагин возвращается к глобальному провайдеру.
+    fun setTranslationProviderForPlugin(extensionId: String, provider: String) {
+        val current = TRANSLATION_PLUGIN_PROVIDER.value.toMutableMap()
+        if (provider.isBlank()) current.remove(extensionId) else current[extensionId] = provider
+        TRANSLATION_PLUGIN_PROVIDER.value = current
+    }
+
+    fun setTranslationScopeForPlugin(extensionId: String, scope: String) {
+        val current = TRANSLATION_PLUGIN_SCOPE.value.toMutableMap()
+        if (scope == TRANSLATION_SCOPE_STANDARD) current.remove(extensionId) else current[extensionId] = scope
+        TRANSLATION_PLUGIN_SCOPE.value = current
+    }
+
+    // Пустой промпт удаляет ключ — плагин возвращается к глобальному промпту.
+    fun setTranslationPromptForPlugin(extensionId: String, prompt: String) {
+        val current = TRANSLATION_PLUGIN_PROMPTS.value.toMutableMap()
+        if (prompt.isBlank()) current.remove(extensionId) else current[extensionId] = prompt
+        TRANSLATION_PLUGIN_PROMPTS.value = current
+    }
+
+    // Generic setter for per-plugin hide translation maps.
+    fun setTranslationPluginHideMap(pref: Preference<Map<String, Boolean>>, extensionId: String, hide: Boolean) {
+        val current = pref.value.toMutableMap()
+        if (hide) current[extensionId] = true else current.remove(extensionId)
+        pref.value = current
+    }
+
+    // Запись ВСЕГДА в per-novel карту (TRANSLATION_BOOK_LANG_PAIR), независимо от
+    // TRANSLATION_GLOBAL_MODE. Каскад read-path (resolveTranslation*) определяет
+    // приоритет: 1) пер-новел → 2) включённый плагин → 3) глобал.
+    fun setTranslationPairForBook(bookUrl: String, source: String, target: String) {
         TRANSLATION_BOOK_LANG_PAIR.value = updateTranslationPairMap(
             map = TRANSLATION_BOOK_LANG_PAIR.value,
             bookUrl = bookUrl,
@@ -637,9 +1087,20 @@ class AppPreferences @Inject constructor(
         )
     }
 
-    // Включает/выключает перевод конкретной новеллы (персональный режим).
-    // Пару языков не трогает — она остаётся сохранённой и восстанавливается
-    // при повторном включении.
+    // Запись глобальной пары языков. Вызывается из UI ридера,
+    // когда пользователь выбирает язык в глобальном режиме.
+    fun setGlobalTranslationPair(source: String, target: String) {
+        GLOBAL_TRANSLATION_PREFERRED_SOURCE.value = source
+        GLOBAL_TRANSLATION_PREFERRED_TARGET.value = target
+    }
+
+    // Включает/выключает перевод конкретной новеллы.
+    // Включает/выключает перевод конкретной новеллы. Запись адаптивна к режиму:
+    // в глобальном режиме тумблер книги управляет глобальным включением
+    // (GLOBAL_TRANSLATION_ENABLED — единый переключатель для всех новелл, как в default);
+    // вне глобального режима — per-novel картой (TRANSLATION_BOOK_ENABLED_MAP).
+    // Выключение (false) УДАЛЯЕТ ключ, т.е. «сбрасывает к наследованию», а не блокирует:
+    // тогда включённый плагин или глобальная настройка могут снова включить перевод.
     fun setTranslationEnabledForBook(bookUrl: String, enabled: Boolean) {
         if (TRANSLATION_GLOBAL_MODE.value) {
             GLOBAL_TRANSLATION_ENABLED.value = enabled
@@ -650,6 +1111,45 @@ class AppPreferences @Inject constructor(
         TRANSLATION_BOOK_ENABLED_MAP.value = current
     }
 
+    // Закрепляет язык в избранном (перемещает в начало) либо снимает закрепление.
+    fun toggleFavoriteLanguage(code: String) {
+        val current = TRANSLATION_FAVORITE_LANGUAGES.value.toMutableList()
+        if (code in current) {
+            current.remove(code)
+        } else {
+            current.remove(code)
+            current.add(0, code)
+        }
+        TRANSLATION_FAVORITE_LANGUAGES.value = current
+    }
+
+    fun isFavoriteLanguage(code: String): Boolean =
+        code in TRANSLATION_FAVORITE_LANGUAGES.value
+
+    // Упорядоченный список избранных языков: сначала недавно закреплённые.
+    fun favoriteLanguages(): List<String> = TRANSLATION_FAVORITE_LANGUAGES.value
+
+    // Записывает пару в начало списка последних, убирая дубликаты и обрезая до 5.
+    fun recordRecentTranslationPair(source: String, target: String) {
+        val pair = TranslationLangPair(source = source, target = target)
+        val current = TRANSLATION_RECENT_PAIRS.value.toMutableList()
+        current.remove(pair)
+        current.add(0, pair)
+        TRANSLATION_RECENT_PAIRS.value = current.take(5)
+    }
+
+    // Последние пары перевода: сначала самая свежая.
+    fun recentTranslationPairs(): List<TranslationLangPair> = TRANSLATION_RECENT_PAIRS.value
+
+    // Удаляет точную пару из списка последних (сценарий снятия звезды с чипа пары).
+    // recordRecentTranslationPair дедуплицирует по паре, поэтому дубликатов нет
+    // и remove-first удаляет единственное вхождение.
+    fun removeRecentTranslationPair(pair: TranslationLangPair) {
+        val current = TRANSLATION_RECENT_PAIRS.value.toMutableList()
+        current.remove(pair)
+        TRANSLATION_RECENT_PAIRS.value = current
+    }
+
     // Миграция настроек перевода, сделанных до объединения enabled+pair в единую карту.
     // Старый преф TRANSLATION_BOOK_ENABLED (JSON Map<bookUrl, Boolean>) больше не читается кодом,
     // но может оставаться в SharedPreferences у существующих пользователей.
@@ -657,6 +1157,20 @@ class AppPreferences @Inject constructor(
     init {
         migrateLegacyTranslationSettings()
         migrateEnabledStateFromPairs()
+        migrateTypoGlobalTranslationKey()
+    }
+
+    // Миграция (один раз): переименование ключа GLOBAL_TRANSLATIOR_PREFERRED_SOURCE
+    // → GLOBAL_TRANSLATION_PREFERRED_SOURCE (опечатка в ранних версиях).
+    private fun migrateTypoGlobalTranslationKey() {
+        val newKey = "GLOBAL_TRANSLATION_PREFERRED_SOURCE"
+        val oldKey = "GLOBAL_TRANSLATIOR_PREFERRED_SOURCE"
+        if (!preferences.contains(newKey) && preferences.contains(oldKey)) {
+            preferences.edit()
+                .putString(newKey, preferences.getString(oldKey, "en") ?: "en")
+                .remove(oldKey)
+                .apply()
+        }
     }
 
     // Миграция (один раз): новеллы с полной парой в TRANSLATION_BOOK_LANG_PAIR
@@ -1035,6 +1549,56 @@ class AppPreferences @Inject constructor(
         )
     }
 
+    // ── Filter presets & text search history ────────────────────────────────────
+
+    fun getFilterPresets(sourceId: String): List<FilterPreset> {
+        val raw = preferences.getString("filter_presets_$sourceId", null) ?: return emptyList()
+        return try {
+            Json.decodeFromString<List<FilterPreset>>(raw)
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to deserialize filter presets for $sourceId")
+            emptyList()
+        }
+    }
+
+    fun saveFilterPresets(sourceId: String, presets: List<FilterPreset>) {
+        preferences.edit()
+            .putString("filter_presets_$sourceId", Json.encodeToString(presets))
+            .apply()
+    }
+
+    fun getTextHistory(sourceId: String): List<FilterHistoryEntry> {
+        val raw = preferences.getString("text_history_$sourceId", null) ?: return emptyList()
+        return try {
+            Json.decodeFromString<List<FilterHistoryEntry>>(raw)
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to deserialize text history for $sourceId")
+            emptyList()
+        }
+    }
+
+    fun addTextHistory(sourceId: String, entry: FilterHistoryEntry) {
+        val current = getTextHistory(sourceId).toMutableList()
+        current.removeAll { it.filterKey == entry.filterKey && it.value == entry.value }
+        current.add(0, entry)
+        preferences.edit()
+            .putString("text_history_$sourceId", Json.encodeToString(current.take(20)))
+            .apply()
+    }
+
+    fun clearTextHistory(sourceId: String) {
+        preferences.edit()
+            .remove("text_history_$sourceId")
+            .apply()
+    }
+
+    fun removeTextHistory(sourceId: String, filterKey: String, value: String) {
+        val current = getTextHistory(sourceId).toMutableList()
+        current.removeAll { it.filterKey == filterKey && it.value == value }
+        preferences.edit()
+            .putString("text_history_$sourceId", Json.encodeToString(current.take(20)))
+            .apply()
+    }
 
     abstract inner class Preference<T>(val name: String) {
         abstract var value: T

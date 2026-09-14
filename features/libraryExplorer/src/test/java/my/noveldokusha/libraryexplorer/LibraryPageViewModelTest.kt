@@ -12,7 +12,10 @@ import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.core.appPreferences.LibrarySortOption
 import my.noveldokusha.core.appPreferences.SortConfig
 import my.noveldokusha.core.appPreferences.SortDirection
+import my.noveldokusha.core.appPreferences.TranslationLangPair
+import my.noveldokusha.core.appPreferences.TranslationSettingsResolver
 import my.noveldokusha.core.appPreferences.TernaryState
+import my.noveldokusha.feature.local_database.DAOs.BookTranslationDao
 import my.noveldokusha.data.AppRepository
 import my.noveldokusha.data.LibraryBooksRepository
 import my.noveldokusha.feature.local_database.BookWithContext
@@ -22,6 +25,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -142,6 +146,17 @@ class LibraryPageViewModelTest {
             whenever(prefs.LIBRARY_SORT_CONFIG).thenReturn(sortConfig)
         }
 
+        // Резолвер стабим: translatedTitles-подписка в init ходит в каскад.
+        val resolver = mock<TranslationSettingsResolver>().also { r ->
+            whenever(r.translationTargetForBook(any(), any())).thenReturn("")
+            whenever(r.translationEnabledForBook(any(), any())).thenReturn(false)
+            whenever(r.translationScopeForBook(any(), any())).thenReturn("STANDARD")
+            whenever(r.translationProviderForBook(any(), any())).thenReturn(null)
+            whenever(r.translationPairForBook(any(), any())).thenReturn(TranslationLangPair("", ""))
+            whenever(r.resolveSourceId(any())).thenReturn(null)
+            whenever(r.translationSettingsChangeSignal()).thenReturn(flowOf(Unit))
+        }
+
         return LibraryPageViewModel(
             appRepository = appRepository,
             preferences = preferences,
@@ -149,6 +164,8 @@ class LibraryPageViewModelTest {
             workersInteractions = workers,
             libraryDao = libraryDao,
             scraper = mock(),
+            translationSettingsResolver = resolver,
+            bookTranslationDao = mock(),
             context = mock(),
         )
     }

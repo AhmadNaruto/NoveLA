@@ -20,9 +20,12 @@ import androidx.appcompat.content.res.AppCompatResources
 import timber.log.Timber
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.updateLayoutParams
-import coil.load
+import coil3.load
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
 import my.noveldokusha.core.AppFileResolver
 import my.noveldokusha.core.utils.inflater
+import my.noveldokusha.core.utils.refererFor
 import my.noveldokusha.features.reader.features.TextSynthesis
 import my.noveldokusha.reader.R
 import my.noveldokusha.reader.databinding.ActivityReaderListItemBodyBinding
@@ -240,10 +243,15 @@ internal class ReaderItemAdapter(
         val imageModel = appFileResolver.resolvedBookImagePath(bookUrl = bookUrl, imagePath = item.image.path, isCover = false)
         Timber.d("viewImage called imageModel=%s path=%s", imageModel, item.image.path)
 
+        // ponytail: Referer для прямых URL — чтобы серверы-источники не блокировали загрузку
+        val referer = (imageModel as? String)
+            ?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
+            ?.let(::refererFor)
+
         bind.image.load(imageModel) {
-            crossfade(true)
-            scale(coil.size.Scale.FIT)
+            scale(coil3.size.Scale.FIT)
             size(1024)
+            if (!referer.isNullOrEmpty()) httpHeaders(NetworkHeaders.Builder().set("Referer", referer).build())
             listener(onError = { _,_ ->
                 Timber.d("viewImage: load error for path=%s", item.image.path)
                 if (bind.image.tag == null && item.image.path.startsWith("http")) {
@@ -251,8 +259,7 @@ internal class ReaderItemAdapter(
                     val proxyUrl = "https://images.weserv.nl/?url=${android.net.Uri.encode(item.image.path)}"
                     Timber.d("viewImage: trying proxy url=%s", proxyUrl)
                     bind.image.load(proxyUrl) {
-                        crossfade(true)
-                        scale(coil.size.Scale.FIT)
+                        scale(coil3.size.Scale.FIT)
                         size(1024)
                         error(R.drawable.ic_baseline_error_outline_24)
                     }

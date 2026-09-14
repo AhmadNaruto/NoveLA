@@ -21,7 +21,6 @@ dependencies {
     implementation(projects.tooling.localDatabase)
     implementation(projects.tooling.textToSpeech)
     implementation(projects.tooling.textTranslator.domain)
-    implementation(projects.tooling.algorithms)
     implementation(projects.networking)
 
     implementation(libs.material)
@@ -35,6 +34,9 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.compose.material3.android)
     implementation(libs.coil)
+    implementation(libs.compose.coil)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.okhttp)
     implementation(libs.jsoup)
     implementation(libs.timber)
     implementation(libs.subsampling.scale.image.view)

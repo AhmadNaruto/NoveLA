@@ -233,6 +233,27 @@
     <string name="dark_mode_black">Itim</string>
     <string name="color_scheme">Color Scheme</string>
     <string name="reader_text_color">Kulay ng Teksto</string>
+    <string name="reader_import_font">Mag-import ng font</string>
+    <string name="reader_fonts_imported">Na-import</string>
+    <string name="reader_delete_font">Tanggalin ang font</string>
+    <string name="reader_background">Background</string>
+    <string name="reader_background_auto">Awtomatiko</string>
+    <string name="reader_background_custom">Custom na larawan…</string>
+    <string name="reader_background_delete">Tanggalin</string>
+    <string name="reader_background_preset_paper">Papel</string>
+    <string name="reader_background_preset_twilight">Dilim</string>
+    <string name="reader_background_preset_night">Gabi</string>
+    <string name="reader_background_preset_ocean">Karagatan</string>
+    <string name="reader_background_preset_forest">Esmeralda</string>
+    <string name="reader_background_preset_rose">Rosa</string>
+    <string name="reader_background_preset_cream">Krema</string>
+    <string name="reader_background_preset_linen">Lino</string>
+    <string name="reader_background_preset_mist">Ulap</string>
+    <string name="reader_background_preset_sage">Sage</string>
+    <string name="reader_background_preset_dusk">Dapit-hapon</string>
+    <string name="reader_background_preset_cocoa">Kakaw</string>
+    <string name="reader_background_preset_arctic">Artiko</string>
+    <string name="reader_background_preset_midnight">Hatinggabi</string>
     <string name="translation_services">Mga Serbisyo sa Pagsasalin</string>
     <string name="gemini_api_key">Gemini API Key</string>
     <string name="active_google_gemini_api">Aktibo: Google Gemini API</string>
@@ -540,6 +561,13 @@
     <string name="language_search">Pumili ng wika</string>
     <string name="language_search_hint">Maghanap ng mga wika…</string>
     <string name="language_no_results">Walang nakitang wika</string>
+    <string name="language_favorites">Mga Paborito</string>
+    <string name="language_recent_pairs">Mga kamakailang pares</string>
+    <string name="language_recent_pairs_empty">Pumili ng mga wika — lalabas dito ang isang pares para sa mabilis na pag-apply</string>
+    <string name="language_favorite_add">Idagdag sa mga paborito</string>
+    <string name="language_favorite_remove">Alisin sa mga paborito</string>
+    <string name="language_all_languages">Lahat ng wika</string>
+    <string name="language_no_favorites">Wala pang paborito - i-tap ang bituin sa isang wika</string>
     <string name="novel_prompt_title">Prompt na tiyak sa nobela</string>
     <string name="novel_prompt_placeholder">Opsyonal: custom system prompt para sa nobelang ito</string>
     <string name="novel_prompt_description_reader">Magtakda ng custom system prompt para sa nobelang ito</string>
@@ -678,7 +706,6 @@
     <string name="translation_not_configured">Ang pagsasalin ay naka-disable o hindi naka-configure</string>
     <string name="translation_queued">Idinagdag sa pila ng pagsasalin</string>
     <string name="translation_select_pair_to_enable">Piliin ang pinagmulan at target na wika para simulan ang pagsasalin</string>
-    <string name="translation_toggle_off_hint">Naka-off ang pagsasalin para sa nobelang ito. I-on ito para magsalin.</string>
     <string name="translation_nothing_to_translate">Walang isasalin</string>
     <string name="translation_mode_title">Mode ng pagsasalin</string>
     <string name="translation_mode_settings_description">Pares ng wika kada nobela, o isang pares para sa lahat ng nobela</string>
@@ -731,6 +758,7 @@
     <string name="manga_reader_controls">Mga kontrol</string>
     <string name="manga_reader_download_on_open">I-download ang kabanata kapag binuksan</string>
     <string name="manga_reader_end_of_book">Naabot mo na ang dulo ng libro</string>
+    <string name="manga_reader_no_pages">Walang mga pahina sa kabanatang ito</string>
     <string name="manga_reader_fullscreen">Full screen</string>
     <string name="manga_reader_general">Pangkalahatan</string>
     <string name="manga_reader_invalid_chapter">Hindi mabubuksan ang kabanatang ito sa manga reader.</string>
@@ -762,7 +790,27 @@
     <string name="book_export_channel_name">Pag-export ng libro</string>
     <string name="book_export_progress">Nag-e-export: %1$d/%2$d kabanata</string>
     <string name="book_export_complete">Na-export: %1$s</string>
+    <string name="export_started">Nagsimula na ang pag-export</string>
     <string name="book_export_cancel">Kanselahin</string>
     <string name="book_export_no_chapters">Walang kabanata para i-export</string>
     <string name="book_export_failed">Nabigo ang pag-export</string>
+
+    <!-- Per-plugin translation settings -->
+    <string name="extension_translation_settings">Buksan ang mga setting ng pagsasalin</string>
+    <string name="plugin_translation_settings_title">Pagsasalin (plugin)</string>
+    <string name="plugin_translation_enabled">Paganahin ang pagsasalin ng plugin</string>
+    <string name="plugin_translation_swap_languages">Pagpalitin ang mga wika</string>
+    <string name="plugin_translation_scope_standard">Karaniwan (mga kabanata)</string>
+    <string name="plugin_translation_scope_full">Buong (mga kabanata + libro)</string>
+    <string name="plugin_translation_scope_standard_description">Isinasalin ang teksto ng kabanata at mga pamagat ng kabanata.</string>
+    <string name="plugin_translation_scope_full_description">Isinasalin at sine-save din ang pamagat at deskripsyon ng nobela.</string>
+    <string name="plugin_translation_prompt_label">Prompt</string>
+    <string name="plugin_translation_prompt_hint">Opsyonal: custom na system prompt para sa Gemini/OpenAI</string>
+    <string name="plugin_translation_hide_section">Itago ang mga pinalaking pamagat</string>
+    <string name="plugin_translation_hide_library">Sa library</string>
+    <string name="plugin_translation_hide_history">Sa kasaysayan</string>
+    <string name="plugin_translation_hide_catalog">Sa katalogo</string>
+    <string name="plugin_translation_hide_search">Sa paghahanap</string>
+    <string name="active_translator_label">Aktibong tagasalin: %s</string>
+    <string name="translators_all_off">Naka-off ang mga tagasalin</string>
 </resources>

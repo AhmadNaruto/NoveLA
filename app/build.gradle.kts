@@ -46,8 +46,8 @@ android {
 
     defaultConfig {
         applicationId = "my.novela"
-        versionCode = 36
-        versionName = "1.5.0"
+        versionCode = 37
+        versionName = "1.5.1"
         base.archivesName.set("NoveLA_v$versionName")
         manifestPlaceholders["appLabel"] = "NoveLA"
     }
@@ -178,6 +178,7 @@ dependencies {
     implementation(libs.compose.androidx.material.icons.extended)
     implementation(libs.compose.material3.android)
     implementation(libs.compose.coil)
+    implementation(libs.coil.network.okhttp)
     implementation(libs.compose.lazyColumnScrollbar)
 
     // Networking

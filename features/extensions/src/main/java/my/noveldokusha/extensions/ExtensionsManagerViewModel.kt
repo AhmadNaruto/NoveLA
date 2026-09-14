@@ -6,9 +6,11 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +29,7 @@ import my.noveldokusha.data.ScraperRepository
 import org.yaml.snakeyaml.Yaml
 import timber.log.Timber
 import my.noveldokusha.core.getLanguageDisplayName
+import my.noveldokusha.text_translator.domain.TranslationManager
 import javax.inject.Inject
 
 @HiltViewModel
@@ -38,10 +41,17 @@ class ExtensionsManagerViewModel @Inject constructor(
     private val scraperRepository: ScraperRepository,
     private val luaSourceLoader: LuaSourceLoader,          // ← для скачивания .lua
     private val luaSourceProvider: LuaSourceProvider,
+    private val translationManager: TranslationManager,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ExtensionsScreenState())
     val state: StateFlow<ExtensionsScreenState> = _state.asStateFlow()
+
+    // ponytail: реактивный поток для Compose — чтобы иконка переводчика
+    // в CatalogList обновлялась при переключении per-plugin toggle.
+    val pluginEnabledMap: StateFlow<Map<String, Boolean>> =
+        appPreferences.TRANSLATION_PLUGIN_ENABLED_MAP.flow()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), appPreferences.TRANSLATION_PLUGIN_ENABLED_MAP.value)
 
     /** Сериализует импорт/сохранение/сброс локальных Lua-скриптов,
      *  чтобы параллельные операции не гоняли reload() и запись файлов одновременно. */
@@ -77,21 +87,24 @@ class ExtensionsManagerViewModel @Inject constructor(
     fun onEvent(event: ExtensionsScreenEvent) = when (event) {
         is ExtensionsScreenEvent.OnExtensionToggle       -> toggleExtension(event.extensionId, event.enabled)
         is ExtensionsScreenEvent.OnExtensionUninstall    -> uninstallExtension(event.extensionId)
-        is ExtensionsScreenEvent.OnExtensionConfigure    -> Unit // TODO
+        is ExtensionsScreenEvent.OnExtensionConfigure    -> openTranslationSettings(event.extensionId)
         ExtensionsScreenEvent.OnRefresh                  -> refreshAll()
         ExtensionsScreenEvent.OnShowRepositoryDialog     -> _state.update { it.copy(showRepositoryDialog = true) }
         ExtensionsScreenEvent.OnHideRepositoryDialog     -> _state.update { it.copy(showRepositoryDialog = false) }
         is ExtensionsScreenEvent.OnUpdateRepositoryUrl   -> updateRepositoryUrl(event.url)
         is ExtensionsScreenEvent.OnLanguageFilterToggle  -> toggleLanguageFilter(event.languageCode)
         is ExtensionsScreenEvent.OnLanguageFilterClear   -> clearLanguageFilter(event.languageCode)
+        is ExtensionsScreenEvent.OnContentTypeFilterToggle -> toggleContentTypeFilter(event.contentType)
         ExtensionsScreenEvent.OnBackPressed              -> Unit
         is ExtensionsScreenEvent.OnExtensionInstall      -> installExtension(event.extensionId)
+        ExtensionsScreenEvent.OnUpdateAll                -> updateAllExtensions()
         is ExtensionsScreenEvent.OnExtensionUninstallById -> uninstallExtensionById(event.extensionId)
         is ExtensionsScreenEvent.OnEditLuaClick           -> openLuaEditor(event.extensionId)
         ExtensionsScreenEvent.OnLuaEditorDismiss          -> closeLuaEditor()
         is ExtensionsScreenEvent.OnLuaEditorChange        -> updateLuaEditorText(event.code)
         ExtensionsScreenEvent.OnLuaEditorSave             -> saveLuaEditor()
         is ExtensionsScreenEvent.OnResetLuaClick          -> resetLuaExtension(event.extensionId)
+        ExtensionsScreenEvent.OnTranslationSettingsDismiss -> closeTranslationSettings()
     }
 
     // ── Загрузка доступных расширений из репозитория ─────────────────────────
@@ -150,13 +163,14 @@ class ExtensionsManagerViewModel @Inject constructor(
                                     description      = src.get("description") as? String ?: "",
                                     author           = src.get("author") as? String ?: "",
                                     version          = installedVer ?: remoteVer,
-                                    remoteVersion    = remoteVer, // Удаленная версия из YAML
-                                    codeUrl          = src["url"] as String, // Поле называется "url" в YAML
+                                    remoteVersion    = remoteVer,
+                                    codeUrl          = src["url"] as String,
                                     iconUrl          = src["icon"] as String,
                                     language         = langCode,
                                     isInstalled      = installedVer != null,
                                     isEnabled        = isEnabled(id),
-                                    isUpdateAvailable = isUpdateAvailable(remoteVer, installedVer)
+                                    isUpdateAvailable = isUpdateAvailable(remoteVer, installedVer),
+                                    contentType      = src["content_type"] as? String ?: ""
                                 )
                             )
                         }
@@ -233,7 +247,8 @@ class ExtensionsManagerViewModel @Inject constructor(
                     language = cached.language,
                     isInstalled = getInstalledVersion(cached.id) != null,
                     isEnabled = isEnabled(cached.id),
-                    isUpdateAvailable = isUpdateAvailable(cached.remoteVersion, getInstalledVersion(cached.id))
+                    isUpdateAvailable = isUpdateAvailable(cached.remoteVersion, getInstalledVersion(cached.id)),
+                    contentType = cached.contentType
                 )
             }
             val langs = list.groupBy { it.language }
@@ -266,7 +281,8 @@ class ExtensionsManagerViewModel @Inject constructor(
                 remoteVersion = ext.remoteVersion,
                 codeUrl = ext.codeUrl,
                 iconUrl = ext.iconUrl,
-                language = ext.language
+                language = ext.language,
+                contentType = ext.contentType
             )
         }
         appPreferences.EXTENSIONS_AVAILABLE_CACHE.value = cached
@@ -303,9 +319,9 @@ class ExtensionsManagerViewModel @Inject constructor(
                     imageUrl = extInfo.iconUrl,
                     codeUrl  = extInfo.codeUrl
                 )
-                // Шаг 2б: Сохранить codeUrl в settings как JSON,
+                // Шаг 2б: Сохранить codeUrl и content_type в settings как JSON,
                 // чтобы LuaSourceLoader знал откуда перескачать при следующем запуске
-                val settingsJson = Gson().toJson(mapOf("codeUrl" to extInfo.codeUrl))
+                val settingsJson = Gson().toJson(mapOf("codeUrl" to extInfo.codeUrl, "content_type" to extInfo.contentType))
                 extensionManager.updateExtensionSettings(extensionId, settingsJson)
 
                 Timber.d("Installed extension: ${extInfo.name}")
@@ -319,6 +335,15 @@ class ExtensionsManagerViewModel @Inject constructor(
                 luaSourceLoader.removeScript(extensionId)
             } finally {
                 setInstalling(extensionId, false)
+            }
+        }
+    }
+
+    private fun updateAllExtensions() {
+        viewModelScope.launch {
+            val extensionsToUpdate = _state.value.availableExtensions.filter { it.isUpdateAvailable }
+            extensionsToUpdate.forEach { ext ->
+                installExtension(ext.id)
             }
         }
     }
@@ -424,11 +449,13 @@ class ExtensionsManagerViewModel @Inject constructor(
             val version = luaField(finalCode, "version", "1.0.0")
             val language = luaField(finalCode, "language", "en")
             val icon = luaField(finalCode, "icon")
+            val contentType = luaField(finalCode, "content_type", "novel")
 
             if (extensionManager.isExtensionInstalled(storageId)) {
                 // Идемпотентный реимпорт того же файла — обновляем скрипт без создания дубля.
                 luaSourceLoader.saveScript(storageId, finalCode)
-                extensionManager.updateExtensionSettings(storageId, """{"sourceType": "local"}""")
+                val settingsJson = Gson().toJson(mapOf("sourceType" to "local", "content_type" to contentType))
+                extensionManager.updateExtensionSettings(storageId, settingsJson)
                 luaSourceProvider.reload()
                 return@withLock
             }
@@ -453,7 +480,8 @@ class ExtensionsManagerViewModel @Inject constructor(
                 imageUrl = icon.ifBlank { null },
                 codeUrl = null
             )
-            extensionManager.updateExtensionSettings(storageId, """{"sourceType": "local"}""")
+            val localSettings = Gson().toJson(mapOf("sourceType" to "local", "content_type" to contentType))
+            extensionManager.updateExtensionSettings(storageId, localSettings)
             luaSourceProvider.reload()
         }
     }
@@ -509,6 +537,7 @@ class ExtensionsManagerViewModel @Inject constructor(
         val newVersion = luaField(code, "version", "1.0.0")
         val newLanguage = luaField(code, "language", "en")
         val newIcon = luaField(code, "icon")
+        val newContentType = luaField(code, "content_type", "novel")
         val oldCodeUrl = getCodeUrl(id)
 
         extensionManager.installExtensionFromInfo(
@@ -519,6 +548,10 @@ class ExtensionsManagerViewModel @Inject constructor(
             imageUrl = newIcon.ifBlank { null },
             codeUrl = oldCodeUrl
         )
+        val settingsMap = mutableMapOf<String, Any>()
+        if (!oldCodeUrl.isNullOrBlank()) settingsMap["codeUrl"] = oldCodeUrl
+        settingsMap["content_type"] = newContentType
+        extensionManager.updateExtensionSettings(id, Gson().toJson(settingsMap))
         luaSourceProvider.reload()
         closeLuaEditor()
     }
@@ -543,6 +576,106 @@ class ExtensionsManagerViewModel @Inject constructor(
             luaSourceProvider.reload()
         }
     }
+
+    // ── Настройки перевода плагина ──────────────────────────────────────────
+
+    /** Открывает диалог настроек перевода для установленного плагина. */
+    private fun openTranslationSettings(extensionId: String) {
+        _state.update { it.copy(translationSettingsExtensionId = extensionId) }
+    }
+
+    private fun closeTranslationSettings() {
+        _state.update { it.copy(translationSettingsExtensionId = null) }
+    }
+
+    /** Модели языков для выбора пары перевода (из TranslationManager). */
+    val translationModels: List<my.noveldokusha.text_translator.domain.TranslationModelState>
+        get() = translationManager.models
+
+    /** Глобальный режим перевода активен — настройки плагина не применяются. */
+    val translationGlobalMode: Boolean
+        get() = appPreferences.TRANSLATION_GLOBAL_MODE.value
+
+    /** Глобальная пара по умолчанию (для fallback-превью, когда у плагина пусто). */
+    val globalTranslationSource: String
+        get() = appPreferences.GLOBAL_TRANSLATION_PREFERRED_SOURCE.value
+
+    val globalTranslationTarget: String
+        get() = appPreferences.GLOBAL_TRANSLATION_PREFERRED_TARGET.value
+
+    // Чтение текущих значений плагина (пустые/дефолтные, если не заданы).
+    fun translationEnabled(extensionId: String): Boolean =
+        appPreferences.translationEnabledForPlugin(extensionId)
+
+    fun translationPair(extensionId: String): my.noveldokusha.core.appPreferences.TranslationLangPair =
+        appPreferences.translationPairForPlugin(extensionId)
+
+    fun translationProvider(extensionId: String): String? =
+        appPreferences.translationProviderForPlugin(extensionId)
+
+    fun translationScope(extensionId: String): String =
+        appPreferences.translationScopeForPlugin(extensionId)
+
+    fun translationPrompt(extensionId: String): String? =
+        appPreferences.translationPromptForPlugin(extensionId)
+
+    // Запись: пишем в AppPreferences сразу (write+rebuild — диалог читает заново).
+    fun setTranslationEnabled(extensionId: String, enabled: Boolean) {
+        appPreferences.setTranslationEnabledForPlugin(extensionId, enabled)
+    }
+
+    fun setTranslationPair(extensionId: String, source: String, target: String) {
+        appPreferences.setTranslationPairForPlugin(extensionId, source, target)
+    }
+
+    fun setTranslationProvider(extensionId: String, provider: String) {
+        appPreferences.setTranslationProviderForPlugin(extensionId, provider)
+    }
+
+    fun setTranslationScope(extensionId: String, scope: String) {
+        appPreferences.setTranslationScopeForPlugin(extensionId, scope)
+    }
+
+    fun setTranslationPrompt(extensionId: String, prompt: String) {
+        appPreferences.setTranslationPromptForPlugin(extensionId, prompt)
+    }
+
+    // Hide translation toggles (per-plugin, only when scope==FULL)
+    fun translationHideLibrary(extensionId: String): Boolean =
+        appPreferences.TRANSLATION_PLUGIN_HIDE_LIBRARY.value[extensionId] == true
+
+    fun translationHideHistory(extensionId: String): Boolean =
+        appPreferences.TRANSLATION_PLUGIN_HIDE_HISTORY.value[extensionId] == true
+
+    fun translationHideCatalog(extensionId: String): Boolean =
+        appPreferences.TRANSLATION_PLUGIN_HIDE_CATALOG.value[extensionId] == true
+
+    fun translationHideSearch(extensionId: String): Boolean =
+        appPreferences.TRANSLATION_PLUGIN_HIDE_SEARCH.value[extensionId] == true
+
+    fun setTranslationHideLibrary(extensionId: String, hide: Boolean) {
+        appPreferences.setTranslationPluginHideMap(appPreferences.TRANSLATION_PLUGIN_HIDE_LIBRARY, extensionId, hide)
+    }
+
+    fun setTranslationHideHistory(extensionId: String, hide: Boolean) {
+        appPreferences.setTranslationPluginHideMap(appPreferences.TRANSLATION_PLUGIN_HIDE_HISTORY, extensionId, hide)
+    }
+
+    fun setTranslationHideCatalog(extensionId: String, hide: Boolean) {
+        appPreferences.setTranslationPluginHideMap(appPreferences.TRANSLATION_PLUGIN_HIDE_CATALOG, extensionId, hide)
+    }
+
+    fun setTranslationHideSearch(extensionId: String, hide: Boolean) {
+        appPreferences.setTranslationPluginHideMap(appPreferences.TRANSLATION_PLUGIN_HIDE_SEARCH, extensionId, hide)
+    }
+
+    // Мост к избранным языкам и последним парам: делегируют напрямую в AppPreferences.
+    fun favoriteLanguages(): List<String> = appPreferences.favoriteLanguages()
+    fun toggleFavoriteLanguage(code: String) = appPreferences.toggleFavoriteLanguage(code)
+    fun recentTranslationPairs() = appPreferences.recentTranslationPairs()
+    fun recordRecentTranslationPair(source: String, target: String) = appPreferences.recordRecentTranslationPair(source, target)
+    fun removeRecentTranslationPair(pair: my.noveldokusha.core.appPreferences.TranslationLangPair) =
+        appPreferences.removeRecentTranslationPair(pair)
 
     // ── Вкл/выкл ─────────────────────────────────────────────────────────────
 
@@ -575,6 +708,12 @@ class ExtensionsManagerViewModel @Inject constructor(
     private fun clearLanguageFilter(code: String?) {
         _state.update { it.copy(selectedLanguages = if (code == null) emptySet() else it.selectedLanguages - code) }
         appPreferences.EXTENSIONS_LANGUAGES_FILTER.value = _state.value.selectedLanguages
+    }
+
+    private fun toggleContentTypeFilter(contentType: String) {
+        _state.update { state ->
+            state.copy(selectedContentType = if (state.selectedContentType == contentType) "" else contentType)
+        }
     }
 
     private fun refreshAll() = loadAllAvailableExtensions(forceRefresh = true)

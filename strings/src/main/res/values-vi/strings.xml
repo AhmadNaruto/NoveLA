@@ -233,6 +233,27 @@
     <string name="dark_mode_black">Đen</string>
     <string name="color_scheme">Bảng màu</string>
     <string name="reader_text_color">Màu chữ</string>
+    <string name="reader_import_font">Nhập phông chữ</string>
+    <string name="reader_fonts_imported">Đã nhập</string>
+    <string name="reader_delete_font">Xóa phông chữ</string>
+    <string name="reader_background">Nền</string>
+    <string name="reader_background_auto">Tự động</string>
+    <string name="reader_background_custom">Ảnh tùy chỉnh…</string>
+    <string name="reader_background_delete">Xóa</string>
+    <string name="reader_background_preset_paper">Giấy</string>
+    <string name="reader_background_preset_twilight">Hoàng hôn</string>
+    <string name="reader_background_preset_night">Đêm</string>
+    <string name="reader_background_preset_ocean">Đại dương</string>
+    <string name="reader_background_preset_forest">Ngọc lục bảo</string>
+    <string name="reader_background_preset_rose">Hoa hồng</string>
+    <string name="reader_background_preset_cream">Kem</string>
+    <string name="reader_background_preset_linen">Vải lanh</string>
+    <string name="reader_background_preset_mist">Sương mù</string>
+    <string name="reader_background_preset_sage">Xô thơm</string>
+    <string name="reader_background_preset_dusk">Chạng vạng</string>
+    <string name="reader_background_preset_cocoa">Ca cao</string>
+    <string name="reader_background_preset_arctic">Bắc Cực</string>
+    <string name="reader_background_preset_midnight">Nửa đêm</string>
     <string name="translation_services">Dịch vụ dịch thuật</string>
     <string name="gemini_api_key">Khóa API Gemini</string>
     <string name="active_google_gemini_api">Đang hoạt động: Google Gemini API</string>
@@ -540,6 +561,13 @@
     <string name="language_search">Chọn ngôn ngữ</string>
     <string name="language_search_hint">Tìm kiếm ngôn ngữ…</string>
     <string name="language_no_results">Không tìm thấy ngôn ngữ nào</string>
+    <string name="language_favorites">Yêu thích</string>
+    <string name="language_recent_pairs">Cặp gần đây</string>
+    <string name="language_recent_pairs_empty">Chọn ngôn ngữ — một cặp sẽ xuất hiện ở đây để áp dụng nhanh</string>
+    <string name="language_favorite_add">Thêm vào yêu thích</string>
+    <string name="language_favorite_remove">Xóa khỏi yêu thích</string>
+    <string name="language_all_languages">Tất cả ngôn ngữ</string>
+    <string name="language_no_favorites">Chưa có yêu thích - chạm vào ngôi sao trên ngôn ngữ</string>
     <string name="novel_prompt_title">Lời nhắc dành riêng cho tiểu thuyết</string>
     <string name="novel_prompt_placeholder">Tùy chọn: lời nhắc hệ thống tùy chỉnh cho tiểu thuyết này</string>
     <string name="novel_prompt_description_reader">Đặt lời nhắc hệ thống tùy chỉnh cho tiểu thuyết này</string>
@@ -678,7 +706,6 @@
     <string name="translation_not_configured">Tính năng dịch đang tắt hoặc chưa được cấu hình</string>
     <string name="translation_queued">Đã thêm vào hàng đợi dịch</string>
     <string name="translation_select_pair_to_enable">Chọn ngôn ngữ nguồn và đích để bắt đầu dịch</string>
-    <string name="translation_toggle_off_hint">Tính năng dịch đang tắt cho cuốn truyện này. Bật lên để dịch.</string>
     <string name="translation_nothing_to_translate">Không có gì để dịch</string>
     <string name="translation_mode_title">Chế độ dịch</string>
     <string name="translation_mode_settings_description">Cặp ngôn ngữ theo từng truyện hoặc một cặp cho tất cả truyện</string>
@@ -727,6 +754,7 @@
     <string name="manga_reader_chapter_list">Danh sách chương</string>
     <string name="manga_reader_chapter_list_current">Hiện tại</string>
     <string name="manga_reader_chapter_list_empty">Không có chương</string>
+    <string name="manga_reader_no_pages">Không có trang nào trong chương này</string>
     <string name="manga_reader_chapter_loading">Đang tải chương…</string>
     <string name="manga_reader_controls">Điều khiển</string>
     <string name="manga_reader_download_on_open">Tải chương khi mở</string>
@@ -765,4 +793,24 @@
     <string name="book_export_cancel">Hủy</string>
     <string name="book_export_no_chapters">Không có chương để xuất</string>
     <string name="book_export_failed">Xuất thất bại</string>
+    <string name="export_started">Đã bắt đầu xuất</string>
+
+    <!-- Per-plugin translation settings -->
+    <string name="extension_translation_settings">Mở cài đặt dịch</string>
+    <string name="plugin_translation_settings_title">Dịch (plugin)</string>
+    <string name="plugin_translation_enabled">Bật dịch bằng plugin</string>
+    <string name="plugin_translation_swap_languages">Hoán đổi ngôn ngữ</string>
+    <string name="plugin_translation_scope_standard">Tiêu chuẩn (chương)</string>
+    <string name="plugin_translation_scope_full">Đầy đủ (chương + sách)</string>
+    <string name="plugin_translation_scope_standard_description">Dịch văn bản chương và tiêu đề chương.</string>
+    <string name="plugin_translation_scope_full_description">Cũng dịch và lưu tiêu đề cùng mô tả của tiểu thuyết.</string>
+    <string name="plugin_translation_prompt_label">Lời nhắc</string>
+    <string name="plugin_translation_prompt_hint">Tùy chọn: lời nhắc hệ thống tùy chỉnh cho Gemini/OpenAI</string>
+    <string name="plugin_translation_hide_section">Ẩn tiêu đề đã dịch</string>
+    <string name="plugin_translation_hide_library">Trong thư viện</string>
+    <string name="plugin_translation_hide_history">Trong lịch sử</string>
+    <string name="plugin_translation_hide_catalog">Trong danh mục</string>
+    <string name="plugin_translation_hide_search">Trong tìm kiếm</string>
+    <string name="active_translator_label">Dịch giả đang hoạt động: %s</string>
+    <string name="translators_all_off">Dịch giả đã tắt</string>
 </resources>

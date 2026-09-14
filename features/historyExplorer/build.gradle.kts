@@ -12,6 +12,7 @@ dependencies {
     implementation(projects.coreui)
     implementation(projects.strings)
     implementation(projects.data)
+    implementation(projects.scraper)
     implementation(projects.navigation)
     implementation(projects.tooling.localDatabase)
 
@@ -20,6 +21,7 @@ dependencies {
     implementation(libs.compose.androidx.lifecycle.viewmodel)
     implementation(libs.compose.androidx.material.icons.extended)
     implementation(libs.compose.coil)
+    implementation(libs.coil.network.okhttp)
 
     implementation(libs.timber)
 }

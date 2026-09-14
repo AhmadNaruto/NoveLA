@@ -233,6 +233,27 @@
     <string name="dark_mode_black">ब्लैक</string>
     <string name="color_scheme">रंग योजना</string>
     <string name="reader_text_color">पाठ का रंग</string>
+    <string name="reader_import_font">फ़ॉन्ट आयात करें</string>
+    <string name="reader_fonts_imported">आयातित</string>
+    <string name="reader_delete_font">फ़ॉन्ट हटाएं</string>
+    <string name="reader_background">पृष्ठभूमि</string>
+    <string name="reader_background_auto">स्वचालित</string>
+    <string name="reader_background_custom">कस्टम चित्र…</string>
+    <string name="reader_background_delete">हटाएं</string>
+    <string name="reader_background_preset_paper">कागज़</string>
+    <string name="reader_background_preset_twilight">गोधूलि</string>
+    <string name="reader_background_preset_night">रात</string>
+    <string name="reader_background_preset_ocean">महासागर</string>
+    <string name="reader_background_preset_forest">पन्ना</string>
+    <string name="reader_background_preset_rose">गुलाब</string>
+    <string name="reader_background_preset_cream">क्रीम</string>
+    <string name="reader_background_preset_linen">लिनेन</string>
+    <string name="reader_background_preset_mist">कोहरा</string>
+    <string name="reader_background_preset_sage">सेज</string>
+    <string name="reader_background_preset_dusk">साँझ</string>
+    <string name="reader_background_preset_cocoa">कोको</string>
+    <string name="reader_background_preset_arctic">आर्कटिक</string>
+    <string name="reader_background_preset_midnight">आधी रात</string>
     <string name="translation_services">अनुवाद सेवाएँ</string>
     <string name="gemini_api_key">Gemini API कुंजी</string>
     <string name="active_google_gemini_api">सक्रिय: Google Gemini API</string>
@@ -540,6 +561,13 @@
     <string name="language_search">भाषा चुनें</string>
     <string name="language_search_hint">भाषाएँ खोजें…</string>
     <string name="language_no_results">कोई भाषा नहीं मिली</string>
+    <string name="language_favorites">पसंदीदा</string>
+    <string name="language_recent_pairs">हाल की जोड़ियाँ</string>
+    <string name="language_recent_pairs_empty">भाषाएँ चुनें — त्वरित लागू करने के लिए एक जोड़ी यहाँ दिखाई देगी</string>
+    <string name="language_favorite_add">पसंदीदा में जोड़ें</string>
+    <string name="language_favorite_remove">पसंदीदा से हटाएँ</string>
+    <string name="language_all_languages">सभी भाषाएँ</string>
+    <string name="language_no_favorites">अभी कोई पसंदीदा नहीं — किसी भाषा पर स्टार टैप करें</string>
     <string name="novel_prompt_title">उपन्यास-विशिष्ट प्रॉम्प्ट</string>
     <string name="novel_prompt_placeholder">वैकल्पिक: इस उपन्यास के लिए कस्टम सिस्टम प्रॉम्प्ट</string>
     <string name="novel_prompt_description_reader">इस उपन्यास के लिए कस्टम सिस्टम प्रॉम्प्ट सेट करें</string>
@@ -683,7 +711,6 @@
 <string name="translation_mode_per_novel">यह उपन्यास</string>
 <string name="translation_mode_global">सभी उपन्यास</string>
 <string name="translation_select_pair_to_enable">अनुवाद शुरू करने के लिए स्रोत और लक्ष्य भाषा चुनें</string>
-<string name="translation_toggle_off_hint">इस उपन्यास के लिए अनुवाद बंद है। अनुवाद करने के लिए इसे चालू करें।</string>
 <string name="tts_highlight">टीटीएस हाइलाइट</string>
 <string name="manual_highlight">मैन्युअल हाइलाइट</string>
 <string name="manual_highlight_start">मैन्युअल हाइलाइट शुरू करें</string>
@@ -746,7 +773,8 @@
 <string name="manga_custom_brightness">कस्टम चमक</string>
 <string name="manga_reader_chapter_list">अध्याय सूची</string>
 <string name="manga_reader_chapter_list_current">वर्तमान</string>
-<string name="manga_reader_chapter_list_empty">कोई अध्याय नहीं</string>
+    <string name="manga_reader_chapter_list_empty">कोई अध्याय नहीं</string>
+    <string name="manga_reader_no_pages">इस अध्याय में कोई पृष्ठ नहीं है</string>
 <string name="manga_reader_open_in_browser">ब्राउज़र में खोलें</string>
 <string name="manga_autoscroll_speed_value">%1$d dp/s</string>
 <string name="manga_grayscale">ग्रेस्केल</string>
@@ -765,4 +793,24 @@
     <string name="book_export_cancel">रद्द करें</string>
     <string name="book_export_no_chapters">निर्यात करने के लिए कोई अध्याय नहीं</string>
     <string name="book_export_failed">निर्यात विफल</string>
+    <string name="export_started">निर्यात शुरू हुआ</string>
+
+    <!-- Per-plugin translation settings -->
+    <string name="extension_translation_settings">अनुवाद सेटिंग खोलें</string>
+    <string name="plugin_translation_settings_title">अनुवाद (प्लगइन)</string>
+    <string name="plugin_translation_enabled">प्लगइन अनुवाद सक्षम करें</string>
+    <string name="plugin_translation_swap_languages">भाषाएँ बदलें</string>
+    <string name="plugin_translation_scope_standard">मानक (अध्याय)</string>
+    <string name="plugin_translation_scope_full">पूर्ण (अध्याय + पुस्तक)</string>
+    <string name="plugin_translation_scope_standard_description">अध्याय का पाठ और अध्याय शीर्षक का अनुवाद करता है।</string>
+    <string name="plugin_translation_scope_full_description">उपन्यास का शीर्षक और विवरण भी अनुवाद और सहेजता है।</string>
+    <string name="plugin_translation_prompt_label">प्रॉम्प्ट</string>
+    <string name="plugin_translation_prompt_hint">वैकल्पिक: Gemini/OpenAI के लिए कस्टम सिस्टम प्रॉम्प्ट</string>
+    <string name="plugin_translation_hide_section">अनुवादित शीर्षक छुपाएं</string>
+    <string name="plugin_translation_hide_library">पुस्तकालय में</string>
+    <string name="plugin_translation_hide_history">इतिहास में</string>
+    <string name="plugin_translation_hide_catalog">सूची में</string>
+    <string name="plugin_translation_hide_search">खोज में</string>
+    <string name="active_translator_label">सक्रिय अनुवादक: %s</string>
+    <string name="translators_all_off">अनुवादक बंद हैं</string>
 </resources>
