@@ -505,7 +505,9 @@ private fun heuristicChapterExtraction(url: String, document: Document): my.nove
         val content = article.articleContent ?: return null
         return my.noveldokusha.scraper.ChapterDownload(
             body = TextExtractor.get(content),
-            title = article.title
+            // ponytail: title из Readability мусорный (например "Chainsaw Man Chapter 3 - Read Manga Online").
+            // Название приходит из списка глав, а не из тела — не затираем.
+            title = null
         )
     }
 }
