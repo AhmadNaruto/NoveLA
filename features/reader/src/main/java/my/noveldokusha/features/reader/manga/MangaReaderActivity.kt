@@ -100,6 +100,7 @@ import my.noveldokusha.coreui.theme.LocalIsDark
 import my.noveldokusha.coreui.theme.Theme
 import my.noveldokusha.coreui.theme.colorAccent
 import my.noveldokusha.feature.local_database.tables.Chapter
+import my.noveldokusha.navigation.NavigationRoutes
 import my.noveldokusha.features.reader.manga.setting.MangaReadingMode
 import my.noveldokusha.features.reader.manga.ui.MangaReaderSettingsSheet
 import my.noveldokusha.features.reader.manga.viewer.Viewer
@@ -163,6 +164,9 @@ internal class MangaReaderActivity : ComponentActivity() {
 
     @Inject
     lateinit var pageImageLoader: PageImageLoader
+
+    @Inject
+    lateinit var navigationRoutes: NavigationRoutes
 
     private val viewModel by viewModels<MangaReaderViewModel>()
 
@@ -1067,12 +1071,12 @@ internal class MangaReaderActivity : ComponentActivity() {
         }
     }
 
-    /** Открыть текущую главу в браузере (URL источника, не текст). */
+    /** Открыть текущую главу во вебвьювере (URL источника, не текст). */
     private fun openInBrowser() {
         val ready = viewModel.uiState.value as? MangaReaderUiState.Ready ?: return
         val url = ready.chapter.url
         runCatching {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            startActivity(navigationRoutes.webView(this, url))
         }
     }
 
