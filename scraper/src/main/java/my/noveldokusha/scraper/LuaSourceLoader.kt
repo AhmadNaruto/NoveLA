@@ -240,6 +240,7 @@ class LuaEngine @Inject constructor(
         g.set("set_cookies",            SetCookiesFunction()           as LuaValue)
         g.set("get_preference",         GetPreferenceFunction()        as LuaValue)
         g.set("set_preference",         SetPreferenceFunction()        as LuaValue)
+        g.set("get_localStorage",       GetLocalStorageFunction()      as LuaValue)
         // Crypto
         g.set("aes_decrypt",            AesDecryptFunction()           as LuaValue)
         g.set("base64_decode",          Base64DecodeFunction()         as LuaValue)
@@ -615,6 +616,22 @@ class LuaEngine @Inject constructor(
             }
             networkClient.cookieJar.saveFromResponse(httpUrl, cookies)
             return LuaValue.NIL
+        }
+    }
+
+    private inner class GetLocalStorageFunction : TwoArgFunction() {
+        override fun call(a1: LuaValue, a2: LuaValue): LuaValue {
+            val host = a1.checkjstring().let { url ->
+                try { java.net.URI(url).host ?: url } catch (_: Exception) { url }
+            }
+            val key = a2.checkjstring()
+            val prefs = context.getSharedPreferences("lua_localStorage", Context.MODE_PRIVATE)
+            val json = prefs.getString(host, null) ?: return LuaValue.NIL
+            return try {
+                val map = gson.fromJson(json, Map::class.java)
+                val value = map[key] as? String ?: return LuaValue.NIL
+                LuaValue.valueOf(value)
+            } catch (_: Exception) { LuaValue.NIL }
         }
     }
 
