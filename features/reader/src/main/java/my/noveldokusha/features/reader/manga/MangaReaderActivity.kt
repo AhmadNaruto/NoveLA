@@ -107,6 +107,7 @@ import my.noveldokusha.features.reader.manga.viewer.Viewer
 import my.noveldokusha.features.reader.manga.viewer.pager.createPagerViewer
 import my.noveldokusha.features.reader.manga.viewer.webtoon.MangaWebtoonViewer
 import my.noveldokusha.features.reader.tools.PageImageLoader
+import my.noveldokusha.features.reader.ui.PluginErrorDialog
 import my.noveldokusha.reader.R
 import timber.log.Timber
 import javax.inject.Inject
@@ -196,6 +197,11 @@ internal class MangaReaderActivity : ComponentActivity() {
 
     /** Диалог «невалидная глава» открыт. */
     private val showInvalidChapterDialog = mutableStateOf(false)
+
+    /** Диалог ошибки плагина открыт. */
+    private val showPluginErrorDialog = mutableStateOf(false)
+    private val pluginErrorTitle = mutableStateOf("")
+    private val pluginErrorMessage = mutableStateOf("")
 
     /**
      * Переход между главами пейджера в процессе: спиннер поверх вьюера
@@ -534,7 +540,15 @@ internal class MangaReaderActivity : ComponentActivity() {
                         R.string.manga_reader_end_of_book,
                         Toast.LENGTH_SHORT,
                     ).show()
-                    MangaReaderEvent.InvalidChapter -> showInvalidChapterDialog.value = true
+                    is MangaReaderEvent.InvalidChapter -> {
+                        if (event.title != null) {
+                            pluginErrorTitle.value = event.title
+                            pluginErrorMessage.value = event.message ?: ""
+                            showPluginErrorDialog.value = true
+                        } else {
+                            showInvalidChapterDialog.value = true
+                        }
+                    }
                 }
             }
         }
@@ -777,6 +791,17 @@ internal class MangaReaderActivity : ComponentActivity() {
                 showInvalidChapterDialog.value = false
                 finish()
             })
+        }
+
+        if (showPluginErrorDialog.value) {
+            PluginErrorDialog(
+                title = pluginErrorTitle.value,
+                message = pluginErrorMessage.value,
+                onDismiss = {
+                    showPluginErrorDialog.value = false
+                    finish()
+                }
+            )
         }
     }
 
