@@ -303,6 +303,10 @@ internal class MangaReaderViewModel @Inject constructor(
             Timber.w("MangaReaderLoad: buildChapter fetchPages failed url=%s", url)
             return null
         }
+        if (urls.isEmpty()) {
+            Timber.w("MangaReaderLoad: buildChapter empty pages url=%s", url)
+            return null
+        }
         Timber.d("MangaReaderLoad: buildChapter url=%s index=%d pages=%d", url, index, urls.size)
         return MangaChapter(
             url = url,
