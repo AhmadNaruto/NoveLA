@@ -32,6 +32,19 @@ class DownloaderRepository @Inject constructor(
     private val networkClient: NetworkClient,
 ) {
 
+    private fun <T> Response<T>.propagatePluginError(): Response<T> = when {
+        this is Response.Error && exception is my.noveldokusha.scraper.domain.PluginShowErrorException -> {
+            val e = exception as my.noveldokusha.scraper.domain.PluginShowErrorException
+            Response.Error(
+                message = e.message ?: "Error",
+                exception = e,
+                pluginErrorTitle = e.errorTitle,
+                pluginErrorMessage = e.message
+            )
+        }
+        else -> this
+    }
+
     suspend fun bookCoverImageUrl(
         bookUrl: String,
     ): Response<String?> = withContext(Dispatchers.IO) {
@@ -49,7 +62,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookCoverImageUrl(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     suspend fun bookTitle(
@@ -69,7 +82,7 @@ class DownloaderRepository @Inject constructor(
 
         val apiResponse = my.noveldokusha.network.tryFlatConnect {
             scrap.getBookTitle(bookUrl)
-        }
+        }.propagatePluginError()
 
         if (apiResponse is Response.Success && apiResponse.data != null) {
             return@withContext apiResponse
@@ -103,7 +116,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookGenres(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     suspend fun bookRating(
@@ -114,7 +127,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookRating(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     /**
@@ -129,7 +142,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookStatus(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     /**
@@ -144,7 +157,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookLastUpdate(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     suspend fun bookDescription(
@@ -164,7 +177,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookDescription(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     suspend fun bookChapter(
@@ -360,10 +373,7 @@ class DownloaderRepository @Inject constructor(
 
         if (firstPageResult != null) {
             val firstPage = (firstPageResult as? Response.Success)?.data
-                ?: return@withContext Response.Error(
-                    (firstPageResult as Response.Error).message,
-                    (firstPageResult as Response.Error).exception
-                )
+                ?: return@withContext (firstPageResult as Response.Error).propagatePluginError()
 
             Timber.d("bookChaptersList: parsePage supported, totalPages=${firstPage.totalPages}, page1 chapters=${firstPage.chapters.size}")
 
@@ -395,7 +405,7 @@ class DownloaderRepository @Inject constructor(
         Timber.d("bookChaptersList: parsePage not supported, falling back to getChapterList")
         my.noveldokusha.network.tryFlatConnect {
             scrap.getChapterList(bookUrl)
-        }
+        }.propagatePluginError()
             .map { chapters ->
                 Timber.d("bookChaptersList: getChapterList returned ${chapters.size} chapters")
                 chapters.mapIndexed { index, it ->
@@ -436,10 +446,10 @@ class DownloaderRepository @Inject constructor(
             } else {
                 Timber.d("bookChaptersPage: page=$page → null (not supported)")
             }
-            result
+            result?.propagatePluginError()
         } catch (e: Exception) {
             Timber.e(e, "bookChaptersPage: page=$page exception")
-            Response.Error(e.message ?: "Unknown error", e)
+            Response.Error(e.message ?: "Unknown error", e).propagatePluginError()
         }
     }
 
@@ -460,7 +470,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getChapterListHash(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     // ── Заголовки для загрузки страницы главы ────────────────────────────────
