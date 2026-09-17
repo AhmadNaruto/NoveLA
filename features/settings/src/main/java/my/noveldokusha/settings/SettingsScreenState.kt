@@ -10,7 +10,7 @@ import my.noveldokusha.core.appPreferences.AppLanguage
 import my.noveldokusha.core.appPreferences.AppLanguageProvider
 import my.noveldokusha.core.appPreferences.NovelPromptData
 
-enum class CleanConfirmationType { DATABASE, IMAGES_FOLDER, CHAPTER_CACHE }
+enum class CleanConfirmationType { DATABASE, IMAGES_FOLDER, NOVEL_CACHE, MANGA_CACHE }
 
 data class SettingsScreenState(
     val databaseSize: MutableState<String>,
@@ -57,8 +57,10 @@ data class SettingsScreenState(
     val autoBackupIncludePlugins: State<Boolean>,
     val autoBackupLastTimestamp: State<Long>,
     // Chapter cache
-    val chapterCacheSize: MutableState<String>,
-    val isCleaningChapterCache: State<Boolean>,
+    val novelCacheSize: MutableState<String>,
+    val mangaCacheSize: MutableState<String>,
+    val isCleaningNovelCache: State<Boolean>,
+    val isCleaningMangaCache: State<Boolean>,
     val cleanConfirmationType: MutableState<CleanConfirmationType?>,
 ) {
     data class UpdateApp(
