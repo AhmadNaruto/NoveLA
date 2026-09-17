@@ -52,7 +52,7 @@
     <string name="updating_library_notice">Actualizando biblioteca</string>
     <string name="chapter_downloaded">Capítulo descargado</string>
     <string name="search_by_title">Buscar por título</string>
-    <string name="clean_images_folder">Limpiar carpeta de imágenes</string>
+    <string name="clean_images_folder">Limpiar caché de imágenes</string>
     <string name="preserve_only_images_from_library_books">Conservar solo imágenes de libros de la biblioteca</string>
     <string name="add_delay">Añadir retraso</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">Limpiando base de datos...</string>
     <string name="database_cleaned_successfully">Base de datos limpiada correctamente</string>
     <string name="database_clean_failed">Error al limpiar la base de datos</string>
-    <string name="cleaning_images_folder">Limpiando carpeta de imágenes...</string>
-    <string name="images_folder_cleaned">Carpeta de imágenes limpiada. %d carpetas eliminadas</string>
-    <string name="images_folder_already_clean">La carpeta de imágenes ya está limpia</string>
-    <string name="images_folder_clean_failed">Error al limpiar la carpeta de imágenes</string>
+    <string name="cleaning_images_folder">Limpiando caché de imágenes...</string>
+    <string name="images_folder_cleaned">Caché de imágenes limpiada. %d carpetas eliminadas</string>
+    <string name="images_folder_already_clean">La caché de imágenes ya está limpia</string>
+    <string name="images_folder_clean_failed">Error al limpiar la caché de imágenes</string>
     <string name="close_selection_bar">Cerrar barra de selección</string>
     <string name="open_last_read_chapter">Abrir último capítulo leído</string>
     <string name="updating_book_info">Actualizando información del libro</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Se intentó pero no se pudo omitir el firewall de Cloudflare</string>
     <string name="features_reader_full_screen">Pantalla completa</string>
     <string name="single_tap_to_open_settings">Un toque para abrir el menú</string>
-    <string name="source_name_local">Local</string>
+    <string name="source_name_local">Local EPUB/FB2</string>
+    <string name="source_name_local_manga">Local CBZ</string>
 
     <string name="delete_novel">Eliminar novela</string>
     <string name="delete_book_translations">Eliminar todas las traducciones de esta novela</string>
@@ -448,7 +449,6 @@
     <string name="llm_preset_name">Nombre del preajuste</string>
     <string name="llm_preset_default">Predeterminado</string>
 
-
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">API compatible con OpenAI</string>
     <string name="provider_openai_description">OpenAI, OpenRouter, Mistral, DeepSeek, Ollama, etc.</string>
@@ -521,13 +521,18 @@
     <string name="auto_backup_interval_updated">Intervalo de copia de seguridad actualizado</string>
     <string name="auto_backup_last_time">Última copia de seguridad</string>
     <string name="auto_backup_never">Nunca</string>
-    <string name="clean_chapter_cache">Limpiar caché de capítulos</string>
     <string name="clean_database_confirmation">¿Estás seguro de que quieres limpiar la base de datos? Esto eliminará todos los libros que no están en la biblioteca y sus datos.</string>
-    <string name="clean_images_folder_confirmation">¿Estás seguro de que quieres limpiar la carpeta de imágenes? Esto eliminará las imágenes de los libros que no están en la biblioteca.</string>
-    <string name="clean_chapter_cache_confirmation">¿Estás seguro de que quieres limpiar el caché de capítulos? Esto eliminará los cuerpos de capítulos y traducciones almacenados en caché.</string>
-    <string name="cleaning_chapter_cache">Limpiando caché de capítulos…</string>
-    <string name="chapter_cache_cleaned">Caché de capítulos limpiada</string>
-    <string name="chapter_cache_clean_failed">Error al limpiar la caché de capítulos</string>
+    <string name="clean_images_folder_confirmation">Esto eliminará la caché temporal de imágenes y los archivos de libros que no están en la biblioteca. Las portadas de los libros de la biblioteca no se verán afectadas.</string>
+    <string name="clean_novel_cache">Limpiar textos sin conexión</string>
+    <string name="clean_novel_cache_confirmation">¿Estás seguro de que quieres limpiar los textos sin conexión? Esto eliminará los textos de capítulos y traducciones guardados. Se volverán a descargar al leer.</string>
+    <string name="cleaning_novel_cache">Limpiando textos sin conexión…</string>
+    <string name="novel_cache_cleaned">Textos sin conexión limpiados</string>
+    <string name="novel_cache_clean_failed">Error al limpiar los textos sin conexión</string>
+    <string name="clean_manga_cache">Limpiar manga sin conexión</string>
+    <string name="clean_manga_cache_confirmation">¿Estás seguro de que quieres limpiar el manga sin conexión? Esto eliminará los capítulos descargados. Para leer sin conexión, tendrás que descargarlos de nuevo.</string>
+    <string name="cleaning_manga_cache">Limpiando manga sin conexión…</string>
+    <string name="manga_cache_cleaned">Manga sin conexión limpiado</string>
+    <string name="manga_cache_clean_failed">Error al limpiar el manga sin conexión</string>
     <string name="all_sources">Todas las fuentes</string>
     <string name="reset_filters">Restablecer</string>
 
@@ -649,7 +654,6 @@
     <string name="available">Disponible</string>
 
     <string name="book_fix">Reparar libro</string>
-
 
     <!-- History -->
     <string name="title_history">Historial</string>

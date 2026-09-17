@@ -106,7 +106,7 @@
 
     <string name="search_by_title">Поиск по названию</string>
 
-    <string name="clean_images_folder">Очистить папку изображений</string>
+    <string name="clean_images_folder">Очистить кэш изображений</string>
 
     <string name="preserve_only_images_from_library_books">Сохранить только изображения из книг библиотеки</string>
 
@@ -224,13 +224,13 @@
 
     <string name="database_clean_failed">Не удалось очистить базу данных</string>
 
-    <string name="cleaning_images_folder">Очистка папки изображений...</string>
+    <string name="cleaning_images_folder">Очистка кэша изображений...</string>
 
-    <string name="images_folder_cleaned">Папка изображений очищена. Удалено папок: %d</string>
+    <string name="images_folder_cleaned">Кэш изображений очищен. Удалено папок: %d</string>
 
-    <string name="images_folder_already_clean">Папка изображений уже чистая</string>
+    <string name="images_folder_already_clean">Кэш изображений уже чист</string>
 
-    <string name="images_folder_clean_failed">Не удалось очистить папку изображений</string>
+    <string name="images_folder_clean_failed">Не удалось очистить кэш изображений</string>
 
     <string name="close_selection_bar">Закрыть панель выбора</string>
 
@@ -908,18 +908,18 @@
     <string name="auto_backup_never">Никогда</string>
 
     <string name="clean_database_confirmation">Вы уверены, что хотите очистить базу данных? Это удалит все книги не из библиотеки и их данные.</string>
-    <string name="clean_images_folder_confirmation">Вы уверены, что хотите очистить папку изображений? Это удалит изображения книг не из библиотеки.</string>
+    <string name="clean_images_folder_confirmation">Это удалит временный кэш картинок и файлы книг, которых нет в библиотеке. Обложки книг из библиотеки не пострадают.</string>
 
-    <string name="clean_novel_cache">Очистить кеш новелл</string>
-    <string name="clean_novel_cache_confirmation">Вы уверены, что хотите очистить кеш новелл? Это удалит кешированные тексты глав и переводы.</string>
-    <string name="cleaning_novel_cache">Очистка кеша новелл…</string>
-    <string name="novel_cache_cleaned">Кеш новелл очищен</string>
-    <string name="novel_cache_clean_failed">Не удалось очистить кеш новелл</string>
-    <string name="clean_manga_cache">Очистить кеш манги</string>
-    <string name="clean_manga_cache_confirmation">Вы уверены, что хотите очистить кеш манги? Это удалит скачанные изображения страниц и кеш URL-ов.</string>
-    <string name="cleaning_manga_cache">Очистка кеша манги…</string>
-    <string name="manga_cache_cleaned">Кеш манги очищен</string>
-    <string name="manga_cache_clean_failed">Не удалось очистить кеш манги</string>
+    <string name="clean_novel_cache">Очистить оффлайн-тексты</string>
+    <string name="clean_novel_cache_confirmation">Это удалит сохранённые тексты глав и переводы. Они будут перекачаны при чтении.</string>
+    <string name="cleaning_novel_cache">Очистка оффлайн-текстов…</string>
+    <string name="novel_cache_cleaned">Оффлайн-тексты очищены</string>
+    <string name="novel_cache_clean_failed">Не удалось очистить оффлайн-тексты</string>
+    <string name="clean_manga_cache">Очистить оффлайн-мангу</string>
+    <string name="clean_manga_cache_confirmation">Это удалит скачанные главы манги. Для оффлайн-чтения их нужно будет скачать заново.</string>
+    <string name="cleaning_manga_cache">Очистка оффлайн-манги…</string>
+    <string name="manga_cache_cleaned">Оффлайн-манга очищена</string>
+    <string name="manga_cache_clean_failed">Не удалось очистить оффлайн-мангу</string>
 
     <string name="reset_filters">Сбросить</string>
 

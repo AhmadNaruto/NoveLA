@@ -52,7 +52,7 @@
     <string name="updating_library_notice">Ina-update ang aklatan</string>
     <string name="chapter_downloaded">Na-download ang kabanata</string>
     <string name="search_by_title">Maghanap ayon sa pamagat</string>
-    <string name="clean_images_folder">Linisin ang folder ng mga larawan</string>
+    <string name="clean_images_folder">Linisin ang cache ng mga larawan</string>
     <string name="preserve_only_images_from_library_books">Panatilihin lamang ang mga larawan mula sa mga aklat sa aklatan</string>
     <string name="add_delay">Magdagdag ng antala</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">Nililinis ang database...</string>
     <string name="database_cleaned_successfully">Matagumpay na nalinis ang database</string>
     <string name="database_clean_failed">Nabigo ang paglilinis ng database</string>
-    <string name="cleaning_images_folder">Nililinis ang folder ng mga larawan...</string>
-    <string name="images_folder_cleaned">Nalinis ang folder ng mga larawan. %d folder ang tinanggal</string>
-    <string name="images_folder_already_clean">Malinis na ang folder ng mga larawan</string>
-    <string name="images_folder_clean_failed">Nabigo ang paglilinis ng folder ng mga larawan</string>
+    <string name="cleaning_images_folder">Nililinis ang cache ng mga larawan...</string>
+    <string name="images_folder_cleaned">Nalinis ang cache ng mga larawan. %d folder ang tinanggal</string>
+    <string name="images_folder_already_clean">Malinis na ang cache ng mga larawan</string>
+    <string name="images_folder_clean_failed">Nabigo ang paglilinis ng cache ng mga larawan</string>
     <string name="close_selection_bar">Isara ang selection bar</string>
     <string name="open_last_read_chapter">Buksan ang huling binasang kabanata</string>
     <string name="updating_book_info">Ina-update ang impormasyon ng aklat</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Sinubukan ngunit nabigo ang pag-bypass sa Cloudflare firewall</string>
     <string name="features_reader_full_screen">Full screen</string>
     <string name="single_tap_to_open_settings">Isang tap upang buksan ang menu</string>
-    <string name="source_name_local">Lokal</string>
+    <string name="source_name_local">Lokal na EPUB/FB2</string>
+    <string name="source_name_local_manga">Lokal na CBZ</string>
 
     <string name="delete_novel">Tanggalin ang nobela</string>
     <string name="delete_book_translations">Tanggalin ang lahat ng pagsasalin ng nobelang ito</string>
@@ -448,7 +449,6 @@
     <string name="llm_preset_name">Pangalan ng preset</string>
     <string name="llm_preset_default">Default</string>
 
-
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">OpenAI-compatible na API</string>
     <string name="provider_openai_description">OpenAI, OpenRouter, Mistral, DeepSeek, Ollama, atbp.</string>
@@ -521,13 +521,18 @@
     <string name="auto_backup_interval_updated">Na-update ang interval ng backup</string>
     <string name="auto_backup_last_time">Huling backup</string>
     <string name="auto_backup_never">Hindi kailanman</string>
-    <string name="clean_chapter_cache">I-clear ang cache ng kabanata</string>
     <string name="clean_database_confirmation">Sigurado ka bang gusto mong linisin ang database? Aalisin nito ang lahat ng aklat na wala sa library at ang kanilang datos.</string>
-    <string name="clean_images_folder_confirmation">Sigurado ka bang gusto mong linisin ang folder ng mga larawan? Aalisin nito ang mga larawan ng mga aklat na wala sa library.</string>
-    <string name="clean_chapter_cache_confirmation">Sigurado ka bang gusto mong i-clear ang cache ng kabanata? Aalisin nito ang mga naka-cache na nilalaman ng kabanata at mga pagsasalin.</string>
-    <string name="cleaning_chapter_cache">Ni-clear ang cache ng kabanata…</string>
-    <string name="chapter_cache_cleaned">Na-clear ang cache ng kabanata</string>
-    <string name="chapter_cache_clean_failed">Nabigo ang pag-clear ng cache ng kabanata</string>
+    <string name="clean_images_folder_confirmation">Aalisin nito ang pansamantalang cache ng mga larawan at mga file ng mga aklat na wala sa library. Ang mga cover ng mga aklat sa library ay hindi mapipinsala.</string>
+    <string name="clean_novel_cache">I-clear ang offline na teksto</string>
+    <string name="clean_novel_cache_confirmation">Sigurado ka bang gusto mong i-clear ang offline na teksto? Aalisin nito ang mga naka-save na teksto ng kabanata at mga pagsasalin. Muling ida-download ang mga ito kapag nagbabasa.</string>
+    <string name="cleaning_novel_cache">Nililinis ang offline na teksto…</string>
+    <string name="novel_cache_cleaned">Na-clear ang offline na teksto</string>
+    <string name="novel_cache_clean_failed">Nabigo ang pag-clear ng offline na teksto</string>
+    <string name="clean_manga_cache">I-clear ang offline na manga</string>
+    <string name="clean_manga_cache_confirmation">Sigurado ka bang gusto mong i-clear ang offline na manga? Aalisin nito ang mga na-download na kabanata. Para sa offline na pagbasa, kailangan mong i-download muli ang mga ito.</string>
+    <string name="cleaning_manga_cache">Nililinis ang offline na manga…</string>
+    <string name="manga_cache_cleaned">Na-clear ang offline na manga</string>
+    <string name="manga_cache_clean_failed">Nabigo ang pag-clear ng offline na manga</string>
     <string name="all_sources">Lahat ng pinagmulan</string>
     <string name="reset_filters">I-reset</string>
 
@@ -649,7 +654,6 @@
     <string name="available">Available</string>
 
     <string name="book_fix">Ayusin ang libro</string>
-
 
     <!-- History -->
     <string name="title_history">Kasaysayan</string>

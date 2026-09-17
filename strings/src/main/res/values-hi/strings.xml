@@ -52,7 +52,7 @@
     <string name="updating_library_notice">लाइब्रेरी अपडेट हो रही है</string>
     <string name="chapter_downloaded">अध्याय डाउनलोड किया गया</string>
     <string name="search_by_title">शीर्षक से खोजें</string>
-    <string name="clean_images_folder">छवियाँ फ़ोल्डर साफ़ करें</string>
+    <string name="clean_images_folder">छवियाँ कैश साफ़ करें</string>
     <string name="preserve_only_images_from_library_books">केवल लाइब्रेरी पुस्तकों से छवियाँ रखें</string>
     <string name="add_delay">विलंब जोड़ें</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">डेटाबेस साफ़ हो रहा है...</string>
     <string name="database_cleaned_successfully">डेटाबेस सफलतापूर्वक साफ़ हुआ</string>
     <string name="database_clean_failed">डेटाबेस साफ़ करने में विफल</string>
-    <string name="cleaning_images_folder">छवियाँ फ़ोल्डर साफ़ हो रहा है...</string>
-    <string name="images_folder_cleaned">छवियाँ फ़ोल्डर साफ़ हुआ। %d फ़ोल्डर हटाए गए</string>
-    <string name="images_folder_already_clean">छवियाँ फ़ोल्डर पहले से साफ़ है</string>
-    <string name="images_folder_clean_failed">छवियाँ फ़ोल्डर साफ़ करने में विफल</string>
+    <string name="cleaning_images_folder">छवियाँ कैश साफ़ हो रहा है...</string>
+    <string name="images_folder_cleaned">छवियाँ कैश साफ़ हुआ। %d फ़ोल्डर हटाए गए</string>
+    <string name="images_folder_already_clean">छवियाँ कैश पहले से साफ़ है</string>
+    <string name="images_folder_clean_failed">छवियाँ कैश साफ़ करने में विफल</string>
     <string name="close_selection_bar">चयन पट्टी बंद करें</string>
     <string name="open_last_read_chapter">अंतिम पढ़ा गया अध्याय खोलें</string>
     <string name="updating_book_info">पुस्तक जानकारी अपडेट हो रही है</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Cloudflare फ़ायरवॉल को बाइपास करने का प्रयास विफल</string>
     <string name="features_reader_full_screen">पूर्ण स्क्रीन</string>
     <string name="single_tap_to_open_settings">मेनू खोलने के लिए एक टैप</string>
-    <string name="source_name_local">स्थानीय</string>
+    <string name="source_name_local">स्थानीय EPUB/FB2</string>
+    <string name="source_name_local_manga">स्थानीय CBZ</string>
 
     <string name="delete_novel">उपन्यास हटाएं</string>
     <string name="delete_book_translations">इस उपन्यास के सभी अनुवाद हटाएं</string>
@@ -448,7 +449,6 @@
     <string name="llm_preset_name">प्रीसेट नाम</string>
     <string name="llm_preset_default">डिफ़ॉल्ट</string>
 
-
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">OpenAI-संगत API</string>
     <string name="provider_openai_description">OpenAI, OpenRouter, Mistral, DeepSeek, Ollama, आदि।</string>
@@ -521,13 +521,18 @@
     <string name="auto_backup_interval_updated">बैकअप अंतराल अपडेट किया गया</string>
     <string name="auto_backup_last_time">अंतिम बैकअप</string>
     <string name="auto_backup_never">कभी नहीं</string>
-    <string name="clean_chapter_cache">अध्याय कैश साफ़ करें</string>
     <string name="clean_database_confirmation">क्या आप वाकई डेटाबेस साफ़ करना चाहते हैं? यह लाइब्रेरी में नहीं वाली सभी पुस्तकों और उनके डेटा को हटा देगा।</string>
-    <string name="clean_images_folder_confirmation">क्या आप वाकई इमेज फ़ोल्डर साफ़ करना चाहते हैं? यह लाइब्रेरी में नहीं वाली पुस्तकों की छवियों को हटा देगा।</string>
-    <string name="clean_chapter_cache_confirmation">क्या आप वाकई अध्याय कैश साफ़ करना चाहते हैं? यह कैश की गई अध्याय सामग्री और अनुवादों को हटा देगा।</string>
-    <string name="cleaning_chapter_cache">अध्याय कैश साफ़ हो रहा है…</string>
-    <string name="chapter_cache_cleaned">अध्याय कैश साफ़ हुआ</string>
-    <string name="chapter_cache_clean_failed">अध्याय कैश साफ़ करने में विफल</string>
+    <string name="clean_images_folder_confirmation">क्या आप वाकई छवियाँ कैश साफ़ करना चाहते हैं? यह अस्थायी कैश की गई तस्वीरों और लाइब्रेरी में नहीं वाली पुस्तकों की फ़ाइलों को हटा देगा। लाइब्रेरी की पुस्तकों की आवरण तस्वीरें सुरक्षित रहेंगी।</string>
+    <string name="clean_novel_cache">ओफ़लाइन टेक्स्ट साफ़ करें</string>
+    <string name="clean_novel_cache_confirmation">क्या आप वाकई ओफ़लाइन टेक्स्ट साफ़ करना चाहते हैं? यह सहेजे गए अध्याय टेक्स्ट और अनुवाद हटा देगा। पढ़ते समय वे फिर से डाउनलोड हो जाएंगे।</string>
+    <string name="cleaning_novel_cache">ओफ़लाइन टेक्स्ट साफ़ हो रहा है…</string>
+    <string name="novel_cache_cleaned">ओफ़लाइन टेक्स्ट साफ़ हो गया</string>
+    <string name="novel_cache_clean_failed">ओफ़लाइन टेक्स्ट साफ़ करने में विफल</string>
+    <string name="clean_manga_cache">ओफ़लाइन मंगा साफ़ करें</string>
+    <string name="clean_manga_cache_confirmation">क्या आप वाकई ओफ़लाइन मंगा साफ़ करना चाहते हैं? यह डाउनलोड की गई मंगा अध्याय हटा देगा। ओफ़लाइन पढ़ने के लिए उन्हें फिर से डाउनलोड करना होगा।</string>
+    <string name="cleaning_manga_cache">ओफ़लाइन मंगा साफ़ हो रहा है…</string>
+    <string name="manga_cache_cleaned">ओफ़लाइन मंगा साफ़ हो गया</string>
+    <string name="manga_cache_clean_failed">ओफ़लाइन मंगा साफ़ करने में विफल</string>
     <string name="all_sources">सभी स्रोत</string>
     <string name="reset_filters">रीसेट</string>
 
@@ -649,7 +654,6 @@
     <string name="available">उपलब्ध</string>
 
     <string name="book_fix">पुस्तक ठीक करें</string>
-
 
     <!-- History -->
     <string name="title_history">इतिहास</string>

@@ -52,7 +52,7 @@
     <string name="updating_library_notice">جاري تحديث المكتبة</string>
     <string name="chapter_downloaded">تم تنزيل الفصل</string>
     <string name="search_by_title">البحث بالعنوان</string>
-    <string name="clean_images_folder">تنظيف مجلد الصور</string>
+    <string name="clean_images_folder">تنظيف ذاكرة التخزين المؤقت للصور</string>
     <string name="preserve_only_images_from_library_books">الاحتفاظ فقط بصور كتب المكتبة</string>
     <string name="add_delay">إضافة تأخير</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">جاري تنظيف قاعدة البيانات...</string>
     <string name="database_cleaned_successfully">تم تنظيف قاعدة البيانات بنجاح</string>
     <string name="database_clean_failed">فشل تنظيف قاعدة البيانات</string>
-    <string name="cleaning_images_folder">جاري تنظيف مجلد الصور...</string>
-    <string name="images_folder_cleaned">تم تنظيف مجلد الصور. تم حذف %d مجلد</string>
-    <string name="images_folder_already_clean">مجلد الصور نظيف بالفعل</string>
-    <string name="images_folder_clean_failed">فشل تنظيف مجلد الصور</string>
+    <string name="cleaning_images_folder">جاري تنظيف ذاكرة التخزين المؤقت للصور...</string>
+    <string name="images_folder_cleaned">تم تنظيف ذاكرة التخزين المؤقت للصور. تم حذف %d مجلد</string>
+    <string name="images_folder_already_clean">ذاكرة التخزين المؤقت للصور نظيفة بالفعل</string>
+    <string name="images_folder_clean_failed">فشل تنظيف ذاكرة التخزين المؤقت للصور</string>
     <string name="close_selection_bar">إغلاق شريط التحديد</string>
     <string name="open_last_read_chapter">فتح آخر فصل مقروء</string>
     <string name="updating_book_info">جاري تحديث معلومات الكتاب</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">تمت المحاولة ولكن فشل تجاوز جدار حماية Cloudflare</string>
     <string name="features_reader_full_screen">ملء الشاشة</string>
     <string name="single_tap_to_open_settings">ضغطة واحدة لفتح القائمة</string>
-    <string name="source_name_local">محلي</string>
+    <string name="source_name_local">محلي EPUB/FB2</string>
+    <string name="source_name_local_manga">محلي CBZ</string>
 
     <string name="delete_novel">حذف الرواية</string>
     <string name="delete_book_translations">حذف جميع ترجمات هذه الرواية</string>
@@ -448,7 +449,6 @@
     <string name="llm_preset_name">اسم الإعداد المسبق</string>
     <string name="llm_preset_default">افتراضي</string>
 
-
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">OpenAI-compatible API</string>
     <string name="provider_openai_description">OpenAI, OpenRouter, Mistral, DeepSeek, Ollama, إلخ.</string>
@@ -521,13 +521,18 @@
     <string name="auto_backup_interval_updated">تم تحديث فترة النسخ الاحتياطي</string>
     <string name="auto_backup_last_time">آخر نسخ احتياطي</string>
     <string name="auto_backup_never">أبداً</string>
-    <string name="clean_chapter_cache">مسح ذاكرة التخزين المؤقت للفصول</string>
     <string name="clean_database_confirmation">هل أنت متأكد أنك تريد تنظيف قاعدة البيانات؟ سيؤدي هذا إلى إزالة جميع الكتب غير الموجودة في المكتبة وبياناتها.</string>
-    <string name="clean_images_folder_confirmation">هل أنت متأكد أنك تريد تنظيف مجلد الصور؟ سيؤدي هذا إلى إزالة صور الكتب غير الموجودة في المكتبة.</string>
-    <string name="clean_chapter_cache_confirmation">هل أنت متأكد أنك تريد مسح ذاكرة التخزين المؤقت للفصول؟ سيؤدي هذا إلى إزالة نصوص الفصول والترجمات المخزنة مؤقتًا.</string>
-    <string name="cleaning_chapter_cache">جاري مسح ذاكرة التخزين المؤقت للفصول…</string>
-    <string name="chapter_cache_cleaned">تم مسح ذاكرة التخزين المؤقت للفصول</string>
-    <string name="chapter_cache_clean_failed">فشل مسح ذاكرة التخزين المؤقت للفصول</string>
+    <string name="clean_images_folder_confirmation">هل أنت متأكد أنك تريد تنظيف ذاكرة التخزين المؤقت للصور؟ سيؤدي هذا إلى حذف ذاكرة التخزين المؤقت المؤقتة للصور وملفات الكتب غير الموجودة في المكتبة. غلاف الكتب في المكتبة لن تتأثر.</string>
+    <string name="clean_novel_cache">مسح النصوص المحفوظة</string>
+    <string name="clean_novel_cache_confirmation">هل أنت متأكد أنك تريد مسح النصوص المحفوظة؟ سيؤدي هذا إلى إزالة نصوص الفصول والترجمات المخزنة مؤقتًا. سيتم إعادة تحميلها عند القراءة.</string>
+    <string name="cleaning_novel_cache">جاري مسح النصوص المحفوظة…</string>
+    <string name="novel_cache_cleaned">تم مسح النصوص المحفوظة</string>
+    <string name="novel_cache_clean_failed">فشل مسح النصوص المحفوظة</string>
+    <string name="clean_manga_cache">مسح المانجا المحفوظة</string>
+    <string name="clean_manga_cache_confirmation">هل أنت متأكد أنك تريد مسح المانجا المحفوظة؟ سيؤدي هذا إلى إزالة الفصول المحملة. سيتم إعادة تحميلها للقراءة بدون إنترنت.</string>
+    <string name="cleaning_manga_cache">جاري مسح المانجا المحفوظة…</string>
+    <string name="manga_cache_cleaned">تم مسح المانجا المحفوظة</string>
+    <string name="manga_cache_clean_failed">فشل مسح المانجا المحفوظة</string>
     <string name="all_sources">جميع المصادر</string>
     <string name="reset_filters">إعادة تعيين</string>
 
@@ -649,7 +654,6 @@
     <string name="available">متاح</string>
 
     <string name="book_fix">إصلاح الكتاب</string>
-
 
     <!-- History -->
     <string name="title_history">السجل</string>

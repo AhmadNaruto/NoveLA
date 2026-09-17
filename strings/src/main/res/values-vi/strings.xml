@@ -52,7 +52,7 @@
     <string name="updating_library_notice">Đang cập nhật thư viện</string>
     <string name="chapter_downloaded">Đã tải chương</string>
     <string name="search_by_title">Tìm theo tựa đề</string>
-    <string name="clean_images_folder">Dọn dẹp thư mục hình ảnh</string>
+    <string name="clean_images_folder">Dọn dẹp bộ nhớ đệm hình ảnh</string>
     <string name="preserve_only_images_from_library_books">Chỉ giữ hình ảnh từ sách trong thư viện</string>
     <string name="add_delay">Thêm độ trễ</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">Đang dọn dẹp cơ sở dữ liệu...</string>
     <string name="database_cleaned_successfully">Đã dọn dẹp cơ sở dữ liệu thành công</string>
     <string name="database_clean_failed">Dọn dẹp cơ sở dữ liệu thất bại</string>
-    <string name="cleaning_images_folder">Đang dọn dẹp thư mục hình ảnh...</string>
-    <string name="images_folder_cleaned">Đã dọn dẹp thư mục hình ảnh. Đã xóa %d thư mục</string>
-    <string name="images_folder_already_clean">Thư mục hình ảnh đã sạch</string>
-    <string name="images_folder_clean_failed">Dọn dẹp thư mục hình ảnh thất bại</string>
+    <string name="cleaning_images_folder">Đang dọn dẹp bộ nhớ đệm hình ảnh…</string>
+    <string name="images_folder_cleaned">Đã dọn dẹp bộ nhớ đệm hình ảnh. Đã xóa %d thư mục</string>
+    <string name="images_folder_already_clean">Bộ nhớ đệm hình ảnh đã sạch</string>
+    <string name="images_folder_clean_failed">Dọn dẹp bộ nhớ đệm hình ảnh thất bại</string>
     <string name="close_selection_bar">Đóng thanh chọn</string>
     <string name="open_last_read_chapter">Mở chương đã đọc gần nhất</string>
     <string name="updating_book_info">Đang cập nhật thông tin sách</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Đã thử nhưng không thể vượt tường lửa Cloudflare</string>
     <string name="features_reader_full_screen">Toàn màn hình</string>
     <string name="single_tap_to_open_settings">Chạm một lần để mở menu</string>
-    <string name="source_name_local">Cục bộ</string>
+    <string name="source_name_local">Cục bộ EPUB/FB2</string>
+    <string name="source_name_local_manga">Cục bộ CBZ</string>
 
     <string name="delete_novel">Xóa tiểu thuyết</string>
     <string name="delete_book_translations">Xóa tất cả bản dịch của tiểu thuyết này</string>
@@ -448,7 +449,6 @@
     <string name="llm_preset_name">Tên cài đặt trước</string>
     <string name="llm_preset_default">Mặc định</string>
 
-
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">API tương thích OpenAI</string>
     <string name="provider_openai_description">OpenAI, OpenRouter, Mistral, DeepSeek, Ollama, v.v.</string>
@@ -521,13 +521,18 @@
     <string name="auto_backup_interval_updated">Đã cập nhật khoảng thời gian sao lưu</string>
     <string name="auto_backup_last_time">Sao lưu lần cuối</string>
     <string name="auto_backup_never">Không bao giờ</string>
-    <string name="clean_chapter_cache">Xóa bộ nhớ đệm chương</string>
     <string name="clean_database_confirmation">Bạn có chắc chắn muốn dọn dẹp cơ sở dữ liệu? Thao tác này sẽ xóa tất cả sách không có trong thư viện và dữ liệu của chúng.</string>
-    <string name="clean_images_folder_confirmation">Bạn có chắc chắn muốn dọn dẹp thư mục hình ảnh? Thao tác này sẽ xóa hình ảnh của những sách không có trong thư viện.</string>
-    <string name="clean_chapter_cache_confirmation">Bạn có chắc chắn muốn xóa bộ nhớ đệm chương? Thao tác này sẽ xóa nội dung chương và bản dịch đã được lưu trong bộ nhớ đệm.</string>
-    <string name="cleaning_chapter_cache">Đang xóa bộ nhớ đệm chương…</string>
-    <string name="chapter_cache_cleaned">Đã xóa bộ nhớ đệm chương</string>
-    <string name="chapter_cache_clean_failed">Xóa bộ nhớ đệm chương thất bại</string>
+    <string name="clean_images_folder_confirmation">Thao tác này sẽ xóa bộ nhớ đệm tạm thời và sách không có trong thư viện. Bìa sách trong thư viện sẽ không bị ảnh hưởng.</string>
+    <string name="clean_novel_cache">Xóa văn bản offline</string>
+    <string name="clean_novel_cache_confirmation">Thao tác này sẽ xóa nội dung chương và bản dịch đã lưu. Chúng sẽ được tải lại khi đọc.</string>
+    <string name="cleaning_novel_cache">Đang xóa văn bản offline…</string>
+    <string name="novel_cache_cleaned">Đã xóa văn bản offline</string>
+    <string name="novel_cache_clean_failed">Xóa văn bản offline thất bại</string>
+    <string name="clean_manga_cache">Xóa manga offline</string>
+    <string name="clean_manga_cache_confirmation">Thao tác này sẽ xóa các chương manga đã tải. Để đọc offline, bạn cần tải lại chúng.</string>
+    <string name="cleaning_manga_cache">Đang xóa manga offline…</string>
+    <string name="manga_cache_cleaned">Đã xóa manga offline</string>
+    <string name="manga_cache_clean_failed">Xóa manga offline thất bại</string>
     <string name="all_sources">Tất cả nguồn</string>
     <string name="reset_filters">Đặt lại</string>
 
@@ -649,7 +654,6 @@
     <string name="available">Khả dụng</string>
 
     <string name="book_fix">Sửa sách</string>
-
 
     <!-- History -->
     <string name="title_history">Lịch sử</string>

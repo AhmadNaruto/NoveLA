@@ -52,7 +52,7 @@
     <string name="updating_library_notice">กำลังอัปเดตห้องสมุด</string>
     <string name="chapter_downloaded">ดาวน์โหลดบทแล้ว</string>
     <string name="search_by_title">ค้นหาตามชื่อ</string>
-    <string name="clean_images_folder">ล้างโฟลเดอร์รูปภาพ</string>
+    <string name="clean_images_folder">ล้างแคชรูปภาพ</string>
     <string name="preserve_only_images_from_library_books">เก็บเฉพาะรูปภาพจากหนังสือในห้องสมุด</string>
     <string name="add_delay">เพิ่มหน่วงเวลา</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">กำลังล้างฐานข้อมูล...</string>
     <string name="database_cleaned_successfully">ล้างฐานข้อมูลสำเร็จ</string>
     <string name="database_clean_failed">ล้างฐานข้อมูลล้มเหลว</string>
-    <string name="cleaning_images_folder">กำลังล้างโฟลเดอร์รูปภาพ...</string>
-    <string name="images_folder_cleaned">ล้างโฟลเดอร์รูปภาพแล้ว ลบ %d โฟลเดอร์</string>
-    <string name="images_folder_already_clean">โฟลเดอร์รูปภาพสะอาดอยู่แล้ว</string>
-    <string name="images_folder_clean_failed">ล้างโฟลเดอร์รูปภาพล้มเหลว</string>
+    <string name="cleaning_images_folder">กำลังล้างแคชรูปภาพ…</string>
+    <string name="images_folder_cleaned">ล้างแคชรูปภาพแล้ว ลบ %d โฟลเดอร์</string>
+    <string name="images_folder_already_clean">แคชรูปภาพสะอาดอยู่แล้ว</string>
+    <string name="images_folder_clean_failed">ล้างแคชรูปภาพล้มเหลว</string>
     <string name="close_selection_bar">ปิดแถบเลือก</string>
     <string name="open_last_read_chapter">เปิดบทที่อ่านล่าสุด</string>
     <string name="updating_book_info">กำลังอัปเดตข้อมูลหนังสือ</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">พยายามแต่ไม่สามารถบายพาสไฟร์วอลล์ Cloudflare</string>
     <string name="features_reader_full_screen">เต็มหน้าจอ</string>
     <string name="single_tap_to_open_settings">แตะครั้งเดียวเพื่อเปิดเมนู</string>
-    <string name="source_name_local">ในเครื่อง</string>
+    <string name="source_name_local">ในเครื่อง EPUB/FB2</string>
+    <string name="source_name_local_manga">ในเครื่อง CBZ</string>
 
     <string name="delete_novel">ลบนิยาย</string>
     <string name="delete_book_translations">ลบทั้งหมดการแปลของนิยายเรื่องนี้</string>
@@ -448,7 +449,6 @@
     <string name="llm_preset_name">ชื่อค่าเริ่มต้น</string>
     <string name="llm_preset_default">ค่าเริ่มต้น</string>
 
-
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">API ที่เข้ากันได้กับ OpenAI</string>
     <string name="provider_openai_description">OpenAI, OpenRouter, Mistral, DeepSeek, Ollama, ฯลฯ</string>
@@ -521,13 +521,18 @@
     <string name="auto_backup_interval_updated">อัปเดตช่วงเวลาสำรองแล้ว</string>
     <string name="auto_backup_last_time">สำรองล่าสุด</string>
     <string name="auto_backup_never">ไม่เคย</string>
-    <string name="clean_chapter_cache">ล้างแคชบท</string>
     <string name="clean_database_confirmation">คุณแน่ใจหรือไม่ว่าต้องการล้างฐานข้อมูล? การดำเนินการนี้จะลบหนังสือที่ไม่อยู่ในคลังและข้อมูลทั้งหมด</string>
-    <string name="clean_images_folder_confirmation">คุณแน่ใจหรือไม่ว่าต้องการล้างโฟลเดอร์รูปภาพ? การดำเนินการนี้จะลบรูปภาพของหนังสือที่ไม่อยู่ในคลัง</string>
-    <string name="clean_chapter_cache_confirmation">คุณแน่ใจหรือไม่ว่าต้องการล้างแคชบท? การดำเนินการนี้จะลบเนื้อหาบทและคำแปลที่ถูกแคชไว้</string>
-    <string name="cleaning_chapter_cache">กำลังล้างแคชบท…</string>
-    <string name="chapter_cache_cleaned">ล้างแคชบทแล้ว</string>
-    <string name="chapter_cache_clean_failed">ล้างแคชบทล้มเหลว</string>
+    <string name="clean_images_folder_confirmation">จะลบแคชรูปภาพชั่วคราวและหนังสือนอกคลัง หนังสือในคลังจะไม่ได้รับผลกระทบ</string>
+    <string name="clean_novel_cache">ล้างข้อความออฟไลน์</string>
+    <string name="clean_novel_cache_confirmation">จะลบข้อความบทและคำแปลที่บันทึกไว้ จะดาวน์โหลดใหม่เมื่ออ่าน</string>
+    <string name="cleaning_novel_cache">กำลังล้างข้อความออฟไลน์…</string>
+    <string name="novel_cache_cleaned">ล้างข้อความออฟไลน์แล้ว</string>
+    <string name="novel_cache_clean_failed">ล้างข้อความออฟไลน์ล้มเหลว</string>
+    <string name="clean_manga_cache">ล้างมังงะออฟไลน์</string>
+    <string name="clean_manga_cache_confirmation">จะลบบทมังงะที่ดาวน์โหลดไว้ ต้องดาวน์โหลดใหม่เพื่ออ่านออฟไลน์</string>
+    <string name="cleaning_manga_cache">กำลังล้างมังงะออฟไลน์…</string>
+    <string name="manga_cache_cleaned">ล้างมังงะออฟไลน์แล้ว</string>
+    <string name="manga_cache_clean_failed">ล้างมังงะออฟไลน์ล้มเหลว</string>
     <string name="all_sources">แหล่งที่มาทั้งหมด</string>
     <string name="reset_filters">รีเซ็ต</string>
 
@@ -649,7 +654,6 @@
     <string name="available">พร้อมใช้งาน</string>
 
     <string name="book_fix">ซ่อมหนังสือ</string>
-
 
     <!-- History -->
     <string name="title_history">ประวัติ</string>

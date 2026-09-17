@@ -52,7 +52,7 @@
     <string name="updating_library_notice">正在更新书库</string>
     <string name="chapter_downloaded">章节已下载</string>
     <string name="search_by_title">按标题搜索</string>
-    <string name="clean_images_folder">清理图片文件夹</string>
+    <string name="clean_images_folder">清除图片缓存</string>
     <string name="preserve_only_images_from_library_books">仅保留书库书籍的图片</string>
     <string name="add_delay">添加延迟</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">正在清理数据库…</string>
     <string name="database_cleaned_successfully">数据库清理成功</string>
     <string name="database_clean_failed">数据库清理失败</string>
-    <string name="cleaning_images_folder">正在清理图片文件夹…</string>
-    <string name="images_folder_cleaned">图片文件夹已清理，删除了 %d 个文件夹</string>
-    <string name="images_folder_already_clean">图片文件夹已经干净</string>
-    <string name="images_folder_clean_failed">图片文件夹清理失败</string>
+    <string name="cleaning_images_folder">正在清除图片缓存…</string>
+    <string name="images_folder_cleaned">图片缓存已清除，删除了 %d 个文件夹</string>
+    <string name="images_folder_already_clean">图片缓存已经是干净的</string>
+    <string name="images_folder_clean_failed">图片缓存清除失败</string>
     <string name="close_selection_bar">关闭选择栏</string>
     <string name="open_last_read_chapter">打开上次阅读的章节</string>
     <string name="updating_book_info">正在更新书籍信息</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">尝试绕过 Cloudflare 防火墙但失败</string>
     <string name="features_reader_full_screen">全屏</string>
     <string name="single_tap_to_open_settings">单击打开菜单</string>
-    <string name="source_name_local">本地</string>
+    <string name="source_name_local">本地 EPUB/FB2</string>
+    <string name="source_name_local_manga">本地 CBZ</string>
 
     <string name="delete_novel">删除小说</string>
     <string name="delete_book_translations">删除此小说的所有翻译</string>
@@ -448,7 +449,6 @@
     <string name="llm_preset_name">预设名称</string>
     <string name="llm_preset_default">默认</string>
 
-
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">OpenAI 兼容 API</string>
     <string name="provider_openai_description">OpenAI、OpenRouter、Mistral、DeepSeek、Ollama 等</string>
@@ -521,13 +521,18 @@
     <string name="auto_backup_interval_updated">备份间隔已更新</string>
     <string name="auto_backup_last_time">上次备份</string>
     <string name="auto_backup_never">从未</string>
-    <string name="clean_chapter_cache">清除章节缓存</string>
     <string name="clean_database_confirmation">您确定要清理数据库吗？这将删除所有不在图书馆的书籍及其数据。</string>
-    <string name="clean_images_folder_confirmation">您确定要清理图片文件夹吗？这将删除不在图书馆的书籍的图片。</string>
-    <string name="clean_chapter_cache_confirmation">您确定要清除章节缓存吗？这将删除缓存的章节内容和翻译。</string>
-    <string name="cleaning_chapter_cache">正在清除章节缓存…</string>
-    <string name="chapter_cache_cleaned">章节缓存已清除</string>
-    <string name="chapter_cache_clean_failed">清除章节缓存失败</string>
+    <string name="clean_images_folder_confirmation">将删除临时图片缓存和不在图书馆的书籍。图书馆书籍的封面不受影响。</string>
+    <string name="clean_novel_cache">清除离线文本</string>
+    <string name="clean_novel_cache_confirmation">将删除已保存的章节内容和翻译。阅读时会重新下载。</string>
+    <string name="cleaning_novel_cache">正在清除离线文本…</string>
+    <string name="novel_cache_cleaned">离线文本已清除</string>
+    <string name="novel_cache_clean_failed">清除离线文本失败</string>
+    <string name="clean_manga_cache">清除离线漫画</string>
+    <string name="clean_manga_cache_confirmation">将删除已下载的漫画章节。离线阅读需要重新下载。</string>
+    <string name="cleaning_manga_cache">正在清除离线漫画…</string>
+    <string name="manga_cache_cleaned">离线漫画已清除</string>
+    <string name="manga_cache_clean_failed">清除离线漫画失败</string>
     <string name="all_sources">所有来源</string>
     <string name="reset_filters">重置</string>
 

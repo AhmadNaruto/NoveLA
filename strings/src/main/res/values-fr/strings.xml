@@ -52,7 +52,7 @@
     <string name="updating_library_notice">Mise à jour de la bibliothèque</string>
     <string name="chapter_downloaded">Chapitre téléchargé</string>
     <string name="search_by_title">Rechercher par titre</string>
-    <string name="clean_images_folder">Nettoyer le dossier d\'images</string>
+    <string name="clean_images_folder">Nettoyer le cache d\'images</string>
     <string name="preserve_only_images_from_library_books">Ne conserver que les images des livres de la bibliothèque</string>
     <string name="add_delay">Ajouter un délai</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">Nettoyage de la base de données...</string>
     <string name="database_cleaned_successfully">Base de données nettoyée avec succès</string>
     <string name="database_clean_failed">Échec du nettoyage de la base de données</string>
-    <string name="cleaning_images_folder">Nettoyage du dossier d\'images...</string>
-    <string name="images_folder_cleaned">Dossier d\'images nettoyé. %d dossiers supprimés</string>
-    <string name="images_folder_already_clean">Le dossier d\'images est déjà propre</string>
-    <string name="images_folder_clean_failed">Échec du nettoyage du dossier d\'images</string>
+    <string name="cleaning_images_folder">Nettoyage du cache d\'images...</string>
+    <string name="images_folder_cleaned">Cache d\'images nettoyé. %d dossiers supprimés</string>
+    <string name="images_folder_already_clean">Le cache d\'images est déjà propre</string>
+    <string name="images_folder_clean_failed">Échec du nettoyage du cache d\'images</string>
     <string name="close_selection_bar">Fermer la barre de sélection</string>
     <string name="open_last_read_chapter">Ouvrir le dernier chapitre lu</string>
     <string name="updating_book_info">Mise à jour des informations du livre</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Tentative échouée de contournement du pare-feu Cloudfare</string>
     <string name="features_reader_full_screen">Plein écran</string>
     <string name="single_tap_to_open_settings">Simple pression pour ouvrir le menu</string>
-    <string name="source_name_local">Local</string>
+    <string name="source_name_local">Local EPUB/FB2</string>
+    <string name="source_name_local_manga">Local CBZ</string>
 
     <string name="delete_novel">Supprimer le roman</string>
     <string name="delete_book_translations">Supprimer toutes les traductions de ce roman</string>
@@ -448,7 +449,6 @@
     <string name="llm_preset_name">Nom du préréglage</string>
     <string name="llm_preset_default">Par défaut</string>
 
-
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">API compatible OpenAI</string>
     <string name="provider_openai_description">OpenAI, OpenRouter, Mistral, DeepSeek, Ollama, etc.</string>
@@ -521,13 +521,18 @@
     <string name="auto_backup_interval_updated">Intervalle de sauvegarde mis à jour</string>
     <string name="auto_backup_last_time">Dernière sauvegarde</string>
     <string name="auto_backup_never">Jamais</string>
-    <string name="clean_chapter_cache">Vider le cache des chapitres</string>
     <string name="clean_database_confirmation">Êtes-vous sûr de vouloir nettoyer la base de données ? Cela supprimera tous les livres hors bibliothèque et leurs données.</string>
-    <string name="clean_images_folder_confirmation">Êtes-vous sûr de vouloir nettoyer le dossier d\'images ? Cela supprimera les images des livres hors bibliothèque.</string>
-    <string name="clean_chapter_cache_confirmation">Êtes-vous sûr de vouloir vider le cache des chapitres ? Cela supprimera les corps de chapitres et les traductions mis en cache.</string>
-    <string name="cleaning_chapter_cache">Vidage du cache des chapitres…</string>
-    <string name="chapter_cache_cleaned">Cache des chapitres vidé</string>
-    <string name="chapter_cache_clean_failed">Échec du vidage du cache des chapitres</string>
+    <string name="clean_images_folder_confirmation">Cela supprimera le cache temporaire d\'images et les fichiers de livres qui ne sont pas dans la bibliothèque. Les couvertures des livres de la bibliothèque ne seront pas affectées.</string>
+    <string name="clean_novel_cache">Vider les textes hors ligne</string>
+    <string name="clean_novel_cache_confirmation">Êtes-vous sûr de vouloir vider les textes hors ligne ? Cela supprimera les textes de chapitres et traductions enregistrés. Ils seront re-téléchargés lors de la lecture.</string>
+    <string name="cleaning_novel_cache">Vidage des textes hors ligne…</string>
+    <string name="novel_cache_cleaned">Textes hors ligne vidés</string>
+    <string name="novel_cache_clean_failed">Échec du vidage des textes hors ligne</string>
+    <string name="clean_manga_cache">Vider le manga hors ligne</string>
+    <string name="clean_manga_cache_confirmation">Êtes-vous sûr de vouloir vider le manga hors ligne ? Cela supprimera les chapitres téléchargés. Pour la lecture hors ligne, il faudra les re-télécharger.</string>
+    <string name="cleaning_manga_cache">Vidage du manga hors ligne…</string>
+    <string name="manga_cache_cleaned">Manga hors ligne vidé</string>
+    <string name="manga_cache_clean_failed">Échec du vidage du manga hors ligne</string>
     <string name="all_sources">Toutes les sources</string>
     <string name="reset_filters">Réinitialiser</string>
 
@@ -649,7 +654,6 @@
     <string name="available">Disponible</string>
 
     <string name="book_fix">Réparer le livre</string>
-
 
     <!-- History -->
     <string name="title_history">Historique</string>

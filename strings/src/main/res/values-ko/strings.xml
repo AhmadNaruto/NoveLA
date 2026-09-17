@@ -52,7 +52,7 @@
     <string name="updating_library_notice">라이브러리 업데이트 중</string>
     <string name="chapter_downloaded">화 다운로드됨</string>
     <string name="search_by_title">제목으로 검색</string>
-    <string name="clean_images_folder">이미지 폴더 정리</string>
+    <string name="clean_images_folder">이미지 캐시 정리</string>
     <string name="preserve_only_images_from_library_books">라이브러리 도서 이미지만 보존</string>
     <string name="add_delay">지연 추가</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">데이터베이스 정리 중...</string>
     <string name="database_cleaned_successfully">데이터베이스 정리 성공</string>
     <string name="database_clean_failed">데이터베이스 정리 실패</string>
-    <string name="cleaning_images_folder">이미지 폴더 정리 중...</string>
-    <string name="images_folder_cleaned">이미지 폴더 정리됨. %d개 폴더 삭제됨</string>
-    <string name="images_folder_already_clean">이미지 폴더가 이미 정리됨</string>
-    <string name="images_folder_clean_failed">이미지 폴더 정리 실패</string>
+    <string name="cleaning_images_folder">이미지 캐시 정리 중...</string>
+    <string name="images_folder_cleaned">이미지 캐시 정리됨. %d개 폴더 삭제됨</string>
+    <string name="images_folder_already_clean">이미지 캐시가 이미 정리됨</string>
+    <string name="images_folder_clean_failed">이미지 캐시 정리 실패</string>
     <string name="close_selection_bar">선택 표시줄 닫기</string>
     <string name="open_last_read_chapter">마지막으로 읽은 화 열기</string>
     <string name="updating_book_info">도서 정보 업데이트 중</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Cloudflare 방화벽 우회 시도 실패</string>
     <string name="features_reader_full_screen">전체 화면</string>
     <string name="single_tap_to_open_settings">한 번 탭하여 메뉴 열기</string>
-    <string name="source_name_local">로컬</string>
+    <string name="source_name_local">로컬 EPUB/FB2</string>
+    <string name="source_name_local_manga">로컬 CBZ</string>
 
     <string name="delete_novel">소설 삭제</string>
     <string name="delete_book_translations">이 소설의 모든 번역 삭제</string>
@@ -448,7 +449,6 @@
     <string name="llm_preset_name">프리셋 이름</string>
     <string name="llm_preset_default">기본</string>
 
-
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">OpenAI 호환 API</string>
     <string name="provider_openai_description">OpenAI, OpenRouter, Mistral, DeepSeek, Ollama 등</string>
@@ -521,13 +521,18 @@
     <string name="auto_backup_interval_updated">백업 간격 업데이트됨</string>
     <string name="auto_backup_last_time">마지막 백업</string>
     <string name="auto_backup_never">없음</string>
-    <string name="clean_chapter_cache">화 캐시 지우기</string>
     <string name="clean_database_confirmation">데이터베이스를 정리하시겠습니까? 라이브러리에 없는 모든 책과 해당 데이터가 제거됩니다.</string>
-    <string name="clean_images_folder_confirmation">이미지 폴더를 정리하시겠습니까? 라이브러리에 없는 책의 이미지가 제거됩니다.</string>
-    <string name="clean_chapter_cache_confirmation">챕터 캐시를 지우시겠습니까? 캐시된 챕터 본문과 번역이 제거됩니다.</string>
-    <string name="cleaning_chapter_cache">화 캐시 지우는 중…</string>
-    <string name="chapter_cache_cleaned">화 캐시 지워짐</string>
-    <string name="chapter_cache_clean_failed">화 캐시 지우기 실패</string>
+    <string name="clean_images_folder_confirmation">이미지 캐시를 정리하시겠습니까? 임시로 캐시된 이미지와 라이브러리에 없는 책의 파일이 제거됩니다. 라이브러리 책의 표지 이미지는 유지됩니다.</string>
+    <string name="clean_novel_cache">오프라인 텍스트 지우기</string>
+    <string name="clean_novel_cache_confirmation">오프라인 텍스트를 지우시겠습니까? 저장된 챕터 본문과 번역이 제거됩니다. 읽을 때 다시 다운로드됩니다.</string>
+    <string name="cleaning_novel_cache">오프라인 텍스트 지우는 중…</string>
+    <string name="novel_cache_cleaned">오프라인 텍스트 지워짐</string>
+    <string name="novel_cache_clean_failed">오프라인 텍스트 지우기 실패</string>
+    <string name="clean_manga_cache">오프라인 만화 지우기</string>
+    <string name="clean_manga_cache_confirmation">오프라인 만화를 지우시겠습니까? 다운로드된 만화 챕터가 제거됩니다. 오프라인으로 읽으려면 다시 다운로드해야 합니다.</string>
+    <string name="cleaning_manga_cache">오프라인 만화 지우는 중…</string>
+    <string name="manga_cache_cleaned">오프라인 만화 지워짐</string>
+    <string name="manga_cache_clean_failed">오프라인 만화 지우기 실패</string>
     <string name="all_sources">모든 소스</string>
     <string name="reset_filters">초기화</string>
 
