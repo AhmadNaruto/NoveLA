@@ -215,6 +215,17 @@ class ReaderActivity : BaseActivity() {
                 currentTextColor = { appPreferences.READER_TEXT_COLOR.value },
                 currentSpokenWordRange = { viewModel.readerSpeaker.state.spokenWordRange.value },
                 currentManualHighlight = { viewModel.state.settings.manualHighlight.highlightedItem.value },
+                currentTextJustify = { appPreferences.READER_TEXT_JUSTIFY.value },
+                currentTextHyphenation = { appPreferences.READER_TEXT_HYPHENATION.value },
+                currentTextBold = { appPreferences.READER_TEXT_BOLD.value },
+                currentTextItalic = { appPreferences.READER_TEXT_ITALIC.value },
+                currentTextUnderline = { appPreferences.READER_TEXT_UNDERLINE.value },
+                currentTextShadow = { appPreferences.READER_TEXT_SHADOW.value },
+                currentTextSmooth = { appPreferences.READER_TEXT_SMOOTH.value },
+                currentMarginLeft = { appPreferences.READER_MARGIN_LEFT.value },
+                currentMarginRight = { appPreferences.READER_MARGIN_RIGHT.value },
+                currentMarginTop = { appPreferences.READER_MARGIN_TOP.value },
+                currentMarginBottom = { appPreferences.READER_MARGIN_BOTTOM.value },
             )
         }
     }
@@ -457,6 +468,33 @@ class ReaderActivity : BaseActivity() {
             .asLiveData()
             .observe(this) { viewAdapter.listView.notifyDataSetChanged() }
 
+        // Notify typography style toggles changed for list view
+        snapshotFlow {
+            listOf(
+                viewModel.state.settings.style.textJustify.value,
+                viewModel.state.settings.style.textHyphenation.value,
+                viewModel.state.settings.style.textBold.value,
+                viewModel.state.settings.style.textItalic.value,
+                viewModel.state.settings.style.textUnderline.value,
+                viewModel.state.settings.style.textShadow.value,
+                viewModel.state.settings.style.textSmooth.value,
+            )
+        }.drop(1)
+            .asLiveData()
+            .observe(this) { viewAdapter.listView.notifyDataSetChanged() }
+
+        // Notify margins changed for list view
+        snapshotFlow {
+            listOf(
+                viewModel.state.settings.style.marginLeft.value,
+                viewModel.state.settings.style.marginRight.value,
+                viewModel.state.settings.style.marginTop.value,
+                viewModel.state.settings.style.marginBottom.value,
+            )
+        }.drop(1)
+            .asLiveData()
+            .observe(this) { viewAdapter.listView.notifyDataSetChanged() }
+
         // Periodic refresh for TTS word highlighting while playing
         lifecycleScope.launch {
             var lastRange: IntRange? = null
@@ -534,6 +572,35 @@ class ReaderActivity : BaseActivity() {
                     onSingleTapToOpenSettingsChange = { appPreferences.READER_SINGLE_TAP_TO_OPEN_SETTINGS.value = it },
                     onTtsHighlightEnabledChange = { appPreferences.TTS_HIGHLIGHT_ENABLED.value = it },
                     onTtsHighlightColorChange = { appPreferences.TTS_HIGHLIGHT_COLOR.value = it },
+                    onTextJustifyChange = { appPreferences.READER_TEXT_JUSTIFY.value = it },
+                    onTextHyphenationChange = { appPreferences.READER_TEXT_HYPHENATION.value = it },
+                    onTextBoldChange = { appPreferences.READER_TEXT_BOLD.value = it },
+                    onTextItalicChange = { appPreferences.READER_TEXT_ITALIC.value = it },
+                    onTextUnderlineChange = { appPreferences.READER_TEXT_UNDERLINE.value = it },
+                    onTextShadowChange = { appPreferences.READER_TEXT_SHADOW.value = it },
+                    onTextSmoothChange = { appPreferences.READER_TEXT_SMOOTH.value = it },
+                    onMarginLeftChange = { appPreferences.READER_MARGIN_LEFT.value = it },
+                    onMarginRightChange = { appPreferences.READER_MARGIN_RIGHT.value = it },
+                    onMarginTopChange = { appPreferences.READER_MARGIN_TOP.value = it },
+                    onMarginBottomChange = { appPreferences.READER_MARGIN_BOTTOM.value = it },
+                    onTextDefaultsReset = {
+                        appPreferences.READER_FONT_SIZE.value = 14f
+                        appPreferences.READER_LINE_HEIGHT.value = 1.35f
+                        appPreferences.READER_PARAGRAPH_SPACING.value = 8f
+                        appPreferences.READER_LETTER_SPACING.value = 0f
+                        appPreferences.READER_FONT_FAMILY.value = "serif"
+                        appPreferences.READER_TEXT_JUSTIFY.value = false
+                        appPreferences.READER_TEXT_HYPHENATION.value = false
+                        appPreferences.READER_TEXT_BOLD.value = false
+                        appPreferences.READER_TEXT_ITALIC.value = false
+                        appPreferences.READER_TEXT_UNDERLINE.value = false
+                        appPreferences.READER_TEXT_SHADOW.value = false
+                        appPreferences.READER_TEXT_SMOOTH.value = true
+                        appPreferences.READER_MARGIN_LEFT.value = 16f
+                        appPreferences.READER_MARGIN_RIGHT.value = 16f
+                        appPreferences.READER_MARGIN_TOP.value = 0f
+                        appPreferences.READER_MARGIN_BOTTOM.value = 0f
+                    },
                     onManualHighlightEnabledChange = {
                         appPreferences.MANUAL_HIGHLIGHT_ENABLED.value = it
                         if (!it) viewModel.stopManualHighlight()

@@ -431,6 +431,7 @@
     <!-- Filters -->
     <string name="filters">Filtros</string>
     <string name="filters_reset">Restablecer</string>
+    <string name="typography_reset">Restablecer tipografía</string>
     <string name="filters_apply">Aplicar</string>
     <string name="filters_search_hint">Buscar…</string>
 

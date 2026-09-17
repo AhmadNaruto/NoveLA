@@ -431,6 +431,7 @@
     <!-- Filters -->
     <string name="filters">Filter</string>
     <string name="filters_reset">Atur ulang</string>
+    <string name="typography_reset">Atur ulang tipografi</string>
     <string name="filters_apply">Terapkan</string>
     <string name="filters_search_hint">Cari…</string>
 

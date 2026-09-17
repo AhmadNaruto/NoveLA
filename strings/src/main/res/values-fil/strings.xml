@@ -431,6 +431,7 @@
     <!-- Filters -->
     <string name="filters">Mga Filter</string>
     <string name="filters_reset">I-reset</string>
+    <string name="typography_reset">I-reset ang tipograpiya</string>
     <string name="filters_apply">Ilapat</string>
     <string name="filters_search_hint">Maghanap…</string>
 

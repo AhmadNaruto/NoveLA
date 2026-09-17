@@ -431,6 +431,7 @@
     <!-- Filters -->
     <string name="filters">Penapis</string>
     <string name="filters_reset">Set semula</string>
+    <string name="typography_reset">Set semula tipografi</string>
     <string name="filters_apply">Guna</string>
     <string name="filters_search_hint">Cari…</string>
 

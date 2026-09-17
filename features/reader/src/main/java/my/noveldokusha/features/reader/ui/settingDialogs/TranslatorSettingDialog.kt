@@ -45,6 +45,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,10 +73,12 @@ internal fun TranslatorSettingDialog(
     ElevatedCard(
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp)
     ) {
+        val scrollState = rememberScrollState()
+        val isScrolling by remember { derivedStateOf { scrollState.isScrollInProgress } }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -86,7 +89,7 @@ internal fun TranslatorSettingDialog(
             ) {
                 Switch(
                     checked = state.enable.value,
-                    enabled = true,
+                    enabled = !isScrolling,
                     onCheckedChange = { state.onEnable(it) },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = colorAccent(),
@@ -182,7 +185,7 @@ internal fun TranslatorSettingDialog(
             }
 
             // ── Provider selection ──────────────────────────────────────
-            ProviderSelector(state = state)
+            ProviderSelector(state = state, isScrolling = isScrolling)
 
             HorizontalDivider()
 
@@ -193,10 +196,10 @@ internal fun TranslatorSettingDialog(
             )
 
             // ── Display options ────────────────────────────────────────
-            DisplayOptionsSection(state = state)
+            DisplayOptionsSection(state = state, isScrolling = isScrolling)
 
             // ── Novel prompt (LLM only) ────────────────────────────────
-            NovelPromptSection(state = state)
+            NovelPromptSection(state = state, isScrolling = isScrolling)
         }
     }
 }
@@ -263,7 +266,7 @@ private fun getProviderLabel(key: String): String = when (key) {
 }
 
 @Composable
-private fun ProviderSelector(state: LiveTranslationSettingData) {
+private fun ProviderSelector(state: LiveTranslationSettingData, isScrolling: Boolean = false) {
     val providers = listOf(
         Triple("GOOGLE_PA",   R.string.provider_google_pa,   R.string.provider_google_pa_description),
         Triple("GOOGLE_FREE", R.string.provider_google_free, R.string.provider_google_free_description),
@@ -278,7 +281,7 @@ private fun ProviderSelector(state: LiveTranslationSettingData) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(role = Role.RadioButton) { state.onProviderChange(key) }
+                    .clickable(role = Role.RadioButton, enabled = !isScrolling) { state.onProviderChange(key) }
                     .padding(vertical = 6.dp),
             ) {
                 RadioButton(
@@ -379,7 +382,7 @@ private fun LanguageSelector(
 }
 
 @Composable
-private fun DisplayOptionsSection(state: LiveTranslationSettingData) {
+private fun DisplayOptionsSection(state: LiveTranslationSettingData, isScrolling: Boolean = false) {
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
     val enabled = state.parallelEnabled.value
@@ -396,7 +399,7 @@ private fun DisplayOptionsSection(state: LiveTranslationSettingData) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
+            .clickable(enabled = !isScrolling) {
                 when {
                     !enabled -> {
                         state.onParallelEnabledChange(true)
@@ -442,7 +445,7 @@ private fun DisplayOptionsSection(state: LiveTranslationSettingData) {
 }
 
 @Composable
-private fun NovelPromptSection(state: LiveTranslationSettingData) {
+private fun NovelPromptSection(state: LiveTranslationSettingData, isScrolling: Boolean = false) {
     val isLlmProvider = state.currentProvider.value in listOf("GEMINI", "OPENAI")
 
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -455,7 +458,7 @@ private fun NovelPromptSection(state: LiveTranslationSettingData) {
         modifier = Modifier
             .fillMaxWidth()
             .then(
-                if (isLlmProvider) Modifier.clickable { showEditor = !showEditor }
+                if (isLlmProvider) Modifier.clickable(enabled = !isScrolling) { showEditor = !showEditor }
                 else Modifier
             )
             .padding(vertical = 4.dp),
@@ -546,6 +549,7 @@ private fun NovelPromptSection(state: LiveTranslationSettingData) {
                     Switch(
                         checked = state.novelPromptAppendMode.value,
                         onCheckedChange = { state.onNovelPromptAppendModeChange(it) },
+                        enabled = !isScrolling,
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = colorAccent(),
                             checkedTrackColor = colorAccent().copy(alpha = 0.3f),

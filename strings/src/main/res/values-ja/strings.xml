@@ -431,6 +431,7 @@
     <!-- Filters -->
     <string name="filters">フィルター</string>
     <string name="filters_reset">リセット</string>
+    <string name="typography_reset">タイポグラフィをリセット</string>
     <string name="filters_apply">適用</string>
     <string name="filters_search_hint">検索…</string>
 

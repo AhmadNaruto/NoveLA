@@ -308,6 +308,23 @@
     <string name="reader_background_preset_cocoa">Cocoa</string>
     <string name="reader_background_preset_arctic">Arctic</string>
     <string name="reader_background_preset_midnight">Midnight</string>
+
+    <!-- Reader typography settings -->
+    <string name="reader_text_justify">Justify text</string>
+    <string name="reader_text_hyphenation">Hyphenation</string>
+    <string name="reader_text_bold">Bold</string>
+    <string name="reader_text_italic">Italic</string>
+    <string name="reader_text_underline">Underline</string>
+    <string name="reader_text_shadow">Shadow</string>
+    <string name="reader_text_smooth">Smooth</string>
+    <string name="reader_margins">Margins</string>
+    <string name="reader_margin_left">Left</string>
+    <string name="reader_margin_right">Right</string>
+    <string name="reader_margin_top">Top</string>
+    <string name="reader_margin_bottom">Bottom</string>
+    <string name="reader_text_alignment">Text alignment</string>
+    <string name="reader_font_style">Font style</string>
+
     <string name="translation_services">Translation Services</string>
     <string name="gemini_api_key">Gemini API Key</string>
     <string name="active_google_gemini_api">Active: Google Gemini API</string>
@@ -491,6 +508,7 @@
     <!-- Filters -->
     <string name="filters">Filters</string>
     <string name="filters_reset">Reset</string>
+    <string name="typography_reset">Reset Typography</string>
     <string name="filters_apply">Apply</string>
     <string name="filters_search_hint">Search…</string>
 

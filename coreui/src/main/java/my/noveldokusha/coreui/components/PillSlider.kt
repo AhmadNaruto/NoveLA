@@ -53,6 +53,7 @@ fun PillSlider(
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: () -> Unit = {},
     valueText: String,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -98,23 +99,27 @@ fun PillSlider(
                         true
                     }
                 }
-                .pointerInput(valueRange) {
+                .pointerInput(valueRange, enabled) {
+                    if (!enabled) return@pointerInput
                     awaitEachGesture {
-                        val down = awaitFirstDown()
-                        var dragged = false
-                        drag(down.id) { change ->
-                            change.consume()
-                            dragged = true
-                            val fraction = (change.position.x / size.width).coerceIn(0f, 1f)
-                            localValue = valueRange.start + fraction * (valueRange.endInclusive - valueRange.start)
-                            onValueChange(localValue)
+                        try {
+                            val down = awaitFirstDown()
+                            var dragged = false
+                            drag(down.id) { change ->
+                                change.consume()
+                                dragged = true
+                                val fraction = (change.position.x / size.width).coerceIn(0f, 1f)
+                                localValue = valueRange.start + fraction * (valueRange.endInclusive - valueRange.start)
+                                onValueChange(localValue)
+                            }
+                            if (!dragged) {
+                                val fraction = (down.position.x / size.width).coerceIn(0f, 1f)
+                                localValue = valueRange.start + fraction * (valueRange.endInclusive - valueRange.start)
+                                onValueChange(localValue)
+                            }
+                        } finally {
+                            onValueChangeFinished()
                         }
-                        if (!dragged) {
-                            val fraction = (down.position.x / size.width).coerceIn(0f, 1f)
-                            localValue = valueRange.start + fraction * (valueRange.endInclusive - valueRange.start)
-                            onValueChange(localValue)
-                        }
-                        onValueChangeFinished()
                     }
                 }
         ) {

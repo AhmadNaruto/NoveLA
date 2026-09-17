@@ -431,6 +431,7 @@
     <!-- Filters -->
     <string name="filters">Bộ lọc</string>
     <string name="filters_reset">Đặt lại</string>
+    <string name="typography_reset">Đặt lại typography</string>
     <string name="filters_apply">Áp dụng</string>
     <string name="filters_search_hint">Tìm kiếm…</string>
 

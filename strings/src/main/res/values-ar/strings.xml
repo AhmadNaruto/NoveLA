@@ -431,6 +431,7 @@
     <!-- Filters -->
     <string name="filters">عوامل التصفية</string>
     <string name="filters_reset">إعادة تعيين</string>
+    <string name="typography_reset">إعادة تعيين الطباعة</string>
     <string name="filters_apply">تطبيق</string>
     <string name="filters_search_hint">بحث…</string>
 

@@ -54,6 +54,17 @@ internal data class ReaderScreenState(
             val lineHeight: State<Float>,
             val paragraphSpacing: State<Float>,
             val letterSpacing: State<Float>,
+            val textJustify: State<Boolean>,
+            val textHyphenation: State<Boolean>,
+            val textBold: State<Boolean>,
+            val textItalic: State<Boolean>,
+            val textUnderline: State<Boolean>,
+            val textShadow: State<Boolean>,
+            val textSmooth: State<Boolean>,
+            val marginLeft: State<Float>,
+            val marginRight: State<Float>,
+            val marginTop: State<Float>,
+            val marginBottom: State<Float>,
         )
 
         @Stable

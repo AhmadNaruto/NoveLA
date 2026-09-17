@@ -132,11 +132,13 @@ internal fun VoiceReaderSettingDialog(
         ElevatedCard(
             elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp)
         ) {
+            val scrollState = rememberScrollState()
+            val isScrolling by remember { derivedStateOf { scrollState.isScrollInProgress } }
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
-                    .padding(8.dp)
-                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+                    .verticalScroll(scrollState)
             ) {
                 var localPitch by remember { mutableFloatStateOf(state.voicePitch.value) }
                 var localSpeed by remember { mutableFloatStateOf(state.voiceSpeed.value) }
@@ -149,6 +151,7 @@ internal fun VoiceReaderSettingDialog(
                     valueRange = 0.1f..5f,
                     onValueChange = { localPitch = it },
                     valueText = "%.2f".format(localPitch),
+                    enabled = !isScrolling,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                     onValueChangeFinished = { state.setVoicePitch(localPitch) },
                 )
@@ -158,6 +161,7 @@ internal fun VoiceReaderSettingDialog(
                     valueRange = 0.1f..5f,
                     onValueChange = { localSpeed = it },
                     valueText = "%.2f".format(localSpeed),
+                    enabled = !isScrolling,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                     onValueChangeFinished = { state.setVoiceSpeed(localSpeed) },
                 )
@@ -192,6 +196,7 @@ internal fun VoiceReaderSettingDialog(
                         onClick = { openVoicesDialog = !openVoicesDialog },
                         leadingIcon = { Icon(Icons.Filled.RecordVoiceOver, null, Modifier.size(14.dp)) },
                         modifier = Modifier.heightIn(min = 30.dp),
+                        enabled = !isScrolling,
                         colors = AssistChipDefaults.assistChipColors(
                             leadingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             disabledLeadingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -203,6 +208,7 @@ internal fun VoiceReaderSettingDialog(
                             onClick = { openOriginalVoiceDialog = !openOriginalVoiceDialog },
                             leadingIcon = { Icon(Icons.Filled.RecordVoiceOver, null, Modifier.size(14.dp)) },
                             modifier = Modifier.heightIn(min = 30.dp),
+                            enabled = !isScrolling,
                             colors = AssistChipDefaults.assistChipColors(
                                 leadingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 disabledLeadingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -218,6 +224,7 @@ internal fun VoiceReaderSettingDialog(
                         },
                         leadingIcon = { Icon(Icons.Filled.Bookmarks, null, Modifier.size(14.dp)) },
                         modifier = Modifier.heightIn(min = 30.dp),
+                        enabled = !isScrolling,
                         colors = AssistChipDefaults.assistChipColors(
                             leadingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             disabledLeadingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -269,13 +276,13 @@ internal fun VoiceReaderSettingDialog(
                             FloatingTtsToggleCard(
                                 text = stringResource(R.string.tts_floating),
                                 checked = floatingTtsState.isEnabled.value,
-                                enabled = true,
+                                enabled = !isScrolling,
                                 onToggle = { floatingTtsState.isEnabled.value = !floatingTtsState.isEnabled.value },
                             )
                             FloatingTtsToggleCard(
                                 text = stringResource(R.string.tts_floating_show_outside_app),
                                 checked = floatingTtsState.showOutsideApp.value,
-                                enabled = floatingTtsState.isEnabled.value,
+                                enabled = floatingTtsState.isEnabled.value && !isScrolling,
                                 onToggle = { floatingTtsState.showOutsideApp.value = !floatingTtsState.showOutsideApp.value },
                             )
                         }

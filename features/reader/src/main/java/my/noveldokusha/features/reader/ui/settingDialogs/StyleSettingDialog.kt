@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -39,7 +40,9 @@ import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.FormatColorFill
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Nightlight
+import androidx.compose.material.icons.outlined.FormatAlignJustify
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.SpaceBar
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ElevatedCard
@@ -49,6 +52,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ripple
@@ -85,6 +89,7 @@ import my.noveldokusha.coreui.composableActions.onDoAskForImage
 import my.noveldokusha.coreui.components.PillSlider
 import my.noveldokusha.coreui.theme.AppTheme
 import my.noveldokusha.coreui.theme.DarkMode
+import my.noveldokusha.coreui.theme.colorAccent
 import my.noveldokusha.features.reader.tools.BackgroundImageLoader
 import my.noveldokusha.features.reader.tools.FontsLoader
 import my.noveldokusha.features.reader.ui.ReaderBackgroundPreset
@@ -104,6 +109,18 @@ internal fun StyleSettingDialog(
     onBackgroundChanged: (String) -> Unit,
     onDarkModeChange: (DarkMode) -> Unit,
     onAppThemeChange: (AppTheme) -> Unit,
+    onTextJustifyChange: (Boolean) -> Unit,
+    onTextHyphenationChange: (Boolean) -> Unit,
+    onTextBoldChange: (Boolean) -> Unit,
+    onTextItalicChange: (Boolean) -> Unit,
+    onTextUnderlineChange: (Boolean) -> Unit,
+    onTextShadowChange: (Boolean) -> Unit,
+    onTextSmoothChange: (Boolean) -> Unit,
+    onMarginLeftChange: (Float) -> Unit,
+    onMarginRightChange: (Float) -> Unit,
+    onMarginTopChange: (Float) -> Unit,
+    onMarginBottomChange: (Float) -> Unit,
+    onTextDefaultsReset: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val fontLoader = remember(context) { FontsLoader(context) }
@@ -135,9 +152,19 @@ internal fun StyleSettingDialog(
     ElevatedCard(
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp)
     ) {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        val scrollState = rememberScrollState()
+        val isScrolling by remember { derivedStateOf { scrollState.isScrollInProgress } }
+        Column(modifier = Modifier.padding(vertical = 16.dp).verticalScroll(scrollState)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            TextButton(onClick = onTextDefaultsReset) {
+                Text(stringResource(R.string.typography_reset), color = colorAccent())
+            }
+        }
         // Text size
-        var currentTextSize by remember { mutableFloatStateOf(state.textSize.value) }
+        var currentTextSize by remember(state.textSize.value) { mutableFloatStateOf(state.textSize.value) }
         PillSlider(
             label = stringResource(R.string.text_size),
             value = currentTextSize,
@@ -147,11 +174,12 @@ internal fun StyleSettingDialog(
                 onTextSizeChange(currentTextSize)
             },
             valueText = "%.2f".format(currentTextSize),
+            enabled = !isScrolling,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
         )
 
         // Line height
-        var currentLineHeight by remember { mutableFloatStateOf(state.lineHeight.value) }
+        var currentLineHeight by remember(state.lineHeight.value) { mutableFloatStateOf(state.lineHeight.value) }
         PillSlider(
             label = stringResource(R.string.line_height),
             value = currentLineHeight,
@@ -161,11 +189,12 @@ internal fun StyleSettingDialog(
                 onLineHeightChange(currentLineHeight)
             },
             valueText = "%.2f".format(currentLineHeight),
+            enabled = !isScrolling,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
         )
 
         // Paragraph spacing
-        var currentParagraphSpacing by remember { mutableFloatStateOf(state.paragraphSpacing.value) }
+        var currentParagraphSpacing by remember(state.paragraphSpacing.value) { mutableFloatStateOf(state.paragraphSpacing.value) }
         PillSlider(
             label = stringResource(R.string.paragraph_spacing),
             value = currentParagraphSpacing,
@@ -175,11 +204,82 @@ internal fun StyleSettingDialog(
                 onParagraphSpacingChange(currentParagraphSpacing)
             },
             valueText = "%.0f dp".format(currentParagraphSpacing),
+            enabled = !isScrolling,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+        )
+
+        // Margins
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+        ) {
+            Icon(
+                Icons.Outlined.SpaceBar,
+                null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = stringResource(R.string.reader_margins),
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
+        var currentMarginLeft by remember(state.marginLeft.value) { mutableFloatStateOf(state.marginLeft.value) }
+        PillSlider(
+            label = stringResource(R.string.reader_margin_left),
+            value = currentMarginLeft,
+            valueRange = 0f..100f,
+            onValueChange = {
+                currentMarginLeft = it
+                onMarginLeftChange(currentMarginLeft)
+            },
+            valueText = "%.0f dp".format(currentMarginLeft),
+            enabled = !isScrolling,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+        )
+        var currentMarginRight by remember(state.marginRight.value) { mutableFloatStateOf(state.marginRight.value) }
+        PillSlider(
+            label = stringResource(R.string.reader_margin_right),
+            value = currentMarginRight,
+            valueRange = 0f..100f,
+            onValueChange = {
+                currentMarginRight = it
+                onMarginRightChange(currentMarginRight)
+            },
+            valueText = "%.0f dp".format(currentMarginRight),
+            enabled = !isScrolling,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+        )
+        var currentMarginTop by remember(state.marginTop.value) { mutableFloatStateOf(state.marginTop.value) }
+        PillSlider(
+            label = stringResource(R.string.reader_margin_top),
+            value = currentMarginTop,
+            valueRange = 0f..100f,
+            onValueChange = {
+                currentMarginTop = it
+                onMarginTopChange(currentMarginTop)
+            },
+            valueText = "%.0f dp".format(currentMarginTop),
+            enabled = !isScrolling,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+        )
+        var currentMarginBottom by remember(state.marginBottom.value) { mutableFloatStateOf(state.marginBottom.value) }
+        PillSlider(
+            label = stringResource(R.string.reader_margin_bottom),
+            value = currentMarginBottom,
+            valueRange = 0f..100f,
+            onValueChange = {
+                currentMarginBottom = it
+                onMarginBottomChange(currentMarginBottom)
+            },
+            valueText = "%.0f dp".format(currentMarginBottom),
+            enabled = !isScrolling,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
         )
 
         // Letter spacing
-        var currentLetterSpacing by remember { mutableFloatStateOf(state.letterSpacing.value) }
+        var currentLetterSpacing by remember(state.letterSpacing.value) { mutableFloatStateOf(state.letterSpacing.value) }
         PillSlider(
             label = stringResource(R.string.letter_spacing),
             value = currentLetterSpacing,
@@ -189,6 +289,7 @@ internal fun StyleSettingDialog(
                 onLetterSpacingChange(currentLetterSpacing)
             },
             valueText = "%.2f em".format(currentLetterSpacing),
+            enabled = !isScrolling,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
         )
 
@@ -285,7 +386,7 @@ internal fun StyleSettingDialog(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .heightIn(min = 48.dp)
-                                        .clickable { onTextFontChange(item) }
+                                        .clickable(enabled = !isScrolling) { onTextFontChange(item) }
                                         .padding(horizontal = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
@@ -318,7 +419,7 @@ internal fun StyleSettingDialog(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .heightIn(min = 48.dp)
-                                            .clickable { onTextFontChange(item) }
+                                            .clickable(enabled = !isScrolling) { onTextFontChange(item) }
                                             .padding(horizontal = 12.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
@@ -355,6 +456,110 @@ internal fun StyleSettingDialog(
                         }
                     }
                 }
+            }
+        }
+
+        // Text alignment
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+        ) {
+            Icon(
+                Icons.Outlined.FormatAlignJustify,
+                null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = stringResource(R.string.reader_text_alignment),
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            item {
+                FilterChip(
+                    selected = state.textJustify.value,
+                    onClick = { onTextJustifyChange(!state.textJustify.value) },
+                    label = { Text(stringResource(R.string.reader_text_justify), maxLines = 1) },
+                    enabled = !isScrolling,
+                )
+            }
+            item {
+                FilterChip(
+                    selected = state.textHyphenation.value,
+                    onClick = { onTextHyphenationChange(!state.textHyphenation.value) },
+                    label = { Text(stringResource(R.string.reader_text_hyphenation), maxLines = 1) },
+                    enabled = !isScrolling,
+                )
+            }
+        }
+
+        // Font style
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+        ) {
+            Icon(
+                Icons.Filled.TextFields,
+                null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = stringResource(R.string.reader_font_style),
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            item {
+                FilterChip(
+                    selected = state.textBold.value,
+                    onClick = { onTextBoldChange(!state.textBold.value) },
+                    label = { Text(stringResource(R.string.reader_text_bold), maxLines = 1) },
+                    enabled = !isScrolling,
+                )
+            }
+            item {
+                FilterChip(
+                    selected = state.textItalic.value,
+                    onClick = { onTextItalicChange(!state.textItalic.value) },
+                    label = { Text(stringResource(R.string.reader_text_italic), maxLines = 1) },
+                    enabled = !isScrolling,
+                )
+            }
+            item {
+                FilterChip(
+                    selected = state.textUnderline.value,
+                    onClick = { onTextUnderlineChange(!state.textUnderline.value) },
+                    label = { Text(stringResource(R.string.reader_text_underline), maxLines = 1) },
+                    enabled = !isScrolling,
+                )
+            }
+            item {
+                FilterChip(
+                    selected = state.textShadow.value,
+                    onClick = { onTextShadowChange(!state.textShadow.value) },
+                    label = { Text(stringResource(R.string.reader_text_shadow), maxLines = 1) },
+                    enabled = !isScrolling,
+                )
+            }
+            item {
+                FilterChip(
+                    selected = state.textSmooth.value,
+                    onClick = { onTextSmoothChange(!state.textSmooth.value) },
+                    label = { Text(stringResource(R.string.reader_text_smooth), maxLines = 1) },
+                    enabled = !isScrolling,
+                )
             }
         }
 
@@ -460,6 +665,7 @@ internal fun StyleSettingDialog(
                 onTextColorChanged("%08X".format(argb))
             },
             valueText = "%.0f".format(red),
+            enabled = !isScrolling,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
         )
         PillSlider(
@@ -471,6 +677,7 @@ internal fun StyleSettingDialog(
                 onTextColorChanged("%08X".format(argb))
             },
             valueText = "%.0f".format(green),
+            enabled = !isScrolling,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
         )
         PillSlider(
@@ -482,6 +689,7 @@ internal fun StyleSettingDialog(
                 onTextColorChanged("%08X".format(argb))
             },
             valueText = "%.0f".format(blue),
+            enabled = !isScrolling,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
         )
 
@@ -668,6 +876,7 @@ internal fun StyleSettingDialog(
                     selected = mode == state.currentDarkMode.value,
                     onClick = { onDarkModeChange(mode) },
                     label = { Text(text = stringResource(id = mode.titleRes)) },
+                    enabled = !isScrolling,
                     leadingIcon = {
                         Icon(
                             imageVector = when (mode) {

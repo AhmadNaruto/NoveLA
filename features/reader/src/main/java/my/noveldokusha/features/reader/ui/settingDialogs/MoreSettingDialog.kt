@@ -24,6 +24,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -61,11 +64,13 @@ internal fun MoreSettingDialog(
     ElevatedCard(
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp)
     ) {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        val scrollState = rememberScrollState()
+        val isScrolling by remember { derivedStateOf { scrollState.isScrollInProgress } }
+        Column(modifier = Modifier.padding(vertical = 16.dp).verticalScroll(scrollState)) {
         // Manual highlight
         SlimListItem(
             modifier = Modifier
-                .clickable { onManualHighlightEnabledChange(!manualHighlightEnabled) },
+                .clickable(enabled = !isScrolling) { onManualHighlightEnabledChange(!manualHighlightEnabled) },
             headlineContent = {
                 Text(text = stringResource(id = R.string.manual_highlight))
             },
@@ -80,6 +85,7 @@ internal fun MoreSettingDialog(
                 Switch(
                     checked = manualHighlightEnabled,
                     onCheckedChange = onManualHighlightEnabledChange,
+                    enabled = !isScrolling,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = colorAccent(),
                         checkedTrackColor = colorAccent().copy(alpha = 0.4f),
@@ -90,7 +96,7 @@ internal fun MoreSettingDialog(
         // TTS Highlight
         SlimListItem(
             modifier = Modifier
-                .clickable { onTtsHighlightEnabledChange(!ttsHighlightEnabled) },
+                .clickable(enabled = !isScrolling) { onTtsHighlightEnabledChange(!ttsHighlightEnabled) },
             headlineContent = {
                 Text(text = stringResource(id = R.string.tts_highlight))
             },
@@ -105,6 +111,7 @@ internal fun MoreSettingDialog(
                 Switch(
                     checked = ttsHighlightEnabled,
                     onCheckedChange = onTtsHighlightEnabledChange,
+                    enabled = !isScrolling,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = colorAccent(),
                         checkedTrackColor = colorAccent().copy(alpha = 0.4f),
@@ -134,7 +141,7 @@ internal fun MoreSettingDialog(
                                 if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
                                 else Modifier
                             )
-                            .clickable { onTtsHighlightColorChange(hexColor) }
+                            .clickable(enabled = !isScrolling) { onTtsHighlightColorChange(hexColor) }
                     )
                 }
             }

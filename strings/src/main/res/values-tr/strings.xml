@@ -431,6 +431,7 @@
     <!-- Filters -->
     <string name="filters">Filtreler</string>
     <string name="filters_reset">Sıfırla</string>
+    <string name="typography_reset">Tipografiyi sıfırla</string>
     <string name="filters_apply">Uygula</string>
     <string name="filters_search_hint">Ara…</string>
 

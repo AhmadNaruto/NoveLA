@@ -431,6 +431,7 @@
     <!-- Filters -->
     <string name="filters">फ़िल्टर</string>
     <string name="filters_reset">रीसेट</string>
+    <string name="typography_reset">टाइपोग्राफी रीसेट</string>
     <string name="filters_apply">लागू करें</string>
     <string name="filters_search_hint">खोजें…</string>
 

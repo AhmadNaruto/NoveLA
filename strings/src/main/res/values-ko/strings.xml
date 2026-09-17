@@ -431,6 +431,7 @@
     <!-- Filters -->
     <string name="filters">필터</string>
     <string name="filters_reset">초기화</string>
+    <string name="typography_reset">타이포그래피 초기화</string>
     <string name="filters_apply">적용</string>
     <string name="filters_search_hint">검색…</string>
 

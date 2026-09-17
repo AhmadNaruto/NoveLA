@@ -724,6 +724,8 @@
 
     <string name="filters_reset">Сбросить</string>
 
+    <string name="typography_reset">Сбросить типографику</string>
+
     <string name="filters_apply">Применить</string>
 
     <string name="filters_search_hint">Поиск…</string>
@@ -839,6 +841,22 @@
     <string name="reader_background_preset_cocoa">Какао</string>
     <string name="reader_background_preset_arctic">Арктика</string>
     <string name="reader_background_preset_midnight">Полночь</string>
+
+    <!-- Reader typography settings -->
+    <string name="reader_text_justify">Выравнивание по ширине</string>
+    <string name="reader_text_hyphenation">Переносы слов</string>
+    <string name="reader_text_bold">Жирный</string>
+    <string name="reader_text_italic">Курсив</string>
+    <string name="reader_text_underline">Подчеркивание</string>
+    <string name="reader_text_shadow">Тень</string>
+    <string name="reader_text_smooth">Сглаживание</string>
+    <string name="reader_margins">Поля</string>
+    <string name="reader_margin_left">Слева</string>
+    <string name="reader_margin_right">Справа</string>
+    <string name="reader_margin_top">Сверху</string>
+    <string name="reader_margin_bottom">Снизу</string>
+    <string name="reader_text_alignment">Выравнивание текста</string>
+    <string name="reader_font_style">Стиль шрифта</string>
 
     <!-- Backup/Restore options -->
 
