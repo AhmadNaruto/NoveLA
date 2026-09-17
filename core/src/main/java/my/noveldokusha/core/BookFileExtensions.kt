@@ -7,4 +7,6 @@ fun String.isFb2File(): Boolean {
 
 fun String.isEpubFile(): Boolean = lowercase().endsWith(".epub")
 
-fun String.isBookFile(): Boolean = isEpubFile() || isFb2File()
+fun String.isCbzFile(): Boolean = lowercase().endsWith(".cbz")
+
+fun String.isBookFile(): Boolean = isEpubFile() || isFb2File() || isCbzFile()

@@ -371,12 +371,19 @@ internal class ChaptersViewModel @Inject constructor(
                     appFileResolver.getLocalIfContentType(rawBookUrl, bookFolderName = bookTitle)
                 )
                 if (appRepository.libraryBooks.get(localUrl) == null) {
-                    importUriContent()
+                    importUriContentSync()
                 }
                 bookUrl = localUrl
             }
 
-            if (state.isLocalSource.value) return@launch
+            if (state.isLocalSource.value) {
+                // ponytail: жанры загружаем здесь, после импорта — иначе race condition
+                val cachedBook = libraryDao.get(bookUrl)
+                if (cachedBook?.genres?.isNotBlank() == true) {
+                    state.genres.value = GenreUtils.parse(cachedBook.genres)
+                }
+                return@launch
+            }
 
             if (!appRepository.bookChapters.hasChapters(bookUrl))
                 updateChaptersList()
@@ -742,6 +749,11 @@ internal class ChaptersViewModel @Inject constructor(
             }
             state.isRefreshing.value = false
         }
+    }
+
+    private suspend fun importUriContentSync() {
+        importUriContent()
+        loadChaptersJob?.join()
     }
 
     private fun updateChaptersList() {

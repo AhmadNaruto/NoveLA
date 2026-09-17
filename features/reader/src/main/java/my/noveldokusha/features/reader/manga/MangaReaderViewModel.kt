@@ -211,7 +211,8 @@ internal class MangaReaderViewModel @Inject constructor(
                 )
 
                 // Промоушен открытой главы в постоянное хранилище (download on open).
-                if (appPreferences.MANGA_READER_DOWNLOAD_ON_OPEN.value) {
+                // cbz:// страницы уже локальны в архиве — скачивание не нужно.
+                if (appPreferences.MANGA_READER_DOWNLOAD_ON_OPEN.value && pages.none { it.startsWith("cbz://") }) {
                     viewModelScope.launch {
                         runCatching { downloadedPageChaptersStore.downloadChapter(url, pages) }
                     }

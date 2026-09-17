@@ -16,6 +16,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import my.noveldokusha.core.addLocalUriPrefix
 import my.noveldokusha.core.utils.refererFor
 import my.noveldokusha.data.DownloadedPageChaptersStore
 import my.noveldokusha.features.reader.manga.MangaPage
@@ -25,6 +26,8 @@ import okhttp3.Request
 import timber.log.Timber
 import java.io.File
 import java.security.MessageDigest
+import java.util.LinkedHashMap
+import java.util.zip.ZipFile
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -50,17 +53,21 @@ class PageImageLoader @Inject constructor(
     companion object {
         private const val MAX_CACHE_BYTES = 256L * 1024 * 1024 // 256 MB
         private const val CACHE_DIR = "page_images"
-
-        /**
-         * Потолок ОДНОВРЕМЕННЫХ сетевых загрузок префетча манги. Старый
-         * батчинг (chunked + awaitAll) ждал завершения ВСЕГО чанка, прежде
-         * чем начать следующий: один медленный файл в чанке простаивал
-         * остальные каналы. Семафор запускает все страницы сразу и
-         * ограничивает только число одновременных загрузок — докачалась
-         * одна, стартует следующая. 6 — компромисс: CDN не перегружается,
-         * но лента успевает прогреться на несколько страниц вперёд.
-         */
+        private const val CBZ_SCHEME = "cbz://"
         private const val PREFETCH_PARALLELISM = 6
+        private const val MAX_OPEN_ZIP_FILES = 3
+    }
+
+    private class CachedZip(val zip: ZipFile)
+
+    private val zipCache = object : LinkedHashMap<String, CachedZip>(8, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CachedZip>): Boolean {
+            if (size > MAX_OPEN_ZIP_FILES) {
+                runCatching { eldest.value.zip.close() }
+                return true
+            }
+            return false
+        }
     }
 
     private val cacheDir: File = File(context.cacheDir, CACHE_DIR)
@@ -123,15 +130,15 @@ class PageImageLoader @Inject constructor(
     suspend fun getDimensions(chapterUrl: String, url: String): Pair<Int, Int>? {
         dimsCache[url]?.let { return it }
         val dims = withContext(Dispatchers.IO) {
-            // Скачанная глава: файл лежит в постоянном хранилище, а не в
-            // LRU-кэше page_images — размеры берём из него же (тот же
-            // источник, что в load()), иначе высота ряда для оффлайн-чтения
-            // неизвестна до первого сетевого load().
-            downloadedPageChaptersStore.getLocalPageFile(chapterUrl, url)
-                ?.let { decodeBounds(it) }
-                ?: fileFor(url)
-                    .takeIf { it.exists() && it.length() > 0 }
+            if (url.startsWith(CBZ_SCHEME)) {
+                decodeBoundsFromCbz(url)
+            } else {
+                downloadedPageChaptersStore.getLocalPageFile(chapterUrl, url)
                     ?.let { decodeBounds(it) }
+                    ?: fileFor(url)
+                        .takeIf { it.exists() && it.length() > 0 }
+                        ?.let { decodeBounds(it) }
+            }
         }
         if (dims != null) dimsCache[url] = dims
         return dims
@@ -168,6 +175,30 @@ class PageImageLoader @Inject constructor(
      * чтение без сети): файл уже лежит в скачанном виде.
      */
     suspend fun load(chapterUrl: String, url: String): PageImage? {
+        if (url.startsWith(CBZ_SCHEME)) {
+            val file = fileFor(url)
+            if (file.exists() && file.length() > 0) {
+                decodeBounds(file)?.let { return PageImage(file, it.first, it.second) }
+                file.delete()
+            }
+            inflight[url]?.let { return it.await() }
+            val deferred = CompletableDeferred<PageImage?>()
+            inflight[url] = deferred
+            try {
+                val result = loadCbzPage(url)
+                if (result != null) dimsCache[url] = result.width to result.height
+                deferred.complete(result)
+                return result
+            } catch (e: CancellationException) {
+                deferred.complete(null)
+                throw e
+            } catch (e: Exception) {
+                deferred.complete(null)
+                return null
+            } finally {
+                inflight.remove(url)
+            }
+        }
         downloadedPageChaptersStore.getLocalPageFile(chapterUrl, url)?.let { file ->
             val dims = withContext(Dispatchers.IO) { decodeBounds(file) }
             if (dims != null) {
@@ -199,6 +230,124 @@ class PageImageLoader @Inject constructor(
         } finally {
             inflight.remove(url)
         }
+    }
+
+    /**
+     * cbz://manga.cbz#001.jpg → читает entry из ZIP напрямую, кэширует в page_images.
+     */
+    private suspend fun loadCbzPage(url: String): PageImage? = withContext(Dispatchers.IO) {
+        val (zipPath, entryName) = parseCbzUrl(url) ?: return@withContext null
+        val file = fileFor(url)
+
+        try {
+            val zip = openArchive(zipPath) ?: return@withContext null
+            val entry = zip.getEntry(entryName) ?: return@withContext null
+            zip.getInputStream(entry).use { stream ->
+                cacheDir.mkdirs()
+                val tmp = File(cacheDir, file.name + ".tmp")
+                tmp.outputStream().use { out ->
+                    stream.copyTo(out, bufferSize = 8192)
+                }
+                if (!tmp.renameTo(file)) {
+                    tmp.delete()
+                    file.outputStream().use { out ->
+                        zip.getInputStream(entry).use { it.copyTo(out) }
+                    }
+                }
+            }
+            evictAndTrim()
+            decodeBounds(file)?.let { PageImage(file, it.first, it.second) }
+        } catch (e: Exception) {
+            Timber.e(e, "PageImageLoader: CBZ load failed for $url")
+            file.delete()
+            null
+        }
+    }
+
+    private fun decodeBoundsFromCbz(url: String): Pair<Int, Int>? {
+        val (zipPath, entryName) = parseCbzUrl(url) ?: return null
+        return try {
+            val zip = openArchive(zipPath) ?: return null
+            val entry = zip.getEntry(entryName) ?: return null
+            zip.getInputStream(entry).use { stream ->
+                val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeStream(stream, null, opts)
+                if (opts.outWidth > 0 && opts.outHeight > 0) opts.outWidth to opts.outHeight else null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun openArchive(uriString: String): ZipFile? {
+        var evicted: CachedZip? = null
+        return synchronized(zipCache) {
+            zipCache[uriString]?.let { return it.zip }
+            val uri = try { android.net.Uri.parse(uriString) } catch (e: Exception) { return null }
+
+            val zip = resolveFilePath(uriString)?.let { path ->
+                runCatching { ZipFile(File(path)) }.getOrNull()
+            } ?: run {
+                val tmpFile = File(cacheDir, "cbz_${sha256(uriString)}.zip")
+                if (!tmpFile.exists()) {
+                    cacheDir.mkdirs()
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        tmpFile.outputStream().use { output -> input.copyTo(output) }
+                    } ?: return null
+                }
+                runCatching { ZipFile(tmpFile) }.getOrNull()
+            } ?: return null
+
+            val prev = zipCache.put(uriString, CachedZip(zip))
+            if (prev != null) {
+                runCatching { prev.zip.close() }
+            }
+            if (zipCache.size > MAX_OPEN_ZIP_FILES) {
+                val eldest = zipCache.entries.first()
+                zipCache.remove(eldest.key)
+                evicted = eldest.value
+            }
+            evicted?.let { runCatching { it.zip.close() } }
+            zip
+        }
+    }
+
+    private fun resolveFilePath(uriString: String): String? {
+        val uri = try { android.net.Uri.parse(uriString) } catch (e: Exception) { return null }
+        
+        if (uri.scheme == "file") return uri.path
+        if (uri.scheme != "content") return null
+        
+        val authority = uri.authority ?: return null
+        
+        // ExternalStorageProvider: content://com.android.externalstorage.documents/document/primary%3Apath
+        if (authority == "com.android.externalstorage.documents") {
+            val docId = uri.lastPathSegment ?: return null
+            if (docId.startsWith("primary:")) {
+                return "/storage/emulated/0/" + docId.removePrefix("primary:").replace("%20", " ")
+            }
+        }
+        
+        // DownloadsProvider: content://com.android.providers.downloads.documents/document/id
+        if (authority == "com.android.providers.downloads.documents") {
+            val projection = arrayOf(android.provider.MediaStore.Downloads.DATA)
+            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) return cursor.getString(0)
+            }
+        }
+        
+        return null
+    }
+
+    private fun parseCbzUrl(url: String): Pair<String, String>? {
+        if (!url.startsWith(CBZ_SCHEME)) return null
+        val withoutScheme = url.removePrefix(CBZ_SCHEME)
+        val hashIndex = withoutScheme.indexOf('#')
+        if (hashIndex == -1) return null
+        val zipPath = withoutScheme.substring(0, hashIndex)
+        val entryName = withoutScheme.substring(hashIndex + 1)
+        if (zipPath.isEmpty() || entryName.isEmpty()) return null
+        return zipPath to entryName
     }
 
     private suspend fun doLoad(url: String): PageImage? = withContext(Dispatchers.IO) {

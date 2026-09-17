@@ -402,7 +402,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Tried but failed to bypass cloudfare firewall</string>
     <string name="features_reader_full_screen">Full screen</string>
     <string name="single_tap_to_open_settings">Single tap to open menu</string>
-    <string name="source_name_local">Local</string>
+    <string name="source_name_local">Local EPUB/FB2</string>
+    <string name="source_name_local_manga">Local CBZ</string>
 
     <string name="delete_novel">Delete novel</string>
     <string name="delete_book_translations">Delete all translations for this book</string>

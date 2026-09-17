@@ -504,7 +504,8 @@
 
     <string name="language_russian">Русский</string>
 
-    <string name="source_name_local">Локальный</string>
+    <string name="source_name_local">Локальные EPUB/FB2</string>
+    <string name="source_name_local_manga">Локальные CBZ</string>
 
     <string name="import_all_books">Импортировать все книги</string>
 

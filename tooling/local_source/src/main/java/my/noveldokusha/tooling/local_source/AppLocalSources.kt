@@ -70,9 +70,10 @@ import javax.inject.Singleton
 @Singleton
 class AppLocalSources @Inject constructor(
     @ApplicationContext private val appContext: Context,
-    private val localSourcesDirectories: LocalSourcesDirectories,
+    localSourcesDirectoriesFactory: LocalSourcesDirectories.Factory,
     private val appFileResolver: AppFileResolver,
 ) : LocalSource {
+    private val localSourcesDirectories = localSourcesDirectoriesFactory.create("novel")
     override val id = "local_source"
     override val nameStrId = R.string.source_name_local
     override val baseUrl = "local://"

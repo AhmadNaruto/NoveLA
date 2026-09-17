@@ -19,10 +19,12 @@ import my.noveldokusha.coreui.states.text
 import my.noveldokusha.coreui.states.title
 import my.noveldokusha.data.LocalBookImporterRepository
 import my.noveldokusha.core.asSequence
+import my.noveldokusha.core.isCbzFile
 import my.noveldokusha.core.isFb2File
 import my.noveldokusha.core.tryAsResponse
 import my.noveldokusha.core.utils.Extra_Uri
 import my.noveldokusha.core.utils.isServiceRunning
+import my.noveldokusha.epub_tooling.cbzMetadataParser
 import my.noveldokusha.epub_tooling.epubParser
 import my.noveldokusha.epub_tooling.fb2Parser
 import timber.log.Timber
@@ -116,8 +118,12 @@ class BookImportService : Service() {
                     null
                 ).asSequence().map { it.getString(0) }.last()
 
-                val bookData = inputStream.use { stream ->
-                    if (fileName.isFb2File()) fb2Parser(stream) else epubParser(stream)
+                val bookData = if (fileName.isCbzFile()) {
+                    inputStream.use { stream -> cbzMetadataParser(stream) }
+                } else {
+                    inputStream.use { stream ->
+                        if (fileName.isFb2File()) fb2Parser(stream) else epubParser(stream)
+                    }
                 }
 
                 notificationsCenter.modifyNotification(
@@ -126,11 +132,21 @@ class BookImportService : Service() {
                 ) {
                     text = getString(R.string.importing_epub)
                 }
-                localBookImporterRepository.epubImporter(
-                    storageFolderName = fileName,
-                    epub = bookData,
-                    addToLibrary = true
-                )
+                if (bookData is my.noveldokusha.epub_tooling.CbzMetadata) {
+                    localBookImporterRepository.cbzImporter(
+                        storageFolderName = fileName,
+                        metadata = bookData,
+                        addToLibrary = true,
+                        contentUri = intentData.uri.toString()
+                    )
+                } else {
+                    @Suppress("UNCHECKED_CAST")
+                    localBookImporterRepository.epubImporter(
+                        storageFolderName = fileName,
+                        epub = bookData as my.noveldokusha.epub_tooling.EpubBook,
+                        addToLibrary = true
+                    )
+                }
             }.onError {
                 Timber.e(it.exception)
                 notificationsCenter.showNotification(

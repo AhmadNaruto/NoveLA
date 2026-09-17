@@ -20,7 +20,7 @@ import javax.inject.Singleton
 @Singleton
 class Scraper @Inject constructor(
     networkClient: NetworkClient,
-    localSource: LocalSource,
+    localSources: Set<@JvmSuppressWildcards LocalSource>,
     @Suppress("UNUSED_PARAMETER") appPreferences: AppPreferences,
     // Интерфейс вместо LuaSourceLoader — нет зависимости от Android Context
     private val luaSourceProvider: LuaSourceProvider
@@ -30,7 +30,7 @@ class Scraper @Inject constructor(
         BakaUpdates(networkClient)
     )
 
-    val localSourcesList = setOf(localSource)
+    val localSourcesList: Set<SourceInterface> = localSources
 
     private val scraperScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
