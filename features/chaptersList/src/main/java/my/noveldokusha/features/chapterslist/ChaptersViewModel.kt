@@ -138,7 +138,7 @@ internal class ChaptersViewModel @Inject constructor(
         sourceCatalogNameStrRes = mutableStateOf(source?.nameStrId),
         settingChapterSort = appPreferences.CHAPTERS_SORT_ASCENDING.state(viewModelScope),
         isLocalSource = mutableStateOf(bookUrl.isLocalUri),
-        isRefreshable = mutableStateOf(rawBookUrl.isContentUri || !bookUrl.isLocalUri),
+        isRefreshable = mutableStateOf(true),
         genres = mutableStateOf(emptyList()),
         rating = mutableStateOf(""),
         status = mutableStateOf(""),
@@ -382,6 +382,8 @@ internal class ChaptersViewModel @Inject constructor(
                 if (cachedBook?.genres?.isNotBlank() == true) {
                     state.genres.value = GenreUtils.parse(cachedBook.genres)
                 }
+                if (!appRepository.bookChapters.hasChapters(bookUrl))
+                    updateChaptersList()
                 return@launch
             }
 
@@ -666,6 +668,8 @@ internal class ChaptersViewModel @Inject constructor(
             viewModelScope.launch { updateRating() }
             viewModelScope.launch { updateStatus() }
             viewModelScope.launch { updateLastUpdateDate() }
+        } else {
+            updateChaptersList()
         }
     }
 

@@ -84,10 +84,51 @@ class AppLocalMangaSource @Inject constructor(
     override val contentType = "manga"
 
     override suspend fun getChapterList(bookUrl: String): Response<List<ChapterResult>> {
-        return Response.Error(
-            "LocalMangaSource doesn't have remote API",
-            UnsupportedOperationException()
-        )
+        return withContext(Dispatchers.IO) {
+            tryConnect {
+                val bookTitle = bookUrl.removePrefix("local://")
+
+                val file = findBookFileInCatalogs(bookTitle)
+                    ?: throw UnsupportedOperationException("Book not found: $bookTitle")
+
+                val docFile = DocumentFile.fromSingleUri(appContext, file)
+                    ?: throw UnsupportedOperationException("Cannot open: $file")
+
+                if (docFile.isDirectory) {
+                    docFile.listFiles()
+                        .filter { it.name?.endsWith(".cbz", true) == true }
+                        .mapIndexed { i, cbz ->
+                            ChapterResult(
+                                title = cbz.name?.substringBeforeLast('.') ?: "Chapter ${i + 1}",
+                                url = appFileResolver.getLocalBookChapterPath(bookTitle, "ch_${cbz.name?.substringBeforeLast('.')}")
+                            )
+                        }
+                } else {
+                    listOf(
+                        ChapterResult(
+                            title = bookTitle,
+                            url = appFileResolver.getLocalBookChapterPath(bookTitle, "chapter")
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    private fun findBookFileInCatalogs(storageFolderName: String): Uri? {
+        return localSourcesDirectories
+            .list
+            .asSequence()
+            .flatMap { dirUri ->
+                DocumentsContract.buildChildDocumentsUriUsingTree(
+                    dirUri, DocumentsContract.getTreeDocumentId(dirUri)
+                ).collectMangaBooks()
+            }
+            .firstOrNull { book ->
+                val fileTitle = book.title.substringBeforeLast('.')
+                fileTitle == storageFolderName || book.title == storageFolderName
+            }
+            ?.url?.toUri()
     }
 
     private val validMIMES = setOf(
