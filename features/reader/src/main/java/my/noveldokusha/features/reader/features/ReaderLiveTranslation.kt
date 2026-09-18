@@ -451,19 +451,6 @@ internal class ReaderLiveTranslation(
 
     private fun onTranslationGlobalModeChange(global: Boolean) {
         Timber.d("onTranslationGlobalModeChange: $global")
-        // Блокируем включение глобального режима, если глобальная пара языков не задана
-        // (source или target пусты) — глобальный режим без пары бессмысленен.
-        if (global) {
-            val globalSource = appPreferences.GLOBAL_TRANSLATION_PREFERRED_SOURCE.value
-            val globalTarget = appPreferences.GLOBAL_TRANSLATION_PREFERRED_TARGET.value
-            if (globalSource.isBlank() || globalTarget.isBlank()) {
-                Timber.w(
-                    "onTranslationGlobalModeChange: blocked — no global language pair (source='%s', target='%s')",
-                    globalSource, globalTarget,
-                )
-                return
-            }
-        }
         try {
             appPreferences.TRANSLATION_GLOBAL_MODE.value = global
             state.translationGlobalMode.value = global

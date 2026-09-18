@@ -19,6 +19,7 @@ import my.noveldokusha.coreui.theme.Theme
 import my.noveldokusha.coreui.AppThemeProvider
 import my.noveldokusha.core.Toasty
 import my.noveldokusha.core.appPreferences.AppPreferences
+import my.noveldokusha.core.appPreferences.TranslationSettingsResolver
 import my.noveldokusha.network.interceptors.CloudflareBypassSignal
 import my.noveldokusha.network.interceptors.PluginUARegistry
 import my.noveldokusha.network.interceptors.resolveUserAgent
@@ -40,8 +41,10 @@ class WebViewActivity : ComponentActivity() {
     @Inject lateinit var themeProvider: AppThemeProvider
     @Inject lateinit var appPreferences: AppPreferences
     @Inject lateinit var translationManager: TranslationManager
+    @Inject lateinit var translationSettingsResolver: TranslationSettingsResolver
 
     private var currentTargetUrl: String = ""
+    private var bookUrl: String = ""
     private var isBypassMode: Boolean = false
     private var oldCfClearance: String = ""
     private var hasAutoClosed: Boolean = false  // ponytail: dedup guard for auto-close paths
@@ -75,7 +78,19 @@ class WebViewActivity : ComponentActivity() {
             var isReady by remember { mutableStateOf(isBypassMode) }
             var currentUrl by remember { mutableStateOf(currentTargetUrl) }
             var isTranslated by remember { mutableStateOf(false) }
-            val translationEnabled = !isBypassMode
+
+            // Резолв target: сначала по bookUrl (если передан), затем по URL WebView.
+            // scraper.getCompatibleSource ищет sourceId по baseUrl плагина.
+            val resolvedTarget = remember(bookUrl, currentTargetUrl) {
+                val fromBook = translationSettingsResolver.translationTargetForBook(bookUrl)
+                if (fromBook.isNotBlank()) fromBook
+                else {
+                    val sourceId = translationSettingsResolver.resolveSourceId(currentTargetUrl)
+                    if (sourceId != null) translationSettingsResolver.translationTargetForBook("", sourceId)
+                    else ""
+                }
+            }
+            val translationEnabled = !isBypassMode && resolvedTarget.isNotBlank()
 
             webView.webViewClient = object : WebViewClient() {
 
@@ -222,11 +237,9 @@ class WebViewActivity : ComponentActivity() {
                             translateBridge.setActive(false)
                             webView.evaluateJavascript("window.__novelaPageTranslator.restore()", null)
                         } else {
-                            // Целевой язык всегда из белого списка GOOGLE_TRANSLATE_LANGUAGES
-                            // (или "en") — резолвер гарантирует отсутствие кавычек/небезопасных
-                            // символов, поэтому интерполяция в JS-литерал в одинарных кавычках безопасна.
+                            // Целевой язык через каскад: per-novel → per-plugin → global → fallback
                             val target = TargetLanguageResolver.resolve(
-                                appPreferences.GLOBAL_TRANSLATION_PREFERRED_TARGET.value,
+                                resolvedTarget,
                                 Locale.getDefault().language
                             )
                             // Микроокно (мс) между setActive(true) и исполнением start() в JS:
@@ -267,6 +280,7 @@ class WebViewActivity : ComponentActivity() {
 
     private fun readIntentExtras(intent: Intent) {
         currentTargetUrl = intent.getStringExtra("url") ?: intent.data?.toString().orEmpty()
+        bookUrl = intent.getStringExtra("bookUrl").orEmpty()
         isBypassMode = intent.getBooleanExtra("isBypassMode", false)
         oldCfClearance = intent.getStringExtra("oldCfClearance") ?: ""
     }

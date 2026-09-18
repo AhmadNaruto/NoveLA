@@ -1101,7 +1101,7 @@ internal class MangaReaderActivity : ComponentActivity() {
         val ready = viewModel.uiState.value as? MangaReaderUiState.Ready ?: return
         val url = ready.chapter.url
         runCatching {
-            startActivity(navigationRoutes.webView(this, url))
+            startActivity(navigationRoutes.webView(this, url, bookUrl = ready.bookUrl))
         }
     }
 

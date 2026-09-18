@@ -80,9 +80,10 @@ class AppNavigationRoutes @Inject constructor() : NavigationRoutes {
         return GlobalSourceSearchActivity.IntentData(context, text)
     }
 
-    override fun webView(context: Context, url: String): Intent {
+    override fun webView(context: Context, url: String, bookUrl: String?): Intent {
         return Intent(context, WebViewActivity::class.java).apply {
             putExtra("url", url)
+            if (bookUrl != null) putExtra("bookUrl", bookUrl)
         }
     }
 

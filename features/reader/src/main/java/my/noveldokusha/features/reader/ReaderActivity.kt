@@ -194,7 +194,7 @@ class ReaderActivity : BaseActivity() {
                     viewModel.chaptersLoader.retryChapter(chapterIndex)
                 },
                 onOpenChapterInBrowser = { url ->
-                    navigationRoutes.webView(this@ReaderActivity, url = url)
+                    navigationRoutes.webView(this@ReaderActivity, url = url, bookUrl = viewModel.bookUrl)
                         .let(::startActivity)
                 },
                 onClick = {
@@ -633,7 +633,7 @@ class ReaderActivity : BaseActivity() {
                         // причине пуста — фолбэк на главу, с которой открыт ридер.
                         val url = viewModel.chapterUrl.ifBlank { chapterUrl }
                         if (url.isNotBlank()) {
-                            navigationRoutes.webView(this, url = url).let(::startActivity)
+                            navigationRoutes.webView(this, url = url, bookUrl = viewModel.bookUrl).let(::startActivity)
                         }
                     },
                     regexCleanupViewModel = regexCleanupViewModel,

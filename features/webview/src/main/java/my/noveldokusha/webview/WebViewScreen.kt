@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.clickable
@@ -48,15 +49,19 @@ private fun LabeledIconButton(
     icon: ImageVector,
     label: String,
     onClick: () -> Unit,
+    enabled: Boolean = true,
 ) {
+    val alpha = if (enabled) 1f else 0.38f
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clickable(
+                enabled = enabled,
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(bounded = true),
                 onClick = onClick
             )
+            .alpha(alpha)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Icon(icon, contentDescription = label)
@@ -162,14 +167,13 @@ internal fun <T : View> WebViewScreen(
 
                         Spacer(modifier = Modifier.weight(1f))
 
-                        // Кнопка перевода страницы: состояние приходит из Activity.
-                        if (translationEnabled) {
-                            LabeledIconButton(
-                                icon = Icons.Default.Translate,
-                                label = if (isTranslated) "Original" else "Translate",
-                                onClick = onTranslateClicked
-                            )
-                        }
+                        // Кнопка перевода страницы: всегда видна, серая когда нет target.
+                        LabeledIconButton(
+                            icon = Icons.Default.Translate,
+                            label = if (isTranslated) "Original" else "Translate",
+                            onClick = onTranslateClicked,
+                            enabled = translationEnabled,
+                        )
 
                         LabeledIconButton(
                             icon = Icons.Default.ContentPaste,
