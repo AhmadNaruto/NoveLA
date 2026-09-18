@@ -36,7 +36,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import my.noveldokusha.core.appPreferences.SourceStripPosition
@@ -179,8 +183,9 @@ fun BookImageButtonView(
             )
         }
 
-        // InfoPanel below cover — original style
+        // InfoPanel below cover — fixed 2-line height, centered
         if (isInfoPanel) {
+            val twoLines = with(LocalDensity.current) { (16.sp * 2f).toDp() }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -189,13 +194,30 @@ fun BookImageButtonView(
                     .background(MaterialTheme.colorScheme.surfaceContainerLow)
                     .padding(horizontal = 6.dp, vertical = 4.dp)
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(twoLines),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = title,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 16.sp,
+                            lineHeightStyle = LineHeightStyle(
+                                alignment = LineHeightStyle.Alignment.Center,
+                                trim = LineHeightStyle.Trim.None,
+                            ),
+                            lineBreak = LineBreak.Heading,
+                            hyphens = Hyphens.Auto,
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
                 if (showStrip) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -352,7 +374,7 @@ private fun PreviewInfoPanel() {
     InternalTheme {
         Row {
             BookImageButtonView(
-                title = "Short title",
+                title = "Solo Leveling",
                 coverImageModel = "",
                 onClick = { },
                 onLongClick = { },
