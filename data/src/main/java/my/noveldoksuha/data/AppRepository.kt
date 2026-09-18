@@ -39,7 +39,8 @@ class AppRepository @Inject constructor(
         bookUrl: String,
         bookTitle: String,
         rating: String? = null,
-        contentType: String = ""
+        contentType: String = "",
+        coverImageUrl: String = ""
     ): Boolean {
         val realUrl = appFileResolver.getLocalIfContentType(bookUrl, bookFolderName = bookTitle)
         val normalizedUrl = normalizeBookUrl(realUrl)
@@ -54,7 +55,8 @@ class AppRepository @Inject constructor(
                 bookUrl = normalizedUrl,
                 bookTitle = bookTitle,
                 rating = rating,
-                contentType = contentType
+                contentType = contentType,
+                coverImageUrl = coverImageUrl
             )
         }
         return result

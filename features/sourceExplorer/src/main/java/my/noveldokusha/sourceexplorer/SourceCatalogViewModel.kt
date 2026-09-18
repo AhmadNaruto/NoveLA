@@ -38,6 +38,7 @@ import my.noveldokusha.scraper.FilterPreset
 import my.noveldokusha.scraper.Scraper
 import my.noveldokusha.scraper.SourceInterface
 import my.noveldokusha.text_translator.domain.TranslationManager
+import my.noveldokusha.interactor.LibraryUpdatesInteractions
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -54,6 +55,7 @@ internal class SourceCatalogViewModel @Inject constructor(
     stateHandle: SavedStateHandle,
     private val appPreferences: AppPreferences,
     scraper: Scraper,
+    private val libraryUpdatesInteractions: LibraryUpdatesInteractions,
 ) : ViewModel(), SourceCatalogStateBundle {
 
     override var sourceBaseUrl by StateExtra_String(stateHandle)
@@ -325,10 +327,51 @@ internal class SourceCatalogViewModel @Inject constructor(
                     bookUrl = book.url,
                     bookTitle = book.title,
                     rating = book.rating,
-                    contentType = book.contentType
+                    contentType = book.contentType,
+                    coverImageUrl = book.coverImageUrl
                 )
             val res = if (isInLibrary) R.string.added_to_library else R.string.removed_from_library
             toasty.show(res)
+
+            // After adding: fetch cover/description/rating + chapters in background
+            if (isInLibrary) {
+                launch {
+                    try {
+                        val coverUrl = appRepository.downloaderRepository
+                            .bookCoverImageUrl(book.url).toSuccessOrNull()?.data
+                        if (coverUrl != null) {
+                            appRepository.libraryBooks.updateCover(book.url, coverUrl)
+                        }
+                    } catch (_: Exception) {}
+                }
+                launch {
+                    try {
+                        val description = appRepository.downloaderRepository
+                            .bookDescription(book.url).toSuccessOrNull()?.data
+                        if (description != null) {
+                            appRepository.libraryBooks.updateDescription(book.url, description)
+                        }
+                    } catch (_: Exception) {}
+                }
+                launch {
+                    try {
+                        val rating = appRepository.downloaderRepository
+                            .bookRating(book.url).toSuccessOrNull()?.data
+                        if (!rating.isNullOrBlank()) {
+                            appRepository.libraryBooks.updateRating(book.url, rating)
+                        }
+                    } catch (_: Exception) {}
+                }
+                launch {
+                    try {
+                        val chapters = appRepository.downloaderRepository
+                            .bookChaptersList(book.url).toSuccessOrNull()?.data
+                        if (!chapters.isNullOrEmpty()) {
+                            appRepository.bookChapters.insert(chapters)
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
         }
     }
 

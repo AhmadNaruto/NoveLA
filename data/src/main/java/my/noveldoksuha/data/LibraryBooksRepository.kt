@@ -190,7 +190,8 @@ class LibraryBooksRepository @Inject constructor(
         bookUrl: String,
         bookTitle: String,
         rating: String? = null,
-        contentType: String = ""
+        contentType: String = "",
+        coverImageUrl: String = ""
     ): Boolean = appDatabase.transaction {
         val currentTime = System.currentTimeMillis()
         when (val existing = getByUrl(bookUrl)) {
@@ -202,6 +203,7 @@ class LibraryBooksRepository @Inject constructor(
                         inLibrary = true,
                         rating = rating.orEmpty(),
                         contentType = contentType,
+                        coverImageUrl = coverImageUrl,
                         addedToLibraryEpochTimeMilli = currentTime,
                         lastUpdateEpochTimeMilli = currentTime
                     )
