@@ -31,22 +31,9 @@ class LocalSourcesDirectories @AssistedInject constructor(
         appContext.getSharedPreferences("local_dirs_$sourceType", Context.MODE_PRIVATE)
 
     val list: List<Uri>
-        get() {
-            val current = prefs.getStringSet("dirs", emptySet())
-                ?.map { Uri.parse(it) }
-                ?: emptyList()
-            if (current.isNotEmpty()) return current
-            // One-time migration: seed from persistedUriPermissions
-            val migrated = appContext.contentResolver.persistedUriPermissions
-                .filter { !it.isWritePermission }
-                .map { it.uri.toString() }
-                .toSet()
-            if (migrated.isNotEmpty()) {
-                prefs.edit().putStringSet("dirs", migrated).apply()
-                return migrated.map { Uri.parse(it) }
-            }
-            return emptyList()
-        }
+        get() = prefs.getStringSet("dirs", emptySet())
+            ?.map { Uri.parse(it) }
+            ?: emptyList()
 
     private val _listState = MutableStateFlow(list)
     val listState = _listState.asStateFlow()
