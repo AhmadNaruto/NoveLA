@@ -120,6 +120,7 @@ internal class SourceCatalogViewModel @Inject constructor(
         listLayoutMode         = appPreferences.BOOKS_LIST_LAYOUT_MODE.state(viewModelScope),
         sortOrder              = appPreferences.SOURCE_SORT_ORDER.state(viewModelScope),
         gridColumns            = appPreferences.BOOKS_GRID_COLUMNS.state(viewModelScope),
+        sourceStripPosition    = appPreferences.LIBRARY_SOURCE_STRIP_POSITION.state(viewModelScope),
         hasFilters             = filterableSource != null,
         filterList             = _filterList,
         activeFilters          = _activeFilters,

@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import my.noveldokusha.coreui.components.BookImageButtonView
-import my.noveldokusha.coreui.components.BookTitlePosition
 import my.noveldokusha.coreui.components.ExpandableText
 import my.noveldokusha.coreui.components.ImageView
 import my.noveldokusha.coreui.components.MyButton
@@ -111,7 +110,6 @@ internal fun DatabaseBookInfoScreenBody(
                         title = "",
                         coverImageModel = coverImg,
                         onClick = { showImageFullScreen = true },
-                        bookTitlePosition = BookTitlePosition.Hidden,
                         modifier = Modifier
                             .weight(1f),
                     )

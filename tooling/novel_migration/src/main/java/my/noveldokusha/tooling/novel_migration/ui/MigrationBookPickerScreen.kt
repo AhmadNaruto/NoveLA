@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.PaddingValues
 import my.noveldokusha.core.rememberResolvedBookImagePath
 import my.noveldokusha.coreui.components.BookImageButtonView
-import my.noveldokusha.coreui.components.BookTitlePosition
+import my.noveldokusha.core.appPreferences.SourceStripPosition
 import my.noveldokusha.coreui.components.MyButton
 import my.noveldokusha.feature.local_database.tables.Book
 import my.noveldokusha.scraper.SourceInterface
@@ -146,7 +146,7 @@ fun MigrationBookPickerScreen(
                         onClick = { onToggleSelection(book) },
                         onLongClick = {},
                         modifier = Modifier.width(110.dp),
-                        bookTitlePosition = BookTitlePosition.Outside,
+                        sourceStripPosition = SourceStripPosition.InfoPanel,
                         topLeftBadge = {
                             if (chapterCount > 0) {
                                 Text(

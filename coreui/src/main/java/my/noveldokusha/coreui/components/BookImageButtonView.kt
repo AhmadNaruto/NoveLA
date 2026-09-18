@@ -39,15 +39,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import my.noveldokusha.core.appPreferences.SourceStripPosition
 import my.noveldokusha.coreui.AppTestTags
 import my.noveldokusha.coreui.R
 import my.noveldokusha.coreui.theme.ImageBorderShape
 import my.noveldokusha.coreui.theme.InternalTheme
 import my.noveldokusha.coreui.theme.PreviewThemes
-
-enum class BookTitlePosition {
-    Inside, Outside, Hidden
-}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -55,14 +52,13 @@ fun BookImageButtonView(
     title: String,
     coverImageModel: Any,
     modifier: Modifier = Modifier,
-    bookTitlePosition: BookTitlePosition = BookTitlePosition.Inside,
     indication: Indication = LocalIndication.current,
     interactionSource: MutableInteractionSource? = null,
     topLeftBadge: (@Composable () -> Unit)? = null,
     topRightBadge: (@Composable () -> Unit)? = null,
     sourceStripUnreadCount: Int? = null,
     sourceStripSourceName: String? = null,
-    sourceStripOnCover: Boolean = true,
+    sourceStripPosition: SourceStripPosition = SourceStripPosition.BelowCover,
     forceCache: Boolean = false,
     fadeInDurationMillis: Int = 250,
     onClick: () -> Unit,
@@ -70,12 +66,13 @@ fun BookImageButtonView(
 ) {
     val rememberedInteractionSource = remember { MutableInteractionSource() }
     val effectiveInteractionSource = interactionSource ?: rememberedInteractionSource
-    // Полоса источника рендерится когда задан хотя бы один из двух контентов — иначе вёрстка идентична прежней.
     val stripUnreadCount = sourceStripUnreadCount
     val stripSourceName = sourceStripSourceName
     val showStrip = stripUnreadCount != null || stripSourceName != null
-    // При полосе на кромке (20.dp) поднимаем заголовок, чтобы он не перекрывался.
-    val titleBottomPadding = if (showStrip && sourceStripOnCover) 32.dp else 8.dp
+    val isOnCover = sourceStripPosition == SourceStripPosition.OnCover
+    val isInfoPanel = sourceStripPosition == SourceStripPosition.InfoPanel
+    val titleBottomPadding = if (showStrip && isOnCover) 32.dp else 8.dp
+
     Column(modifier = modifier.testTag(AppTestTags.BOOK_IMAGE_BUTTON_VIEW)) {
         Box(
             Modifier
@@ -84,8 +81,7 @@ fun BookImageButtonView(
                 .fillMaxWidth()
                 .aspectRatio(1 / 1.45f)
         ) {
-            // Image with clipping — badges must be OUTSIDE this Box
-            // ponytail: убран дублирующий clip — внешний Box уже clip(ImageBorderShape)
+            // Image
             Box(
                 Modifier
                     .matchParentSize()
@@ -108,17 +104,15 @@ fun BookImageButtonView(
                 )
             }
 
-            // Top-left badge (count, etc.) — not clipped
             topLeftBadge?.let {
                 Box(modifier = Modifier.align(Alignment.TopStart)) { it() }
             }
-
-            // Top-right badge (rating, etc.) — not clipped
             topRightBadge?.let {
                 Box(modifier = Modifier.align(Alignment.TopEnd)) { it() }
             }
-            if (bookTitlePosition == BookTitlePosition.Inside) {
-                // Stroke outline for better readability
+
+            // Gradient title overlay — always show unless InfoPanel
+            if (!isInfoPanel) {
                 Text(
                     text = title,
                     textAlign = TextAlign.Center,
@@ -144,7 +138,6 @@ fun BookImageButtonView(
                         )
                     )
                 )
-                // Fill text on top
                 Text(
                     text = title,
                     textAlign = TextAlign.Center,
@@ -160,8 +153,8 @@ fun BookImageButtonView(
                 )
             }
 
-            // Полоса источника на кромке обложки — низ скругляется внешним clip(ImageBorderShape)
-            if (sourceStripOnCover && (stripUnreadCount != null || stripSourceName != null)) {
+            // Source strip on cover
+            if (isOnCover && showStrip) {
                 SourceStrip(
                     unreadCount = stripUnreadCount,
                     sourceName = stripSourceName,
@@ -172,8 +165,9 @@ fun BookImageButtonView(
                 )
             }
         }
-        // Плашка под обложкой: рендерится только при непустом контенте полосы
-        if (!sourceStripOnCover && (stripUnreadCount != null || stripSourceName != null)) {
+
+        // Below-cover: source strip or InfoPanel
+        if (!isOnCover && showStrip && !isInfoPanel) {
             SourceStrip(
                 unreadCount = stripUnreadCount,
                 sourceName = stripSourceName,
@@ -184,18 +178,58 @@ fun BookImageButtonView(
                     .clip(RoundedCornerShape(6.dp))
             )
         }
-        if (bookTitlePosition == BookTitlePosition.Outside) {
-            Text(
-                text = title,
-                maxLines = 2,
+
+        // InfoPanel below cover — original style
+        if (isInfoPanel) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
-                    .padding(4.dp),
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.ExtraBold),
-                textAlign = TextAlign.Center,
-                overflow = TextOverflow.Ellipsis,
-            )
+                    .padding(horizontal = 2.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                if (showStrip) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (stripUnreadCount != null) {
+                            Text(
+                                text = stripUnreadCount.toString(),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 9.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (stripSourceName != null) {
+                                Text(
+                                    text = " · ",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        if (stripSourceName != null) {
+                            Text(
+                                text = stripSourceName,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -208,8 +242,6 @@ private fun SourceStrip(
     onCover: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    // На обложке — градиентный скрим (полоса «вырастает» из обложки), под обложкой — диагональный
-    // градиент 0.65→0.85: глубина сверху вниз + затухание к правому краю
     val stripBackground: Brush = if (onCover) {
         Brush.verticalGradient(
             0f to MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
@@ -232,7 +264,6 @@ private fun SourceStrip(
             .background(stripBackground)
             .padding(horizontal = 6.dp)
     ) {
-        // Фиксированное окно счётчика: без внутреннего horizontal padding — делитель всегда на одном месте
         if (unreadCount != null) {
             Box(
                 modifier = Modifier.width(32.dp),
@@ -282,7 +313,7 @@ private fun SourceStrip(
     }
 }
 
-/** Иконка типа контента: "manga" → [R.drawable.ic_content_type_manga], любое другое (включая null и "") → [R.drawable.ic_content_type_novel]. */
+/** Иконка типа контента */
 fun String?.toContentTypeBadgeIcon(): Int =
     if (this == "manga") R.drawable.ic_content_type_manga else R.drawable.ic_content_type_novel
 
@@ -296,9 +327,9 @@ private fun PreviewView() {
                 coverImageModel = "",
                 onClick = { },
                 onLongClick = { },
-                bookTitlePosition = BookTitlePosition.Inside,
                 sourceStripUnreadCount = 0,
                 sourceStripSourceName = "Local",
+                sourceStripPosition = SourceStripPosition.BelowCover,
                 modifier = Modifier.weight(1f)
             )
             BookImageButtonView(
@@ -306,41 +337,38 @@ private fun PreviewView() {
                 coverImageModel = "",
                 onClick = { },
                 onLongClick = { },
-                bookTitlePosition = BookTitlePosition.Outside,
                 sourceStripUnreadCount = 99999,
                 sourceStripSourceName = "Very long source name that must be cut off with ellipsis",
+                sourceStripPosition = SourceStripPosition.InfoPanel,
                 modifier = Modifier.weight(1f)
             )
         }
     }
 }
 
-// Плашка под обложкой (sourceStripOnCover = false) — вариант для сравнения на F3
 @PreviewThemes
 @Composable
-private fun PreviewViewStripPlaque() {
+private fun PreviewInfoPanel() {
     InternalTheme {
         Row {
             BookImageButtonView(
-                title = "Hello there",
+                title = "Short title",
                 coverImageModel = "",
                 onClick = { },
                 onLongClick = { },
-                bookTitlePosition = BookTitlePosition.Inside,
-                sourceStripUnreadCount = 0,
-                sourceStripSourceName = "Local",
-                sourceStripOnCover = false,
+                sourceStripUnreadCount = 12,
+                sourceStripSourceName = "Source Name",
+                sourceStripPosition = SourceStripPosition.InfoPanel,
                 modifier = Modifier.weight(1f)
             )
             BookImageButtonView(
-                title = "Hello there text very long for a title, but many cases just like this",
+                title = "A very long novel title that should wrap to multiple lines",
                 coverImageModel = "",
                 onClick = { },
                 onLongClick = { },
-                bookTitlePosition = BookTitlePosition.Inside,
-                sourceStripUnreadCount = 99999,
-                sourceStripSourceName = "Very long source name that must be cut off with ellipsis",
-                sourceStripOnCover = false,
+                sourceStripUnreadCount = 0,
+                sourceStripSourceName = "Another Source",
+                sourceStripPosition = SourceStripPosition.InfoPanel,
                 modifier = Modifier.weight(1f)
             )
         }

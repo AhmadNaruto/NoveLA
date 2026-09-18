@@ -27,6 +27,7 @@ import my.noveldokusha.coreui.composableActions.ListGridLoadWatcher
 import my.noveldokusha.coreui.states.IteratorState
 import my.noveldokusha.core.Response
 import my.noveldokusha.core.appPreferences.ListLayoutMode
+import my.noveldokusha.core.appPreferences.SourceStripPosition
 import my.noveldokusha.core.domain.CloudfareVerificationBypassFailedException
 import my.noveldokusha.core.domain.WebViewCookieManagerInitializationFailedException
 import my.noveldokusha.core.rememberResolvedBookImagePath
@@ -47,6 +48,8 @@ fun BooksVerticalView(
     onWebViewOpen: () -> Unit = {},
     // Количество колонок из общего preference BOOKS_GRID_COLUMNS (2..6, дефолт 3)
     gridColumns: Int = 3,
+    // Позиция полосы источника: кромка обложки / плашка под обложкой / InfoPanel
+    sourceStripPosition: SourceStripPosition = SourceStripPosition.BelowCover,
     innerPadding: PaddingValues = PaddingValues(),
 
     // Переводы названий книг (url -> translatedTitle). Читается внутри каждого
@@ -105,6 +108,7 @@ fun BooksVerticalView(
                     onLongClick = { onBookLongClicked(it) },
                     topRightBadge = { BookRatingBadge(rating = it.rating) },
                     topLeftBadge = topLeftBadge?.let { badge -> { badge(it) } },
+                    sourceStripPosition = sourceStripPosition,
                 )
             }
         }

@@ -172,6 +172,7 @@ internal fun SourceCatalogScreen(
                     layoutMode = state.listLayoutMode.value,
                     // Передаём количество колонок из общего preference
                     gridColumns = state.gridColumns.value,
+                    sourceStripPosition = state.sourceStripPosition.value,
                     list = state.fetchIterator.list,
                     state = rememberLazyGridState(),
                     error = state.fetchIterator.error,
