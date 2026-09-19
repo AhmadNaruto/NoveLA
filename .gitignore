@@ -58,3 +58,5 @@ package.json
 repomix.config.json
 /.codegraph
 /.opencode
+/.planning
+/docs

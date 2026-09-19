@@ -13,7 +13,8 @@ sealed class Response<out T> {
         val message: String,
         val exception: Exception,
         val pluginErrorTitle: String? = null,
-        val pluginErrorMessage: String? = null
+        val pluginErrorMessage: String? = null,
+        val pluginAuthUrl: String? = null
     ) : Response<Nothing>()
 
     fun toSuccessOrNull(): Success<T>? = when (this) {

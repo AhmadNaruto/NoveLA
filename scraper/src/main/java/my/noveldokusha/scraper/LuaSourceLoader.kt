@@ -64,14 +64,14 @@ class LuaEngine @Inject constructor(
     private val luaPrefs by lazy { context.getSharedPreferences("lua_preferences", Context.MODE_PRIVATE) }
     val currentSourceId = ThreadLocal<String?>()
 
-    private val pendingShowError = ThreadLocal<Pair<String, String>?>()
+    private val pendingShowError = ThreadLocal<Triple<String, String, String?>?>()
 
-    fun getPendingShowError(): Pair<String, String>? = pendingShowError.get()
+    fun getPendingShowError(): Triple<String, String, String?>? = pendingShowError.get()
 
     fun resetShowError() { pendingShowError.set(null) }
 
-    internal fun setPendingShowError(title: String, message: String) {
-        pendingShowError.set(title to message)
+    internal fun setPendingShowError(title: String, message: String, authUrl: String? = null) {
+        pendingShowError.set(Triple(title, message, authUrl))
     }
 
     // TTL-кэш ответов http_get: геттеры метаданных одной страницы книги делят один сетевой запрос.
@@ -278,12 +278,13 @@ class LuaEngine @Inject constructor(
         g.set("base64_encode",          Base64EncodeFunction()         as LuaValue)
         g.set("os_time",                OsTimeFunction()               as LuaValue)
         // Plugin error signaling
-        g.set("show_error", object : TwoArgFunction() {
-            override fun call(titleArg: LuaValue, messageArg: LuaValue): LuaValue {
+        g.set("show_error", object : ThreeArgFunction() {
+            override fun call(titleArg: LuaValue, messageArg: LuaValue, authArg: LuaValue): LuaValue {
                 val title = titleArg.toString()
                 val message = messageArg.toString()
-                pendingShowError.set(title to message)
-                Timber.d("Lua show_error: title=%s message=%s", title, message)
+                val authUrl = authArg.optjstring(null)
+                pendingShowError.set(Triple(title, message, authUrl))
+                Timber.d("Lua show_error: title=%s message=%s authUrl=%s", title, message, authUrl)
                 return LuaValue.NIL
             }
         })

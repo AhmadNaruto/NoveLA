@@ -39,7 +39,8 @@ class DownloaderRepository @Inject constructor(
                 message = e.message ?: "Error",
                 exception = e,
                 pluginErrorTitle = e.errorTitle,
-                pluginErrorMessage = e.message
+                pluginErrorMessage = e.message,
+                pluginAuthUrl = e.authUrl
             )
         }
         else -> this
@@ -298,7 +299,8 @@ class DownloaderRepository @Inject constructor(
                     message = e.message ?: "Error",
                     exception = e,
                     pluginErrorTitle = e.errorTitle,
-                    pluginErrorMessage = e.message
+                    pluginErrorMessage = e.message,
+                    pluginAuthUrl = e.authUrl
                 )
             } else {
                 result

@@ -217,12 +217,14 @@ open class LuaSourceAdapter(
     }
 
     protected fun checkShowError(): Response.Error? {
-        val (title, message) = luaEngine.getPendingShowError() ?: return null
+        val triple = luaEngine.getPendingShowError() ?: return null
+        val (title, message, authUrl) = triple
         return Response.Error(
             message = message,
-            exception = PluginShowErrorException(title, message),
+            exception = PluginShowErrorException(title, message, authUrl),
             pluginErrorTitle = title,
-            pluginErrorMessage = message
+            pluginErrorMessage = message,
+            pluginAuthUrl = authUrl
         )
     }
 
@@ -493,8 +495,8 @@ open class LuaSourceAdapter(
                         LuaValue.valueOf(html),
                         LuaValue.valueOf(url)
                     )
-                    luaEngine.getPendingShowError()?.let { (title, message) ->
-                        throw my.noveldokusha.scraper.domain.PluginShowErrorException(title, message)
+                    luaEngine.getPendingShowError()?.let { (title, message, authUrl) ->
+                        throw my.noveldokusha.scraper.domain.PluginShowErrorException(title, message, authUrl)
                     }
                     result.optjstring(null)
                 }
@@ -520,14 +522,14 @@ open class LuaSourceAdapter(
                             LuaValue.valueOf(doc.location())
                         )
                     } catch (e: Exception) {
-                    luaEngine.getPendingShowError()?.let { (title, message) ->
-                            throw my.noveldokusha.scraper.domain.PluginShowErrorException(title, message)
+                    luaEngine.getPendingShowError()?.let { (title, message, authUrl) ->
+                            throw my.noveldokusha.scraper.domain.PluginShowErrorException(title, message, authUrl)
                         }
                         Timber.e(e, "Lua getPageList [${metadata.id}]")
                         return@withSourceContext emptyList()
                     }
-                    luaEngine.getPendingShowError()?.let { (title, message) ->
-                        throw my.noveldokusha.scraper.domain.PluginShowErrorException(title, message)
+                    luaEngine.getPendingShowError()?.let { (title, message, authUrl) ->
+                        throw my.noveldokusha.scraper.domain.PluginShowErrorException(title, message, authUrl)
                     }
                     Timber.d("Lua getPageList [${metadata.id}] doc.location=${doc.location()} result.istable=${result.istable()} result=${if (result.isstring()) result.tojstring().take(200) else result.toString().take(200)}")
                     if (!result.istable()) return@withSourceContext emptyList()

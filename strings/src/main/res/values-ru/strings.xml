@@ -475,6 +475,7 @@
     <string name="done">Готово</string>
 
     <string name="close">Закрыть</string>
+    <string name="plugin_error_open">Открыть</string>
 
     <string name="no_directories_added_please_add_them_to_see_them_in_the_source_catalog_list">Директории не добавлены, пожалуйста, добавьте их, чтобы увидеть их в списке каталога источников</string>
 

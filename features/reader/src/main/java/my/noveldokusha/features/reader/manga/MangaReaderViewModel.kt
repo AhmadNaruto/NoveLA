@@ -54,7 +54,8 @@ internal sealed interface MangaReaderEvent {
     data object EndOfBook : MangaReaderEvent
     data class InvalidChapter(
         val title: String? = null,
-        val message: String? = null
+        val message: String? = null,
+        val authUrl: String? = null
     ) : MangaReaderEvent
 }
 
@@ -220,10 +221,11 @@ internal class MangaReaderViewModel @Inject constructor(
             }
             is Response.Error -> {
                 if (response.pluginErrorTitle != null) {
-                    Timber.w("MangaReaderLoad: PluginError title=%s message=%s url=%s", response.pluginErrorTitle, response.pluginErrorMessage, url)
+                    Timber.w("MangaReaderLoad: PluginError title=%s message=%s authUrl=%s url=%s", response.pluginErrorTitle, response.pluginErrorMessage, response.pluginAuthUrl, url)
                     _events.tryEmit(MangaReaderEvent.InvalidChapter(
                         title = response.pluginErrorTitle,
-                        message = response.pluginErrorMessage
+                        message = response.pluginErrorMessage,
+                        authUrl = response.pluginAuthUrl
                     ))
                 } else {
                     Timber.w("MangaReaderLoad: Error url=%s exception=%s", url, response.exception)

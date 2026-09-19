@@ -6,5 +6,6 @@ package my.noveldokusha.scraper.domain
  */
 class PluginShowErrorException(
     val errorTitle: String,
-    override val message: String
+    override val message: String,
+    val authUrl: String? = null
 ) : Exception(message)

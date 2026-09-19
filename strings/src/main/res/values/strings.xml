@@ -363,6 +363,7 @@
     <string name="configuration">Configuration</string>
     <string name="done">Done</string>
     <string name="close">Close</string>
+    <string name="plugin_error_open">Open</string>
     <string name="no_directories_added_please_add_them_to_see_them_in_the_source_catalog_list">No directories added, please add them to see them in the source catalog list</string>
     <string name="import_all_books">Import all books</string>
     <string name="auto_import_local_books">Auto import local books</string>

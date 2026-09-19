@@ -78,6 +78,7 @@ internal sealed interface ReaderItem {
         override val chapterIndex: Int,
         val text: String,
         val chapterUrl: String = "",  // URL главы для кнопки "открыть в браузере"
+        val authUrl: String? = null,  // URL авторизации от плагина (если требуется)
     ) : ReaderItem
     data class Padding(override val chapterIndex: Int) : ReaderItem
 }

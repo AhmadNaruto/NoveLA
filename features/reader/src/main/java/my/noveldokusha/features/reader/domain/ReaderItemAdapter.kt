@@ -367,9 +367,9 @@ internal class ReaderItemAdapter(
         bind.error.text = item.text
         applyTextColor(bind.error, currentTextColor())
         bind.reloadButton.setOnClickListener { onRetryChapter(item.chapterIndex) }
-        if (item.chapterUrl.isNotBlank()) {
+        if (item.chapterUrl.isNotBlank() || item.authUrl != null) {
             bind.openInBrowserButton.visibility = View.VISIBLE
-            bind.openInBrowserButton.setOnClickListener { onOpenChapterInBrowser(item.chapterUrl) }
+            bind.openInBrowserButton.setOnClickListener { onOpenChapterInBrowser(item.authUrl ?: item.chapterUrl) }
         } else {
             bind.openInBrowserButton.visibility = View.GONE
         }

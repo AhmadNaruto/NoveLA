@@ -871,7 +871,12 @@ internal class ReaderChaptersLoader(
                         else
                             "Load error: $detail\n\nPossible causes: Cloudflare protection, login required, or source issue. Try opening in browser."
                     }
-                    insert(ReaderItem.Error(chapterIndex = chapterIndex, chapterUrl = chapter.url, text = userMessage))
+                    insert(ReaderItem.Error(
+                        chapterIndex = chapterIndex,
+                        chapterUrl = chapter.url,
+                        text = userMessage,
+                        authUrl = res.pluginAuthUrl,
+                    ))
                     readerViewHandlersActions.doForceUpdateListViewState()
                 }
                 return@_addChapterInternal false
