@@ -832,19 +832,27 @@ class LuaEngine @Inject constructor(
                     "id" -> LuaValue.valueOf(el.attr("id"))
                     "get_text" -> object : ZeroArgFunction() { override fun call() = LuaValue.valueOf(el.text()) }
                     "get_html" -> object : ZeroArgFunction() { override fun call() = LuaValue.valueOf(el.html()) }
-                    "attr" -> object : OneArgFunction() {
-                        override fun call(a: LuaValue) = try {
-                            LuaValue.valueOf(el.attr(a.checkjstring()))
-                        } catch (_: Exception) { LuaValue.valueOf("") }
+                    // Lua `el:attr("x")` == `el.attr(el, "x")` — колонический вызов добавляет self
+                    // первым аргументом. Берём последний аргумент, чтобы поддерживать оба стиля.
+                    "attr" -> object : VarArgFunction() {
+                        override fun invoke(args: Varargs): Varargs {
+                            val name = if (args.narg() >= 2) args.arg(2) else args.arg(1)
+                            return try {
+                                LuaValue.valueOf(el.attr(name.checkjstring()))
+                            } catch (_: Exception) { LuaValue.valueOf("") }
+                        }
                     }
                     "remove" -> object : ZeroArgFunction() {
                         override fun call(): LuaValue { el.remove(); return LuaValue.NIL }
                     }
-                    "select" -> object : OneArgFunction() {
-                        override fun call(a: LuaValue): LuaValue = try {
-                            val elems = el.select(a.checkjstring())
-                            LuaTable().also { t2 -> elems.forEachIndexed { i, e -> t2.set(i + 1, elementToTable(e)) } }
-                        } catch (_: Exception) { LuaTable() }
+                    "select" -> object : VarArgFunction() {
+                        override fun invoke(args: Varargs): Varargs {
+                            val selector = if (args.narg() >= 2) args.arg(2) else args.arg(1)
+                            return try {
+                                val elems = el.select(selector.checkjstring())
+                                LuaTable().also { t2 -> elems.forEachIndexed { i, e -> t2.set(i + 1, elementToTable(e)) } }
+                            } catch (_: Exception) { LuaTable() }
+                        }
                     }
                     else -> LuaValue.NIL
                 }
