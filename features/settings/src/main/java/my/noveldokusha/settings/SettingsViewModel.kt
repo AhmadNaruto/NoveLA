@@ -127,7 +127,7 @@ internal class SettingsViewModel @Inject constructor(
         isCleaningNovelCache = isCleaningNovelCache,
         isCleaningMangaCache = isCleaningMangaCache,
         cleanConfirmationType = mutableStateOf(null),
-        appVersion = appRemoteRepository.getCurrentAppVersion().toString(),
+        appVersion = appRemoteRepository.getDisplayVersion(),
     )
 
     init {

@@ -35,4 +35,10 @@ class AppRemoteRepository @Inject constructor(
     }
 
     fun getCurrentAppVersion() = AppVersion.fromString(appInternalState.versionName)
+
+    fun getDisplayVersion(): String {
+        val version = getCurrentAppVersion()
+        val buildType = if (appInternalState.isDebugMode) "debug" else "release"
+        return "$version-$buildType (${appInternalState.gitCommitHash})"
+    }
 }

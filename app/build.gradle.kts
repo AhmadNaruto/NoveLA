@@ -52,6 +52,11 @@ android {
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
+
+        val gitCommitHash = providers.exec {
+            commandLine("git", "rev-parse", "--short", "HEAD")
+        }.standardOutput.asText.get().trim().ifEmpty { "unknown" }
+        buildConfigField("String", "GIT_COMMIT_HASH", "\"$gitCommitHash\"")
     }
 
     signingConfigs {
@@ -84,6 +89,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
     namespace = "my.noveldokusha"
 }
