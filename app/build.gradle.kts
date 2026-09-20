@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.konan.properties.hasProperty
 import java.util.Properties
 
 plugins {
@@ -34,7 +33,7 @@ android {
         if (localPropertiesFile.exists())
             load(localPropertiesFile.inputStream())
     }
-    val hasDefaultSigningConfigData = defaultSigningConfigData.hasProperty("storeFile")
+    val hasDefaultSigningConfigData = defaultSigningConfigData.containsKey("storeFile")
     println("hasDefaultSigningConfigData: $hasDefaultSigningConfigData")
 
     if (cliCustomSettings.splitByAbi) splits {

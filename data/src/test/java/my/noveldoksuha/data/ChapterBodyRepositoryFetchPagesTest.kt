@@ -135,8 +135,8 @@ class ChapterBodyRepositoryFetchPagesTest {
             assertTrue(result is Response.Success)
             assertEquals(emptyList<String>(), (result as Response.Success).data)
             // emptyList() от источника НЕ кэшируется — иначе повторное чтение получает pageCount=0
-            verify(chapterPagesDao, never()).insertReplace(any())
-            verify(chapterBodyDao, never()).insertReplace(any())
+            verify(chapterPagesDao, never()).insertReplace(any<ChapterPages>())
+            verify(chapterBodyDao, never()).insertReplace(any<ChapterBody>())
         }
     }
 }
