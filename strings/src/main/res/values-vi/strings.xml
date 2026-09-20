@@ -819,4 +819,14 @@
     <string name="plugin_translation_hide_search">Trong tìm kiếm</string>
     <string name="active_translator_label">Dịch giả đang hoạt động: %s</string>
     <string name="translators_all_off">Dịch giả đã tắt</string>
+
+    <!-- Support & About -->
+    <string name="support">Hỗ trợ</string>
+    <string name="export_logs">Xuất nhật ký</string>
+    <string name="export_logs_description">Chia sẻ tệp nhật ký để khắc phục sự cố</string>
+    <string name="no_logs_available">Không có nhật ký nào</string>
+    <string name="about">Giới thiệu</string>
+    <string name="github_repository">Kho GitHub</string>
+    <string name="report_issue">Báo lỗi</string>
+    <string name="report_issue_description">Tạo báo cáo lỗi trên GitHub</string>
 </resources>

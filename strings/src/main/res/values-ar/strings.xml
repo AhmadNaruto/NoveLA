@@ -819,4 +819,14 @@
     <string name="plugin_translation_hide_search">في البحث</string>
     <string name="active_translator_label">المترجم النشط: %s</string>
     <string name="translators_all_off">المترجمات معطلة</string>
+
+    <!-- Support & About -->
+    <string name="support">الدعم</string>
+    <string name="export_logs">تصدير السجلات</string>
+    <string name="export_logs_description">مشاركة ملف السجل لاستكشاف الأخطاء</string>
+    <string name="no_logs_available">لا تتوفر سجلات</string>
+    <string name="about">حول</string>
+    <string name="github_repository">مستودع GitHub</string>
+    <string name="report_issue">الإبلاغ عن مشكلة</string>
+    <string name="report_issue_description">إنشاء تقرير خطأ على GitHub</string>
 </resources>

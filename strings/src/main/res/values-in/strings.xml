@@ -819,4 +819,14 @@
     <string name="plugin_translation_hide_search">Di pencarian</string>
     <string name="active_translator_label">Penerjemah aktif: %s</string>
     <string name="translators_all_off">Penerjemah nonaktif</string>
+
+    <!-- Support & About -->
+    <string name="support">Dukungan</string>
+    <string name="export_logs">Ekspor log</string>
+    <string name="export_logs_description">Bagikan file log untuk pemecahan masalah</string>
+    <string name="no_logs_available">Tidak ada log yang tersedia</string>
+    <string name="about">Tentang</string>
+    <string name="github_repository">Repositori GitHub</string>
+    <string name="report_issue">Laporkan masalah</string>
+    <string name="report_issue_description">Buat laporan bug di GitHub</string>
 </resources>

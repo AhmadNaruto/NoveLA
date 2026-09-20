@@ -819,4 +819,14 @@
     <string name="plugin_translation_hide_search">Aramada</string>
     <string name="active_translator_label">Aktif çevirmen: %s</string>
     <string name="translators_all_off">Çevirmenler kapalı</string>
+
+    <!-- Support & About -->
+    <string name="support">Destek</string>
+    <string name="export_logs">Günlükleri dışa aktar</string>
+    <string name="export_logs_description">Sorun giderme için günlük dosyasını paylaş</string>
+    <string name="no_logs_available">Kullanılabilir günlük yok</string>
+    <string name="about">Hakkında</string>
+    <string name="github_repository">GitHub deposu</string>
+    <string name="report_issue">Hata bildir</string>
+    <string name="report_issue_description">GitHub\'da hata raporu oluştur</string>
 </resources>

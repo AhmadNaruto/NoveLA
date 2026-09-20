@@ -841,4 +841,15 @@
     <string name="plugin_translation_hide_catalog">In catalog</string>
     <string name="plugin_translation_hide_search">In search</string>
 
+    <!-- Support & About -->
+    <string name="support">Support</string>
+    <string name="export_logs">Export logs</string>
+    <string name="export_logs_description">Share log file for troubleshooting</string>
+    <string name="no_logs_available">No logs available</string>
+    <string name="about">About</string>
+    <string name="version_format">%1$s</string>
+    <string name="github_repository">GitHub repository</string>
+    <string name="report_issue">Report an issue</string>
+    <string name="report_issue_description">Create a bug report on GitHub</string>
+
 </resources>

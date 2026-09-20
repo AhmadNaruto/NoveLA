@@ -831,4 +831,14 @@
     <string name="plugin_translation_hide_search">在搜索</string>
     <string name="active_translator_label">当前翻译器：%s</string>
     <string name="translators_all_off">翻译器已关闭</string>
+
+    <!-- Support & About -->
+    <string name="support">支持</string>
+    <string name="export_logs">导出日志</string>
+    <string name="export_logs_description">分享日志文件用于故障排除</string>
+    <string name="no_logs_available">无可用日志</string>
+    <string name="about">关于</string>
+    <string name="github_repository">GitHub 仓库</string>
+    <string name="report_issue">报告问题</string>
+    <string name="report_issue_description">在 GitHub 上创建错误报告</string>
 </resources>

@@ -819,4 +819,14 @@
     <string name="plugin_translation_hide_search">Sa paghahanap</string>
     <string name="active_translator_label">Aktibong tagasalin: %s</string>
     <string name="translators_all_off">Naka-off ang mga tagasalin</string>
+
+    <!-- Support & About -->
+    <string name="support">Suporta</string>
+    <string name="export_logs">I-export ang log</string>
+    <string name="export_logs_description">Ibahagi ang log file para sa troubleshooting</string>
+    <string name="no_logs_available">Walang available na log</string>
+    <string name="about">Tungkol sa</string>
+    <string name="github_repository">GitHub repository</string>
+    <string name="report_issue">Mag-report ng isyu</string>
+    <string name="report_issue_description">Gumawa ng bug report sa GitHub</string>
 </resources>

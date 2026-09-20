@@ -831,4 +831,14 @@
     <string name="plugin_translation_hide_search">검색</string>
     <string name="active_translator_label">활성 번역기: %s</string>
     <string name="translators_all_off">번역기가 꺼져 있습니다</string>
+
+    <!-- Support & About -->
+    <string name="support">지원</string>
+    <string name="export_logs">로그 내보내기</string>
+    <string name="export_logs_description">문제 해결을 위한 로그 파일 공유</string>
+    <string name="no_logs_available">사용 가능한 로그 없음</string>
+    <string name="about">정보</string>
+    <string name="github_repository">GitHub 저장소</string>
+    <string name="report_issue">문제 보고</string>
+    <string name="report_issue_description">GitHub에 버그 리포트 생성</string>
 </resources>

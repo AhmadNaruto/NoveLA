@@ -819,4 +819,14 @@
     <string name="plugin_translation_hide_search">অনুসন্ধানে</string>
     <string name="active_translator_label">সক্রিয় অনুবাদক: %s</string>
     <string name="translators_all_off">অনুবাদকগুলো বন্ধ আছে</string>
+
+    <!-- Support & About -->
+    <string name="support">সাপোর্ট</string>
+    <string name="export_logs">লগ এক্সপোর্ট</string>
+    <string name="export_logs_description">সমস্যা সমাধানের জন্য লগ ফাইল শেয়ার করুন</string>
+    <string name="no_logs_available">কোনো লগ পাওয়া যায়নি</string>
+    <string name="about">সম্পর্কে</string>
+    <string name="github_repository">GitHub রিপোজিটরি</string>
+    <string name="report_issue">সমস্যা জানান</string>
+    <string name="report_issue_description">GitHub-এ বাগ রিপোর্ট তৈরি করুন</string>
 </resources>

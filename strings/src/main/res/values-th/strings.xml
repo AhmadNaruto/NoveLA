@@ -819,4 +819,14 @@
     <string name="plugin_translation_hide_search">ในการค้นหา</string>
     <string name="active_translator_label">นักแปลที่ใช้งาน: %s</string>
     <string name="translators_all_off">นักแปลปิดอยู่</string>
+
+    <!-- Support & About -->
+    <string name="support">การสนับสนุน</string>
+    <string name="export_logs">ส่งออกล็อก</string>
+    <string name="export_logs_description">แชร์ไฟล์ล็อกสำหรับการแก้ไขปัญหา</string>
+    <string name="no_logs_available">ไม่มีล็อกที่ใช้ได้</string>
+    <string name="about">เกี่ยวกับ</string>
+    <string name="github_repository">คลัง GitHub</string>
+    <string name="report_issue">รายงานปัญหา</string>
+    <string name="report_issue_description">สร้างรายงานข้อผิดพลาดบน GitHub</string>
 </resources>

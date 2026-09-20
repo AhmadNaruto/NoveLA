@@ -1284,5 +1284,15 @@
     <string name="plugin_translation_hide_search">В поиске</string>
     <string name="active_translator_label">Активный переводчик: %s</string>
     <string name="translators_all_off">Переводчики отключены</string>
+
+    <!-- Support & About -->
+    <string name="support">Поддержка</string>
+    <string name="export_logs">Экспорт логов</string>
+    <string name="export_logs_description">Поделиться файлом логов для диагностики</string>
+    <string name="no_logs_available">Логи отсутствуют</string>
+    <string name="about">О приложении</string>
+    <string name="github_repository">Репозиторий на GitHub</string>
+    <string name="report_issue">Сообщить об ошибке</string>
+    <string name="report_issue_description">Создать отчёт об ошибке на GitHub</string>
 </resources>
 

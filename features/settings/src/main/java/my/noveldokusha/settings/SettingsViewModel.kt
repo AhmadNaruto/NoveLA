@@ -1,12 +1,14 @@
 package my.noveldokusha.settings
 
 import android.content.Context
+import android.content.Intent
 import android.text.format.Formatter
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
+import androidx.core.content.FileProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -125,6 +127,7 @@ internal class SettingsViewModel @Inject constructor(
         isCleaningNovelCache = isCleaningNovelCache,
         isCleaningMangaCache = isCleaningMangaCache,
         cleanConfirmationType = mutableStateOf(null),
+        appVersion = appRemoteRepository.getCurrentAppVersion().toString(),
     )
 
     init {
@@ -429,6 +432,29 @@ internal class SettingsViewModel @Inject constructor(
             MemoryDiagnostics.logMemoryStats("SettingsViewModel")
             toasty.show("Memory stats logged to logcat")
         }
+    }
+
+    fun exportLogs() {
+        val logFile = File(context.filesDir, "logs/app.log")
+        if (!logFile.exists()) {
+            toasty.show(R.string.no_logs_available)
+            return
+        }
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            logFile
+        )
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, "NoveLA logs")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(
+            Intent.createChooser(intent, context.getString(R.string.export_logs))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
     }
 
     fun confirmCleanAction() {

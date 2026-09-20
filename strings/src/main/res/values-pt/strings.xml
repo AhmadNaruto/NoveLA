@@ -829,4 +829,14 @@
     <string name="plugin_translation_hide_search">Na pesquisa</string>
     <string name="active_translator_label">Tradutor ativo: %s</string>
     <string name="translators_all_off">Os tradutores estão desligados</string>
+
+    <!-- Support & About -->
+    <string name="support">Suporte</string>
+    <string name="export_logs">Exportar logs</string>
+    <string name="export_logs_description">Compartilhar arquivo de log para diagnóstico</string>
+    <string name="no_logs_available">Nenhum log disponível</string>
+    <string name="about">Sobre</string>
+    <string name="github_repository">Repositório no GitHub</string>
+    <string name="report_issue">Reportar um problema</string>
+    <string name="report_issue_description">Criar um relatório de bug no GitHub</string>
 </resources>
