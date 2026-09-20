@@ -1005,8 +1005,12 @@ class LuaEngine @Inject constructor(
     fun convertToLua(obj: Any?): LuaValue = when (obj) {
         null        -> LuaValue.NIL
         is String   -> LuaValue.valueOf(obj)
-        is Number   -> LuaValue.valueOf(obj.toDouble())
         is Boolean  -> LuaValue.valueOf(obj)
+        is Int      -> LuaValue.valueOf(obj)
+        is Long     -> LuaValue.valueOf(obj.toDouble())
+        is Double   -> LuaValue.valueOf(obj)
+        is Float    -> LuaValue.valueOf(obj.toDouble())
+        is Number   -> LuaValue.valueOf(obj.toDouble())
         is Map<*,*> -> LuaTable().also { t ->
             obj.forEach { (k, v) -> t.set(LuaValue.valueOf(k.toString()), convertToLua(v)) }
         }
