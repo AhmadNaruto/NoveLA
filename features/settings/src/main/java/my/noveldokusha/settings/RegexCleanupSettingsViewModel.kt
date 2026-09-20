@@ -21,6 +21,7 @@ data class RegexCleanupUiState(
     val editingRule: RegexRule? = null,
     val editingIndex: Int? = null,
     val validationError: String? = null,
+    val duplicatePatternError: Boolean = false,
     val previewText: String = "",
     val deleteConfirmationPattern: String? = null
 )
@@ -118,19 +119,35 @@ class RegexCleanupSettingsViewModel @Inject constructor(
             isBottomSheetOpen = false,
             editingRule = null,
             editingIndex = null,
-            validationError = null
+            validationError = null,
+            duplicatePatternError = false
         )
     }
 
     fun onSaveRule(pattern: String, replacement: String, enabled: Boolean, description: String) {
         if (!validateRegex(pattern)) {
             uiState.value = uiState.value.copy(
-                validationError = pattern
+                validationError = pattern,
+                duplicatePatternError = false
             )
             return
         }
 
-        uiState.value = uiState.value.copy(validationError = null)
+        // Проверка на дублирование pattern
+        val trimmedPattern = pattern.trim()
+        val currentRules = targetRules
+        val isDuplicate = currentRules.any { it.pattern == trimmedPattern &&
+            uiState.value.editingIndex?.let { idx -> currentRules.indexOf(it) != idx } ?: true
+        }
+        if (isDuplicate) {
+            uiState.value = uiState.value.copy(
+                validationError = null,
+                duplicatePatternError = true
+            )
+            return
+        }
+
+        uiState.value = uiState.value.copy(validationError = null, duplicatePatternError = false)
 
         viewModelScope.launch {
             val currentRules = targetRules.toMutableList()

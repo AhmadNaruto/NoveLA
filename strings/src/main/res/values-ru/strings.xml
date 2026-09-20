@@ -630,6 +630,7 @@
     <string name="enter_replacement_text">Введите текст замены</string>
 
     <string name="invalid_regex_pattern">Неверный шаблон регулярного выражения</string>
+    <string name="duplicate_regex_pattern">Такой шаблон уже существует</string>
 
     <string name="save">Сохранить</string>
 

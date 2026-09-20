@@ -458,6 +458,7 @@
     <string name="enter_regex_pattern">Enter regex pattern</string>
     <string name="enter_replacement_text">Enter replacement text</string>
     <string name="invalid_regex_pattern">Invalid regex pattern</string>
+    <string name="duplicate_regex_pattern">This pattern already exists</string>
     <string name="save">Save</string>
     <string name="cancel_editing">Cancel editing</string>
     <string name="go_back">Go back</string>
