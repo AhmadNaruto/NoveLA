@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -32,6 +33,17 @@ internal fun ReaderScreenBottomBarDialogs(
     onLineHeightChanged: (Float) -> Unit,
     onParagraphSpacingChanged: (Float) -> Unit,
     onLetterSpacingChanged: (Float) -> Unit,
+    onTextJustifyChange: (Boolean) -> Unit,
+    onTextHyphenationChange: (Boolean) -> Unit,
+    onTextBoldChange: (Boolean) -> Unit,
+    onTextItalicChange: (Boolean) -> Unit,
+    onTextUnderlineChange: (Boolean) -> Unit,
+    onTextShadowChange: (Boolean) -> Unit,
+    onTextSmoothChange: (Boolean) -> Unit,
+    onMarginLeftChange: (Float) -> Unit,
+    onMarginRightChange: (Float) -> Unit,
+    onMarginTopChange: (Float) -> Unit,
+    onMarginBottomChange: (Float) -> Unit,
     onSelectableTextChange: (Boolean) -> Unit,
     onDarkModeSelected: (DarkMode) -> Unit,
     onAppThemeSelected: (AppTheme) -> Unit,
@@ -41,13 +53,19 @@ internal fun ReaderScreenBottomBarDialogs(
     onTtsHighlightEnabledChange: (Boolean) -> Unit,
     onTtsHighlightColorChange: (String) -> Unit,
     onManualHighlightEnabledChange: (Boolean) -> Unit = {},
+    onTextDefaultsReset: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier.fillMaxWidth()
     ) {
-        Box(Modifier.padding(horizontal = 24.dp)) {
+        val maxDialogHeight = (LocalConfiguration.current.screenHeightDp * 0.6f).roundToInt().dp
+        Box(
+            Modifier
+                .padding(horizontal = 24.dp)
+                .heightIn(max = maxDialogHeight)
+        ) {
             AnimatedContent(targetState = settings.selectedSetting.value, label = "") { target ->
                 when (target) {
                     ReaderScreenState.Settings.Type.LiveTranslation -> TranslatorSettingDialog(
@@ -70,6 +88,18 @@ internal fun ReaderScreenBottomBarDialogs(
                             onLineHeightChange = onLineHeightChanged,
                             onParagraphSpacingChange = onParagraphSpacingChanged,
                             onLetterSpacingChange = onLetterSpacingChanged,
+                            onTextJustifyChange = onTextJustifyChange,
+                            onTextHyphenationChange = onTextHyphenationChange,
+                            onTextBoldChange = onTextBoldChange,
+                            onTextItalicChange = onTextItalicChange,
+                            onTextUnderlineChange = onTextUnderlineChange,
+                            onTextShadowChange = onTextShadowChange,
+                            onTextSmoothChange = onTextSmoothChange,
+                            onMarginLeftChange = onMarginLeftChange,
+                            onMarginRightChange = onMarginRightChange,
+                            onMarginTopChange = onMarginTopChange,
+                            onMarginBottomChange = onMarginBottomChange,
+                            onTextDefaultsReset = onTextDefaultsReset,
                         )
                     }
                     ReaderScreenState.Settings.Type.More -> MoreSettingDialog(

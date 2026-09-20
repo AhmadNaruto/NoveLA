@@ -346,6 +346,39 @@ class AppPreferences @Inject constructor(
     val READER_BACKGROUND_IMAGE = object : Preference<String>("READER_BACKGROUND_IMAGE") {
         override var value by SharedPreference_String(name, preferences, "")
     }
+    val READER_TEXT_JUSTIFY = object : Preference<Boolean>("READER_TEXT_JUSTIFY") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
+    val READER_TEXT_HYPHENATION = object : Preference<Boolean>("READER_TEXT_HYPHENATION") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
+    val READER_TEXT_BOLD = object : Preference<Boolean>("READER_TEXT_BOLD") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
+    val READER_TEXT_ITALIC = object : Preference<Boolean>("READER_TEXT_ITALIC") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
+    val READER_TEXT_UNDERLINE = object : Preference<Boolean>("READER_TEXT_UNDERLINE") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
+    val READER_TEXT_SHADOW = object : Preference<Boolean>("READER_TEXT_SHADOW") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
+    val READER_TEXT_SMOOTH = object : Preference<Boolean>("READER_TEXT_SMOOTH") {
+        override var value by SharedPreference_Boolean(name, preferences, true)
+    }
+    val READER_MARGIN_LEFT = object : Preference<Float>("READER_MARGIN_LEFT") {
+        override var value by SharedPreference_Float(name, preferences, 16f)
+    }
+    val READER_MARGIN_RIGHT = object : Preference<Float>("READER_MARGIN_RIGHT") {
+        override var value by SharedPreference_Float(name, preferences, 16f)
+    }
+    val READER_MARGIN_TOP = object : Preference<Float>("READER_MARGIN_TOP") {
+        override var value by SharedPreference_Float(name, preferences, 0f)
+    }
+    val READER_MARGIN_BOTTOM = object : Preference<Float>("READER_MARGIN_BOTTOM") {
+        override var value by SharedPreference_Float(name, preferences, 0f)
+    }
     val READER_TEXT_TO_SPEECH_VOICE_ID =
         object : Preference<String>("READER_TEXT_TO_SPEECH_VOICE_ID") {
             override var value by SharedPreference_String(name, preferences, "")

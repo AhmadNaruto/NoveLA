@@ -50,6 +50,9 @@ android {
         versionName = "1.5.1"
         base.archivesName.set("NoveLA_v$versionName")
         manifestPlaceholders["appLabel"] = "NoveLA"
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     signingConfigs {

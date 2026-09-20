@@ -6,6 +6,7 @@ import my.noveldokusha.coreui.components.ToolbarMode
 import my.noveldokusha.coreui.states.PagedListIteratorState
 import my.noveldokusha.core.appPreferences.ListLayoutMode
 import my.noveldokusha.core.appPreferences.SortOrder
+import my.noveldokusha.core.appPreferences.SourceStripPosition
 import my.noveldokusha.feature.local_database.BookMetadata
 import my.noveldokusha.scraper.ActiveFilters
 import my.noveldokusha.scraper.LuaFilter
@@ -22,6 +23,9 @@ internal data class SourceCatalogScreenState(
 
     // Размер сетки — общий preference (2..6), дефолт 3
     val gridColumns: MutableState<Int>,
+
+    // Стиль карточки: OnCover / BelowCover / InfoPanel
+    val sourceStripPosition: State<SourceStripPosition>,
 
     // Фильтры — показывать кнопку только если источник реализует FilterableCatalog
     val hasFilters: Boolean,

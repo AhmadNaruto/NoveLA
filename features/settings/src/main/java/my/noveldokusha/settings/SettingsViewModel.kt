@@ -48,7 +48,8 @@ internal class SettingsViewModel @Inject constructor(
 
     var isCleaningDatabase = mutableStateOf(false)
     var isCleaningImages = mutableStateOf(false)
-    var isCleaningChapterCache = mutableStateOf(false)
+    var isCleaningNovelCache = mutableStateOf(false)
+    var isCleaningMangaCache = mutableStateOf(false)
 
     private val cloudflareBypassEnabled by appPreferences.CLOUDFLARE_BYPASS_ENABLED.state(viewModelScope)
 
@@ -119,15 +120,18 @@ internal class SettingsViewModel @Inject constructor(
         autoBackupIncludeSettings = appPreferences.BACKUP_AUTO_INCLUDE_SETTINGS.state(viewModelScope),
         autoBackupIncludePlugins = appPreferences.BACKUP_AUTO_INCLUDE_PLUGINS.state(viewModelScope),
         autoBackupLastTimestamp = appPreferences.BACKUP_AUTO_LAST_TIMESTAMP.state(viewModelScope),
-        chapterCacheSize = mutableStateOf("…"),
-        isCleaningChapterCache = isCleaningChapterCache,
+        novelCacheSize = mutableStateOf("…"),
+        mangaCacheSize = mutableStateOf("…"),
+        isCleaningNovelCache = isCleaningNovelCache,
+        isCleaningMangaCache = isCleaningMangaCache,
         cleanConfirmationType = mutableStateOf(null),
     )
 
     init {
         updateDatabaseSize()
         updateImagesFolderSize()
-        updateChapterCacheSize()
+        updateNovelCacheSize()
+        updateMangaCacheSize()
         viewModelScope.launch {
             appRepository.eventDataRestored.collect {
                 updateDatabaseSize()
@@ -358,34 +362,65 @@ internal class SettingsViewModel @Inject constructor(
         updateImagesFolderSizeAndWait()
     }
 
-    private fun updateChapterCacheSize() = viewModelScope.launch {
-        val size = appRepository.settings.getChapterCacheSizeBytes()
+    private fun updateNovelCacheSize() = viewModelScope.launch {
+        val size = appRepository.settings.getNovelCacheSizeBytes()
         withContext(Dispatchers.Main) {
-            state.chapterCacheSize.value = Formatter.formatFileSize(appPreferences.context, size)
+            state.novelCacheSize.value = Formatter.formatFileSize(appPreferences.context, size)
         }
     }
 
-    fun requestCleanChapterCache() {
-        state.cleanConfirmationType.value = CleanConfirmationType.CHAPTER_CACHE
+    private fun updateMangaCacheSize() = viewModelScope.launch {
+        val size = appRepository.settings.getMangaCacheSizeBytes()
+        withContext(Dispatchers.Main) {
+            state.mangaCacheSize.value = Formatter.formatFileSize(appPreferences.context, size)
+        }
     }
 
-    private fun cleanChapterCache() = appScope.launch(Dispatchers.IO) {
-        if (isCleaningChapterCache.value) return@launch
+    fun requestCleanNovelCache() {
+        state.cleanConfirmationType.value = CleanConfirmationType.NOVEL_CACHE
+    }
+
+    fun requestCleanMangaCache() {
+        state.cleanConfirmationType.value = CleanConfirmationType.MANGA_CACHE
+    }
+
+    private fun cleanNovelCache() = appScope.launch(Dispatchers.IO) {
+        if (isCleaningNovelCache.value) return@launch
 
         try {
-            isCleaningChapterCache.value = true
-            toasty.show(R.string.cleaning_chapter_cache)
+            isCleaningNovelCache.value = true
+            toasty.show(R.string.cleaning_novel_cache)
 
-            appRepository.settings.clearChapterCache()
-            updateChapterCacheSize()
+            appRepository.settings.clearNovelCache()
+            updateNovelCacheSize()
             kotlinx.coroutines.delay(500)
 
-            toasty.show(R.string.chapter_cache_cleaned)
+            toasty.show(R.string.novel_cache_cleaned)
         } catch (e: Exception) {
-            toasty.show(R.string.chapter_cache_clean_failed)
+            toasty.show(R.string.novel_cache_clean_failed)
             Timber.e(e)
         } finally {
-            isCleaningChapterCache.value = false
+            isCleaningNovelCache.value = false
+        }
+    }
+
+    private fun cleanMangaCache() = appScope.launch(Dispatchers.IO) {
+        if (isCleaningMangaCache.value) return@launch
+
+        try {
+            isCleaningMangaCache.value = true
+            toasty.show(R.string.cleaning_manga_cache)
+
+            appRepository.settings.clearMangaCache()
+            updateMangaCacheSize()
+            kotlinx.coroutines.delay(500)
+
+            toasty.show(R.string.manga_cache_cleaned)
+        } catch (e: Exception) {
+            toasty.show(R.string.manga_cache_clean_failed)
+            Timber.e(e)
+        } finally {
+            isCleaningMangaCache.value = false
         }
     }
 
@@ -400,7 +435,8 @@ internal class SettingsViewModel @Inject constructor(
         when (state.cleanConfirmationType.value) {
             CleanConfirmationType.DATABASE -> cleanDatabase()
             CleanConfirmationType.IMAGES_FOLDER -> cleanImagesFolder()
-            CleanConfirmationType.CHAPTER_CACHE -> cleanChapterCache()
+            CleanConfirmationType.NOVEL_CACHE -> cleanNovelCache()
+            CleanConfirmationType.MANGA_CACHE -> cleanMangaCache()
             null -> return
         }
         state.cleanConfirmationType.value = null
@@ -429,13 +465,14 @@ internal class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * Refresh all size displays (database, images, chapter cache).
+     * Refresh all size displays (database, images, novel cache, manga cache).
      * Called every time the settings screen becomes visible.
      */
     fun refreshSizes() {
         updateDatabaseSize()
         updateImagesFolderSize()
-        updateChapterCacheSize()
+        updateNovelCacheSize()
+        updateMangaCacheSize()
     }
 
     fun onMassAddDelayChange(newDelayMs: Long) {

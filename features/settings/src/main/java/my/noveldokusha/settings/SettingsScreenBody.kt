@@ -68,7 +68,8 @@ internal fun SettingsScreenBody(
     onDarkModeSelected: (DarkMode) -> Unit,
     onRequestCleanDatabase: () -> Unit,
     onRequestCleanImageFolder: () -> Unit,
-    onRequestCleanChapterCache: () -> Unit,
+    onRequestCleanNovelCache: () -> Unit,
+    onRequestCleanMangaCache: () -> Unit,
     onConfirmClean: () -> Unit,
     onDismissClean: () -> Unit,
     onMassAddDelayChange: (Long) -> Unit,
@@ -140,13 +141,16 @@ internal fun SettingsScreenBody(
         SettingsData(
             databaseSize = state.databaseSize.value,
             imagesFolderSize = state.imageFolderSize.value,
-            chapterCacheSize = state.chapterCacheSize.value,
+            novelCacheSize = state.novelCacheSize.value,
+            mangaCacheSize = state.mangaCacheSize.value,
             isCleaningDatabase = state.isCleaningDatabase.value,
             isCleaningImages = state.isCleaningImages.value,
-            isCleaningChapterCache = state.isCleaningChapterCache.value,
+            isCleaningNovelCache = state.isCleaningNovelCache.value,
+            isCleaningMangaCache = state.isCleaningMangaCache.value,
             onRequestCleanDatabase = onRequestCleanDatabase,
             onRequestCleanImageFolder = onRequestCleanImageFolder,
-            onRequestCleanChapterCache = onRequestCleanChapterCache,
+            onRequestCleanNovelCache = onRequestCleanNovelCache,
+            onRequestCleanMangaCache = onRequestCleanMangaCache,
         )
         HorizontalDivider()
         val context = LocalContext.current
@@ -250,12 +254,14 @@ internal fun SettingsScreenBody(
         val titleRes = when (confirmationType) {
             CleanConfirmationType.DATABASE -> R.string.clean_database
             CleanConfirmationType.IMAGES_FOLDER -> R.string.clean_images_folder
-            CleanConfirmationType.CHAPTER_CACHE -> R.string.clean_chapter_cache
+            CleanConfirmationType.NOVEL_CACHE -> R.string.clean_novel_cache
+            CleanConfirmationType.MANGA_CACHE -> R.string.clean_manga_cache
         }
         val textRes = when (confirmationType) {
             CleanConfirmationType.DATABASE -> R.string.clean_database_confirmation
             CleanConfirmationType.IMAGES_FOLDER -> R.string.clean_images_folder_confirmation
-            CleanConfirmationType.CHAPTER_CACHE -> R.string.clean_chapter_cache_confirmation
+            CleanConfirmationType.NOVEL_CACHE -> R.string.clean_novel_cache_confirmation
+            CleanConfirmationType.MANGA_CACHE -> R.string.clean_manga_cache_confirmation
         }
         AlertDialog(
             onDismissRequest = onDismissClean,
@@ -313,8 +319,10 @@ private fun Preview() {
                     imageFolderSize = remember { mutableStateOf("10 MB") },
                     isCleaningDatabase = remember { mutableStateOf(false) },
                     isCleaningImages = remember { mutableStateOf(false) },
-                    chapterCacheSize = remember { mutableStateOf("5 MB") },
-                    isCleaningChapterCache = remember { mutableStateOf(false) },
+                    novelCacheSize = remember { mutableStateOf("3 MB") },
+                    mangaCacheSize = remember { mutableStateOf("2 MB") },
+                    isCleaningNovelCache = remember { mutableStateOf(false) },
+                    isCleaningMangaCache = remember { mutableStateOf(false) },
                     updateAppSetting = SettingsScreenState.UpdateApp(
                         currentAppVersion = "1.0.0",
                         appUpdateCheckerEnabled = remember { mutableStateOf(true) },
@@ -359,7 +367,8 @@ private fun Preview() {
                 onRefreshSizes = { },
                 onRequestCleanDatabase = { },
                 onRequestCleanImageFolder = { },
-                onRequestCleanChapterCache = { },
+                onRequestCleanNovelCache = { },
+                onRequestCleanMangaCache = { },
                 onConfirmClean = { },
                 onDismissClean = { },
                 onMassAddDelayChange = { },

@@ -52,7 +52,7 @@
     <string name="updating_library_notice">Aggiornamento libreria</string>
     <string name="chapter_downloaded">Capitolo scaricato</string>
     <string name="search_by_title">Cerca per titolo</string>
-    <string name="clean_images_folder">Pulisci cartella immagini</string>
+    <string name="clean_images_folder">Pulisci cache immagini</string>
     <string name="preserve_only_images_from_library_books">Mantieni solo le immagini dei libri in libreria</string>
     <string name="add_delay">Aggiungi ritardo</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">Pulizia database in corso...</string>
     <string name="database_cleaned_successfully">Database pulito con successo</string>
     <string name="database_clean_failed">Pulizia database fallita</string>
-    <string name="cleaning_images_folder">Pulizia cartella immagini in corso...</string>
-    <string name="images_folder_cleaned">Cartella immagini pulita. %d cartelle eliminate</string>
-    <string name="images_folder_already_clean">La cartella immagini è già pulita</string>
-    <string name="images_folder_clean_failed">Pulizia cartella immagini fallita</string>
+    <string name="cleaning_images_folder">Pulizia cache immagini in corso...</string>
+    <string name="images_folder_cleaned">Cache immagini pulita. %d cartelle eliminate</string>
+    <string name="images_folder_already_clean">La cache immagini è già pulita</string>
+    <string name="images_folder_clean_failed">Pulizia cache immagini fallita</string>
     <string name="close_selection_bar">Chiudi barra di selezione</string>
     <string name="open_last_read_chapter">Apri ultimo capitolo letto</string>
     <string name="updating_book_info">Aggiornamento informazioni libro</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Tentativo di bypass del firewall Cloudflare fallito</string>
     <string name="features_reader_full_screen">Schermo intero</string>
     <string name="single_tap_to_open_settings">Tocca una volta per aprire il menu</string>
-    <string name="source_name_local">Locale</string>
+    <string name="source_name_local">Locale EPUB/FB2</string>
+    <string name="source_name_local_manga">Locale CBZ</string>
 
     <string name="delete_novel">Elimina romanzo</string>
     <string name="delete_book_translations">Elimina tutte le traduzioni di questo romanzo</string>
@@ -423,13 +424,15 @@
     <string name="google_pa_api_keys_tip">Una chiave per riga. Le chiavi vengono convalidate automaticamente — le chiavi morte vengono saltate è una nuova chiave viene recuperata da wtr-lab se necessario.</string>
     <string name="all_genres">Tutti</string>
     <string name="grid_columns">Dimensione griglia</string>
-    <string name="source_strip_position">Posizione della striscia della fonte</string>
+    <string name="card_style">Stile scheda</string>
+    <string name="source_strip_info_panel">Pannello informativo</string>
     <string name="source_strip_on_cover">Sulla copertina</string>
     <string name="source_strip_below_cover">Sotto la copertina</string>
     <string name="apply">Applica</string>
     <!-- Filters -->
     <string name="filters">Filtri</string>
     <string name="filters_reset">Reimposta</string>
+    <string name="typography_reset">Reimposta tipografia</string>
     <string name="filters_apply">Applica</string>
     <string name="filters_search_hint">Cerca...</string>
 
@@ -447,7 +450,6 @@
     <string name="llm_save_preset">Salva come predefinito</string>
     <string name="llm_preset_name">Nome predefinito</string>
     <string name="llm_preset_default">Predefinito</string>
-
 
     <!-- — OpenAI-compatible provider — -->
     <string name="provider_openai">API compatibile con OpenAI</string>
@@ -521,13 +523,18 @@
     <string name="auto_backup_interval_updated">Intervallo di backup aggiornato</string>
     <string name="auto_backup_last_time">Ultimo backup</string>
     <string name="auto_backup_never">Mai</string>
-    <string name="clean_chapter_cache">Pulisci cache capitoli</string>
     <string name="clean_database_confirmation">Sei sicuro di voler pulire il database? Questo rimuoverà tutti i libri non in biblioteca e i loro dati.</string>
-    <string name="clean_images_folder_confirmation">Sei sicuro di voler pulire la cartella delle immagini? Questo rimuoverà le immagini dei libri non in biblioteca.</string>
-    <string name="clean_chapter_cache_confirmation">Sei sicuro di voler cancellare la cache dei capitoli? Questo rimuoverà i corpi dei capitoli e le traduzioni memorizzati nella cache.</string>
-    <string name="cleaning_chapter_cache">Pulizia cache capitoli in corso...</string>
-    <string name="chapter_cache_cleaned">Cache capitoli pulita</string>
-    <string name="chapter_cache_clean_failed">Pulizia cache capitoli fallita</string>
+    <string name="clean_images_folder_confirmation">Sei sicuro di voler pulire la cache delle immagini? Questo rimuoverà le immagini memorizzate temporaneamente e i file dei libri non in biblioteca. Le copertine dei libri in biblioteca non saranno toccate.</string>
+    <string name="clean_novel_cache">Pulisci testi offline</string>
+    <string name="clean_novel_cache_confirmation">Sei sicuro di voler pulire i testi offline? Questo rimuoverà i testi dei capitoli e le traduzioni salvate. Verranno scaricati di nuovo durante la lettura.</string>
+    <string name="cleaning_novel_cache">Pulizia testi offline in corso...</string>
+    <string name="novel_cache_cleaned">Testi offline puliti</string>
+    <string name="novel_cache_clean_failed">Pulizia testi offline fallita</string>
+    <string name="clean_manga_cache">Pulisci manga offline</string>
+    <string name="clean_manga_cache_confirmation">Sei sicuro di voler pulire i manga offline? Questo rimuoverà i capitoli del manga scaricati. Per leggere offline, dovranno essere scaricati di nuovo.</string>
+    <string name="cleaning_manga_cache">Pulizia manga offline in corso...</string>
+    <string name="manga_cache_cleaned">Manga offline puliti</string>
+    <string name="manga_cache_clean_failed">Pulizia manga offline fallita</string>
     <string name="all_sources">Tutte le fonti</string>
     <string name="reset_filters">Reimposta</string>
 
@@ -649,7 +656,6 @@
     <string name="available">Disponibile</string>
 
     <string name="book_fix">Ripara libro</string>
-
 
     <!-- History -->
     <string name="title_history">Cronologia</string>

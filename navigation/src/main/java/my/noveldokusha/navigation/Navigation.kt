@@ -13,7 +13,7 @@ interface NavigationRoutes {
 
     fun chapters(context: Context, bookMetadata: BookMetadata): Intent
 
-    fun webView(context: Context, url: String): Intent
+    fun webView(context: Context, url: String, bookUrl: String? = null): Intent
 
     fun reader(
         context: Context,

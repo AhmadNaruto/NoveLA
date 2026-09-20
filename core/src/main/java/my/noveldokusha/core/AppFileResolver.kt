@@ -117,7 +117,7 @@ class AppFileResolver @Inject constructor(
             bookUrl.isContentUri -> resolved
             resolved.isHttpsUrl && isCover -> {
                 val coverFile = getStorageBookCoverImageFile(getLocalBookFolderName(bookUrl))
-                if (coverFile.exists()) coverFile else resolved
+                if (isCoverValid(coverFile)) coverFile else resolved
             }
             resolved.isHttpsUrl -> resolved
             else -> getStorageBookImageFile(bookUrl, resolved)

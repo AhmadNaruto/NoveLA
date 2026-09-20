@@ -1,5 +1,7 @@
 package my.noveldokusha.features.chapterslist
 
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -8,6 +10,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import my.noveldokusha.data.AppRepository
@@ -15,22 +18,28 @@ import my.noveldokusha.data.DownloadedPageChaptersStore
 import my.noveldokusha.data.DownloaderRepository
 import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.core.appPreferences.TernaryState
+import my.noveldokusha.core.isLocalUri
 import my.noveldokusha.feature.local_database.DAOs.ChapterBodyDao
 import my.noveldokusha.feature.local_database.DAOs.ChapterBodyDao.UrlSize
+import my.noveldokusha.feature.local_database.DAOs.ChapterPagesDao
 import my.noveldokusha.feature.local_database.DAOs.DownloadedPageChaptersDao
 import my.noveldokusha.feature.local_database.tables.Book
 import my.noveldokusha.feature.local_database.tables.DownloadedPageChapter
+import my.noveldokusha.core.utils.decodePages
 import my.noveldokusha.core.utils.normalizeBookUrl
+import timber.log.Timber
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 internal class ChaptersRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val appRepository: AppRepository,
     private val downloaderRepository: DownloaderRepository,
     private val appPreferences: AppPreferences,
     private val chapterBodyDao: ChapterBodyDao,
+    private val chapterPagesDao: ChapterPagesDao,
     private val downloadedPageChaptersDao: DownloadedPageChaptersDao,
     private val downloadedPageChaptersStore: DownloadedPageChaptersStore,
 ) {
@@ -76,17 +85,56 @@ internal class ChaptersRepository @Inject constructor(
         appRepository.libraryBooks.get(bookUrl)?.lastReadChapter
 
     /**
-     * Размеры глав для списка. Быстрый путь — только БД (LENGTH(body) +
-     * реальные байты скачанных страничных глав), медленный — дебаунс-скан
-     * диска по изменившемуся набору URL глав. Скан не выполняется на каждое
-     * излучение: результат кэшируется комбинированием двух потоков.
+     * Размеры глав для списка. Три источника:
+     * - БД (LENGTH(body) + реальные байты скачанных страничных глав)
+     * - Дисковый скан downloaded_pages/
+     * - Локальные CBZ-файлы (размер архива через ContentResolver)
      */
     fun getChapterSizesFlow(bookUrl: String): Flow<Map<String, ChapterSize>> = combine(
         dbInfoFlow(bookUrl),
         diskInfoFlow(bookUrl),
-    ) { db, disk -> mergeDiskInfo(db, disk) }
+        localCbzInfoFlow(bookUrl),
+    ) { db, disk, local -> mergeAllInfo(db, disk, local) }
         .map { it.sizeByUrl.mapValues { (_, bytes) -> ChapterSize(bytes) } }
         .distinctUntilChanged()
+
+    /**
+     * Размеры локальных CBZ-файлов через ContentResolver.
+     * Для локальных манг-глав (URL начинается с local://) извлекает content URI
+     * из ChapterPages и запрашивает реальный размер файла.
+     */
+    private fun localCbzInfoFlow(bookUrl: String): Flow<DownloadInfo> {
+        if (!bookUrl.isLocalUri) return flowOf(DownloadInfo(emptySet(), emptyMap()))
+        return combine(
+            appRepository.bookChapters.getChaptersWithContextFlow(bookUrl = bookUrl),
+            chapterPagesDao.getByBookUrls(listOf(bookUrl)),
+        ) { chapters, pageRows ->
+            val cbzSizes = HashMap<String, Long>()
+            chapters.forEach { chapter ->
+                val chapterUrl = chapter.chapter.url
+                val pages = pageRows.find { it.url == chapterUrl }?.pages?.let(::decodePages)
+                if (pages.isNullOrEmpty()) return@forEach
+                // Строка cbz://contentUri#entryName → извлекаем contentUri
+                val firstPage = pages.firstOrNull() ?: return@forEach
+                if (!firstPage.startsWith("cbz://")) return@forEach
+                val contentUriStr = firstPage.removePrefix("cbz://").substringBefore('#')
+                if (contentUriStr.isBlank()) return@forEach
+                try {
+                    val uri = android.net.Uri.parse(contentUriStr)
+                    context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+                        val size = pfd.statSize
+                        if (size > 0) cbzSizes[chapterUrl] = size
+                    }
+                } catch (e: Exception) {
+                    Timber.d("localCbzInfo: failed to get size for $chapterUrl: ${e.message}")
+                }
+            }
+            DownloadInfo(downloadedUrls = emptySet(), sizeByUrl = cbzSizes)
+        }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
+            .onStart { emit(DownloadInfo(emptySet(), emptyMap())) }
+    }
 
     private fun dbInfoFlow(bookUrl: String): Flow<DownloadInfo> = combine(
         chapterBodyDao.getSizesByBookUrls(listOf(bookUrl)),
@@ -129,6 +177,16 @@ internal fun buildDbInfo(
 internal fun mergeDiskInfo(db: DownloadInfo, disk: DownloadInfo): DownloadInfo = DownloadInfo(
     downloadedUrls = db.downloadedUrls + disk.downloadedUrls,
     sizeByUrl = db.sizeByUrl + disk.sizeByUrl,
+)
+
+/** Объединение трёх источников: БД, диск, локальные CBZ. Приоритет: CBZ > диск > БД. */
+internal fun mergeAllInfo(
+    db: DownloadInfo,
+    disk: DownloadInfo,
+    local: DownloadInfo,
+): DownloadInfo = DownloadInfo(
+    downloadedUrls = db.downloadedUrls + disk.downloadedUrls + local.downloadedUrls,
+    sizeByUrl = db.sizeByUrl + disk.sizeByUrl + local.sizeByUrl,
 )
 
 private const val KB = 1024.0

@@ -32,6 +32,19 @@ class DownloaderRepository @Inject constructor(
     private val networkClient: NetworkClient,
 ) {
 
+    private fun <T> Response<T>.propagatePluginError(): Response<T> = when {
+        this is Response.Error && exception is my.noveldokusha.scraper.domain.PluginShowErrorException -> {
+            val e = exception as my.noveldokusha.scraper.domain.PluginShowErrorException
+            Response.Error(
+                message = e.message ?: "Error",
+                exception = e,
+                pluginErrorTitle = e.errorTitle,
+                pluginErrorMessage = e.message
+            )
+        }
+        else -> this
+    }
+
     suspend fun bookCoverImageUrl(
         bookUrl: String,
     ): Response<String?> = withContext(Dispatchers.IO) {
@@ -49,7 +62,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookCoverImageUrl(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     suspend fun bookTitle(
@@ -69,7 +82,7 @@ class DownloaderRepository @Inject constructor(
 
         val apiResponse = my.noveldokusha.network.tryFlatConnect {
             scrap.getBookTitle(bookUrl)
-        }
+        }.propagatePluginError()
 
         if (apiResponse is Response.Success && apiResponse.data != null) {
             return@withContext apiResponse
@@ -103,7 +116,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookGenres(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     suspend fun bookRating(
@@ -114,7 +127,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookRating(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     /**
@@ -129,7 +142,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookStatus(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     /**
@@ -144,7 +157,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookLastUpdate(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     suspend fun bookDescription(
@@ -164,7 +177,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getBookDescription(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     suspend fun bookChapter(
@@ -181,13 +194,13 @@ class DownloaderRepository @Inject constructor(
             }
 
             val result = my.noveldokusha.network.tryFlatConnect {
-                val request = my.noveldokusha.network.getRequest(chapterUrl)
-                val realUrl = networkClient
-                    .call(request, followRedirects = true)
-                    .use { it.request.url.toString() }
+                    val request = my.noveldokusha.network.getRequest(chapterUrl)
+                    val realUrl = networkClient
+                        .call(request, followRedirects = true)
+                        .use { it.request.url.toString() }
 
-                val error by lazy {
-                    """
+                    val error by lazy {
+                        """
 					Unable to load chapter from url:
 					$chapterUrl
 
@@ -196,107 +209,118 @@ class DownloaderRepository @Inject constructor(
 
 					Source not supported
 				""".trimIndent()
-                }
-
-                val matchingSource = scraper.getCompatibleSource(realUrl)
-                matchingSource?.also { source ->
-                    val chapterPageUrl = source.transformChapterUrl(realUrl)
-
-                    // Всегда передаём Referer и базовые заголовки при загрузке страницы главы.
-                    // Без Referer ряд сайтов (jaomix и др.) после нескольких запросов
-                    // возвращает пустую страницу или редирект на защиту.
-                    val headers = buildChapterHeaders(chapterPageUrl)
-
-                    Timber.d("bookChapter: setting tag=source:${source.id} for url=$chapterPageUrl")
-                    val doc = networkClient.call(
-                        getRequest(chapterPageUrl).apply {
-                            headers.forEach { (k, v) -> header(k, v) }
-                            cacheControl(CacheControl.FORCE_NETWORK)
-                            tag(String::class.java, "source:${source.id}")
-                        }
-                    ).use { it.toDocument(source.charset) }
-
-                    // Манхва/манга: если источник извлёк упорядоченный список URL
-                    // страниц (getPageList), глава рендерится как картинки —
-                    // HTML-тело не нужно.
-                    val pages = source.getChapterPages(doc)
-                    if (!pages.isNullOrEmpty()) {
-                        val pageData = my.noveldokusha.scraper.ChapterDownload(
-                            body = "",
-                            title = null,
-                            pages = pages
-                        )
-                        return@tryFlatConnect Response.Success(pageData)
                     }
 
-                    // Если getChapterText вернул null или пустую строку — выходим из блока скрапера
-                    val body = source.getChapterText(doc)?.takeIf { it.isNotBlank() }
-                        ?: run {
-                            // Ни страниц (getPageList), ни тела — глава не скачается
-                            // («Empty content» в fetchChapterForDownload). Пишем с id
-                            // источника, чтобы было видно, чей плагин не отдаёт главу.
-                            Timber.w(
-                                "bookChapter: source ${source.id} returned no pages and no body for $chapterUrl"
+                    val matchingSource = scraper.getCompatibleSource(realUrl)
+                    matchingSource?.also { source ->
+                        val chapterPageUrl = source.transformChapterUrl(realUrl)
+
+                        val headers = buildChapterHeaders(chapterPageUrl)
+
+                        Timber.d("bookChapter: setting tag=source:${source.id} for url=$chapterPageUrl")
+                        val doc = networkClient.call(
+                            getRequest(chapterPageUrl).apply {
+                                headers.forEach { (k, v) -> header(k, v) }
+                                cacheControl(CacheControl.FORCE_NETWORK)
+                                tag(String::class.java, "source:${source.id}")
+                            }
+                        ).use { it.toDocument(source.charset) }
+
+                        val pages = source.getChapterPages(doc)
+                        if (!pages.isNullOrEmpty()) {
+                            val pageData = my.noveldokusha.scraper.ChapterDownload(
+                                body = "",
+                                title = null,
+                                pages = pages
                             )
-                            return@also
+                            return@tryFlatConnect Response.Success(pageData)
                         }
 
-                    val data = my.noveldokusha.scraper.ChapterDownload(
-                        body = body,
-                        title = null
-                    )
-                    return@tryFlatConnect Response.Success(data)
-                }
-
-                // Fallback: heuristic extraction с поддержкой JS-редиректов
-                // Если source найден — передаём тег + заголовки, чтобы запрос шёл
-                // через UserAgentInterceptor с правильным UA-пресетом.
-                val doc = networkClient.call(
-                    getRequest(realUrl).apply {
-                        cacheControl(CacheControl.FORCE_NETWORK)
-                        matchingSource?.let { src ->
-                            tag(String::class.java, "source:${src.id}")
-                            buildChapterHeaders(realUrl).forEach { (k, v) -> header(k, v) }
+                        if (pages != null) {
+                            return@tryFlatConnect Response.Error(
+                                "Chapter has no pages (possible auth required)",
+                                Exception("Source returned empty page list for $chapterUrl")
+                            )
                         }
+
+                        val body = source.getChapterText(doc)?.takeIf { it.isNotBlank() }
+                            ?: run {
+                                Timber.w(
+                                    "bookChapter: source ${source.id} returned no pages and no body for $chapterUrl"
+                                )
+                                return@also
+                            }
+
+                        val data = my.noveldokusha.scraper.ChapterDownload(
+                            body = body,
+                            title = null
+                        )
+                        return@tryFlatConnect Response.Success(data)
                     }
-                ).use { it.toDocument() }
 
-                // Проверяем HTML на JS-редирект (window.location, meta refresh)
-                val redirectUrl = my.noveldokusha.network.JsRedirectResolver.resolveRedirectUrl(doc)
-                if (redirectUrl != null) {
-                    Timber.d("JS redirect resolved: $redirectUrl")
-                    val redirectedDoc = networkClient.call(
-                        getRequest(redirectUrl).cacheControl(CacheControl.FORCE_NETWORK)
+                    val doc = networkClient.call(
+                        getRequest(realUrl).apply {
+                            cacheControl(CacheControl.FORCE_NETWORK)
+                            matchingSource?.let { src ->
+                                tag(String::class.java, "source:${src.id}")
+                                buildChapterHeaders(realUrl).forEach { (k, v) -> header(k, v) }
+                            }
+                        }
                     ).use { it.toDocument() }
-                    val chapter = heuristicChapterExtraction(redirectUrl, redirectedDoc)
-                    if (chapter != null) {
-                        return@tryFlatConnect Response.Success(chapter)
+
+                    val redirectUrl = my.noveldokusha.network.JsRedirectResolver.resolveRedirectUrl(doc)
+                    if (redirectUrl != null) {
+                        Timber.d("JS redirect resolved: $redirectUrl")
+                        val redirectedDoc = networkClient.call(
+                            getRequest(redirectUrl).cacheControl(CacheControl.FORCE_NETWORK)
+                        ).use { it.toDocument() }
+                        val chapter = heuristicChapterExtraction(redirectUrl, redirectedDoc)
+                        if (chapter != null) {
+                            return@tryFlatConnect Response.Success(chapter)
+                        }
+                    }
+
+                    val chapter = heuristicChapterExtraction(realUrl, doc)
+                    when (chapter) {
+                        null -> Response.Error(
+                            error,
+                            Exception("Unable to extract chapter data with heuristics")
+                        )
+                        else -> Response.Success(chapter)
                     }
                 }
 
-                val chapter = heuristicChapterExtraction(realUrl, doc)
-                when (chapter) {
-                    null -> Response.Error(
-                        error,
-                        Exception("Unable to extract chapter data with heuristics")
-                    )
-                    else -> Response.Success(chapter)
-                }
+            // tryAsResponse ловит все исключения внутри tryFlatConnect,
+            // поэтому PluginShowErrorException приходит как Response.Error с исключением.
+            val finalResult = if (result is Response.Error && result.exception is my.noveldokusha.scraper.domain.PluginShowErrorException) {
+                val e = result.exception as my.noveldokusha.scraper.domain.PluginShowErrorException
+                Response.Error(
+                    message = e.message ?: "Error",
+                    exception = e,
+                    pluginErrorTitle = e.errorTitle,
+                    pluginErrorMessage = e.message
+                )
+            } else {
+                result
             }
 
-            when (result) {
-                is Response.Success -> return@withContext result
+            when (finalResult) {
+                is Response.Success -> return@withContext finalResult
                 is Response.Error -> {
-                    val isTransient = result.exception is SocketTimeoutException ||
-                            result.message.contains("Timeout", ignoreCase = true) ||
-                            result.message.contains("timeout", ignoreCase = true) ||
-                            result.message.contains("connect", ignoreCase = true) ||
-                            result.message.contains("connection", ignoreCase = true)
+                    // Плагин-ошибки не ретраим — это не сетевая проблема
+                    if (finalResult.pluginErrorTitle != null) {
+                        return@withContext finalResult
+                    }
+                    val isTransient = finalResult.exception is SocketTimeoutException ||
+                            finalResult.message.contains("Timeout", ignoreCase = true) ||
+                            finalResult.message.contains("timeout", ignoreCase = true) ||
+                            finalResult.message.contains("connect", ignoreCase = true) ||
+                            finalResult.message.contains("connection", ignoreCase = true)
 
                     if (!isTransient || attempt == maxRetries - 1) {
-                        return@withContext result
+                        return@withContext finalResult
                     }
-                    lastError = result
+                    lastError = finalResult
                 }
             }
         }
@@ -349,10 +373,7 @@ class DownloaderRepository @Inject constructor(
 
         if (firstPageResult != null) {
             val firstPage = (firstPageResult as? Response.Success)?.data
-                ?: return@withContext Response.Error(
-                    (firstPageResult as Response.Error).message,
-                    (firstPageResult as Response.Error).exception
-                )
+                ?: return@withContext (firstPageResult as Response.Error).propagatePluginError()
 
             Timber.d("bookChaptersList: parsePage supported, totalPages=${firstPage.totalPages}, page1 chapters=${firstPage.chapters.size}")
 
@@ -384,7 +405,7 @@ class DownloaderRepository @Inject constructor(
         Timber.d("bookChaptersList: parsePage not supported, falling back to getChapterList")
         my.noveldokusha.network.tryFlatConnect {
             scrap.getChapterList(bookUrl)
-        }
+        }.propagatePluginError()
             .map { chapters ->
                 Timber.d("bookChaptersList: getChapterList returned ${chapters.size} chapters")
                 chapters.mapIndexed { index, it ->
@@ -425,10 +446,10 @@ class DownloaderRepository @Inject constructor(
             } else {
                 Timber.d("bookChaptersPage: page=$page → null (not supported)")
             }
-            result
+            result?.propagatePluginError()
         } catch (e: Exception) {
             Timber.e(e, "bookChaptersPage: page=$page exception")
-            Response.Error(e.message ?: "Unknown error", e)
+            Response.Error(e.message ?: "Unknown error", e).propagatePluginError()
         }
     }
 
@@ -449,7 +470,7 @@ class DownloaderRepository @Inject constructor(
 
         my.noveldokusha.network.tryFlatConnect {
             scrap.getChapterListHash(bookUrl)
-        }
+        }.propagatePluginError()
     }
 
     // ── Заголовки для загрузки страницы главы ────────────────────────────────
@@ -505,7 +526,9 @@ private fun heuristicChapterExtraction(url: String, document: Document): my.nove
         val content = article.articleContent ?: return null
         return my.noveldokusha.scraper.ChapterDownload(
             body = TextExtractor.get(content),
-            title = article.title
+            // ponytail: title из Readability мусорный (например "Chainsaw Man Chapter 3 - Read Manga Online").
+            // Название приходит из списка глав, а не из тела — не затираем.
+            title = null
         )
     }
 }

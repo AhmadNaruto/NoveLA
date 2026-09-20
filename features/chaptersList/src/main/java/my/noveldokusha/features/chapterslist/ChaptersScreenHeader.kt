@@ -67,7 +67,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import my.noveldokusha.coreui.components.BookImageButtonView
 import my.noveldokusha.coreui.components.BookRatingChip
-import my.noveldokusha.coreui.components.BookTitlePosition
+import my.noveldokusha.core.appPreferences.SourceStripPosition
 import my.noveldokusha.coreui.components.ExpandableText
 import my.noveldokusha.coreui.components.ImageView
 import my.noveldokusha.coreui.theme.clickableNoIndicator
@@ -142,7 +142,7 @@ internal fun ChaptersScreenHeader(
                     coverImageModel = coverImageModel,
                     onClick = { showImageFullScreen = true },
                     onLongClick = onCoverLongClick,
-                    bookTitlePosition = BookTitlePosition.Hidden,
+                    sourceStripPosition = SourceStripPosition.BelowCover,
                     modifier = Modifier.weight(1f)
                 )
                 if (showImageFullScreen) Dialog(

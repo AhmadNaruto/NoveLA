@@ -5,6 +5,9 @@ import timber.log.Timber
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,17 +15,25 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import my.noveldokusha.core.AppCoroutineScope
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class LocalSourcesDirectories @Inject constructor(
+class LocalSourcesDirectories @AssistedInject constructor(
     @ApplicationContext private val appContext: Context,
     private val appCoroutineScope: AppCoroutineScope,
+    @Assisted private val sourceType: String,
 ) {
+
+    @AssistedFactory
+    interface Factory {
+        fun create(sourceType: String): LocalSourcesDirectories
+    }
+
+    private val prefs get() =
+        appContext.getSharedPreferences("local_dirs_$sourceType", Context.MODE_PRIVATE)
+
     val list: List<Uri>
-        get() = appContext.contentResolver.persistedUriPermissions
-            .map { it.uri }
+        get() = prefs.getStringSet("dirs", emptySet())
+            ?.map { Uri.parse(it) }
+            ?: emptyList()
 
     private val _listState = MutableStateFlow(list)
     val listState = _listState.asStateFlow()
@@ -31,19 +42,22 @@ class LocalSourcesDirectories @Inject constructor(
         appContext.contentResolver.takePersistableUriPermission(
             uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
         )
+        val current = prefs.getStringSet("dirs", mutableSetOf())!!.toMutableSet()
+        current.add(uri.toString())
+        prefs.edit().putStringSet("dirs", current).apply()
         updateState()
     }
 
     fun remove(uri: Uri) {
-        // Get actual permissions for this URI and release all of them
+        val current = prefs.getStringSet("dirs", mutableSetOf())!!.toMutableSet()
+        current.remove(uri.toString())
+        prefs.edit().putStringSet("dirs", current).apply()
         val permission = appContext.contentResolver.persistedUriPermissions
             .firstOrNull { it.uri == uri }
         val flags = if (permission != null) {
-            var flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            if (permission.isWritePermission) {
-                flags = flags or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            }
-            flags
+            var f = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            if (permission.isWritePermission) f = f or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            f
         } else {
             Intent.FLAG_GRANT_READ_URI_PERMISSION
         }
@@ -51,13 +65,6 @@ class LocalSourcesDirectories @Inject constructor(
             appContext.contentResolver.releasePersistableUriPermission(uri, flags)
         } catch (e: Exception) {
             Timber.e(e, "Failed to release URI permission")
-            try {
-                appContext.contentResolver.releasePersistableUriPermission(
-                    uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (e2: Exception) {
-                Timber.e(e2, "Failed to release URI permission even with READ flag")
-            }
         }
         updateState()
     }

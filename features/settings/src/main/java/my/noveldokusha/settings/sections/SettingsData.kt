@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DataArray
-import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.automirrored.outlined.TextSnippet
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,13 +24,16 @@ import my.noveldokusha.settings.R
 internal fun SettingsData(
     databaseSize: String,
     imagesFolderSize: String,
-    chapterCacheSize: String,
+    novelCacheSize: String,
+    mangaCacheSize: String,
     isCleaningDatabase: Boolean,
     isCleaningImages: Boolean,
-    isCleaningChapterCache: Boolean,
+    isCleaningNovelCache: Boolean,
+    isCleaningMangaCache: Boolean,
     onRequestCleanDatabase: () -> Unit,
     onRequestCleanImageFolder: () -> Unit,
-    onRequestCleanChapterCache: () -> Unit,
+    onRequestCleanNovelCache: () -> Unit,
+    onRequestCleanMangaCache: () -> Unit,
 ) {
     Column {
         Text(
@@ -83,24 +86,45 @@ internal fun SettingsData(
         )
         SlimListItem(
             headlineContent = {
-                Text(text = stringResource(R.string.clean_chapter_cache))
+                Text(text = stringResource(R.string.clean_novel_cache))
             },
             supportingContent = {
                 Column {
-                    Text(text = stringResource(id = R.string.size) + " " + chapterCacheSize)
+                    Text(text = stringResource(id = R.string.size) + " " + novelCacheSize)
                 }
             },
             leadingContent = {
-                if (isCleaningChapterCache) {
+                if (isCleaningNovelCache) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Icon(Icons.Outlined.DeleteSweep, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.AutoMirrored.Outlined.TextSnippet, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
-            modifier = Modifier.clickable(enabled = !isCleaningChapterCache) { onRequestCleanChapterCache() }
+            modifier = Modifier.clickable(enabled = !isCleaningNovelCache) { onRequestCleanNovelCache() }
+        )
+        SlimListItem(
+            headlineContent = {
+                Text(text = stringResource(R.string.clean_manga_cache))
+            },
+            supportingContent = {
+                Column {
+                    Text(text = stringResource(id = R.string.size) + " " + mangaCacheSize)
+                }
+            },
+            leadingContent = {
+                if (isCleaningMangaCache) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(Icons.Outlined.Image, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            modifier = Modifier.clickable(enabled = !isCleaningMangaCache) { onRequestCleanMangaCache() }
         )
     }
 }

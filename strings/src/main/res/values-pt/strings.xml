@@ -52,7 +52,7 @@
     <string name="updating_library_notice">A atualizar biblioteca</string>
     <string name="chapter_downloaded">Capítulo descarregado</string>
     <string name="search_by_title">Pesquisar por título</string>
-    <string name="clean_images_folder">Limpar pasta de imagens</string>
+    <string name="clean_images_folder">Limpar cache de imagens</string>
     <string name="preserve_only_images_from_library_books">Preservar apenas imagens de livros da biblioteca</string>
     <string name="add_delay">Adicionar atraso</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">A limpar base de dados...</string>
     <string name="database_cleaned_successfully">Base de dados limpa com sucesso</string>
     <string name="database_clean_failed">Falha ao limpar base de dados</string>
-    <string name="cleaning_images_folder">A limpar pasta de imagens...</string>
-    <string name="images_folder_cleaned">Pasta de imagens limpa. %d pastas eliminadas</string>
-    <string name="images_folder_already_clean">A pasta de imagens já está limpa</string>
-    <string name="images_folder_clean_failed">Falha ao limpar pasta de imagens</string>
+    <string name="cleaning_images_folder">A limpar cache de imagens…</string>
+    <string name="images_folder_cleaned">Cache de imagens limpa. %d pastas eliminadas</string>
+    <string name="images_folder_already_clean">O cache de imagens já está limpo</string>
+    <string name="images_folder_clean_failed">Falha ao limpar cache de imagens</string>
     <string name="close_selection_bar">Fechar barra de seleção</string>
     <string name="open_last_read_chapter">Abrir último capítulo lido</string>
     <string name="updating_book_info">A atualizar informações do livro</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Tentativa falhada de contornar a firewall Cloudflare</string>
     <string name="features_reader_full_screen">Ecrã inteiro</string>
     <string name="single_tap_to_open_settings">Um toque para abrir o menu</string>
-    <string name="source_name_local">Local</string>
+    <string name="source_name_local">Local EPUB/FB2</string>
+    <string name="source_name_local_manga">Local CBZ</string>
 
     <string name="delete_novel">Eliminar novela</string>
     <string name="delete_book_translations">Eliminar todas as traduções desta novela</string>
@@ -423,13 +424,15 @@
     <string name="google_pa_api_keys_tip">Uma chave por linha. As chaves são validadas automaticamente — chaves inválidas são ignoradas e uma nova chave é obtida do wtr-lab se necessário.</string>
     <string name="all_genres">Tudo</string>
     <string name="grid_columns">Tamanho da grelha</string>
-    <string name="source_strip_position">Posição da faixa da fonte</string>
+    <string name="card_style">Estilo do cartão</string>
+    <string name="source_strip_info_panel">Painel de informações</string>
     <string name="source_strip_on_cover">Na capa</string>
     <string name="source_strip_below_cover">Abaixo da capa</string>
     <string name="apply">Aplicar</string>
     <!-- Filters -->
     <string name="filters">Filtros</string>
     <string name="filters_reset">Repor</string>
+    <string name="typography_reset">Repor tipografia</string>
     <string name="filters_apply">Aplicar</string>
     <string name="filters_search_hint">Pesquisar…</string>
 
@@ -447,7 +450,6 @@
     <string name="llm_save_preset">Guardar como predefinição</string>
     <string name="llm_preset_name">Nome da predefinição</string>
     <string name="llm_preset_default">Predefinição</string>
-
 
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">API compatível com OpenAI</string>
@@ -521,13 +523,18 @@
     <string name="auto_backup_interval_updated">Intervalo de backup atualizado</string>
     <string name="auto_backup_last_time">Último backup</string>
     <string name="auto_backup_never">Nunca</string>
-    <string name="clean_chapter_cache">Limpar cache de capítulos</string>
     <string name="clean_database_confirmation">Tem certeza de que deseja limpar o banco de dados? Isso removerá todos os livros fora da biblioteca e seus dados.</string>
-    <string name="clean_images_folder_confirmation">Tem certeza de que deseja limpar a pasta de imagens? Isso removerá imagens de livros fora da biblioteca.</string>
-    <string name="clean_chapter_cache_confirmation">Tem certeza de que deseja limpar o cache de capítulos? Isso removerá os corpos dos capítulos e traduções em cache.</string>
-    <string name="cleaning_chapter_cache">A limpar cache de capítulos…</string>
-    <string name="chapter_cache_cleaned">Cache de capítulos limpa</string>
-    <string name="chapter_cache_clean_failed">Falha ao limpar cache de capítulos</string>
+    <string name="clean_images_folder_confirmation">Isso removerá o cache temporário de imagens e livros fora da biblioteca. As capas dos livros da biblioteca não serão afetadas.</string>
+    <string name="clean_novel_cache">Limpar textos offline</string>
+    <string name="clean_novel_cache_confirmation">Isso removerá os textos dos capítulos e traduções salvos. Eles serão transferidos novamente ao ler.</string>
+    <string name="cleaning_novel_cache">A limpar textos offline…</string>
+    <string name="novel_cache_cleaned">Textos offline limpos</string>
+    <string name="novel_cache_clean_failed">Falha ao limpar textos offline</string>
+    <string name="clean_manga_cache">Limpar mangá offline</string>
+    <string name="clean_manga_cache_confirmation">Isso removerá os capítulos de mangá transferidos. Para ler offline, será necessário transferi-los novamente.</string>
+    <string name="cleaning_manga_cache">A limpar mangá offline…</string>
+    <string name="manga_cache_cleaned">Mangá offline limpo</string>
+    <string name="manga_cache_clean_failed">Falha ao limpar mangá offline</string>
     <string name="all_sources">Todas as fontes</string>
     <string name="reset_filters">Repor</string>
 
@@ -649,7 +656,6 @@
     <string name="available">Disponível</string>
 
     <string name="book_fix">Reparar livro</string>
-
 
     <!-- History -->
     <string name="title_history">Histórico</string>

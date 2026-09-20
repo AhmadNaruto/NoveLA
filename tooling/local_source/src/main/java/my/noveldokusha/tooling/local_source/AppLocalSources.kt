@@ -70,9 +70,10 @@ import javax.inject.Singleton
 @Singleton
 class AppLocalSources @Inject constructor(
     @ApplicationContext private val appContext: Context,
-    private val localSourcesDirectories: LocalSourcesDirectories,
+    localSourcesDirectoriesFactory: LocalSourcesDirectories.Factory,
     private val appFileResolver: AppFileResolver,
 ) : LocalSource {
+    private val localSourcesDirectories = localSourcesDirectoriesFactory.create("novel")
     override val id = "local_source"
     override val nameStrId = R.string.source_name_local
     override val baseUrl = "local://"
@@ -84,11 +85,48 @@ class AppLocalSources @Inject constructor(
 
 
     override suspend fun getChapterList(bookUrl: String): Response<List<ChapterResult>> {
-        // This should always fail as is local
-        return Response.Error(
-            "LocalSource doesn't have remote API",
-            UnsupportedOperationException()
-        )
+        return withContext(Dispatchers.IO) {
+            tryConnect {
+                val bookTitle = bookUrl.removePrefix("local://")
+                val file = findBookFileInCatalogs(bookTitle)
+                    ?: throw UnsupportedOperationException("Book file not found: $bookTitle")
+
+                val inputStream = appContext.contentResolver.openInputStream(file)
+                    ?: throw UnsupportedOperationException("Cannot open file: $file")
+
+                val bookData = inputStream.use { stream ->
+                    if (bookTitle.isFb2File()) fb2Parser(stream) else epubParser(stream)
+                }
+
+                bookData.chapters.map { chapter ->
+                    ChapterResult(
+                        title = chapter.title,
+                        url = appFileResolver.getLocalBookChapterPath(bookTitle, chapter.absPath)
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Find a book file in catalog directories by matching the storage folder name.
+     * The storage folder name is the book title (e.g., "My Book" for "My Book.epub").
+     */
+    private fun findBookFileInCatalogs(storageFolderName: String): Uri? {
+        return localSourcesDirectories
+            .list
+            .asSequence()
+            .flatMap { dirUri ->
+                DocumentsContract.buildChildDocumentsUriUsingTree(
+                    dirUri, DocumentsContract.getTreeDocumentId(dirUri)
+                ).cursorRecursiveGetAllFiles()
+            }
+            .firstOrNull { book ->
+                // Match by title: "My Book" matches "My Book.epub", "My Book.fb2", etc.
+                val fileTitle = book.title.substringBeforeLast('.')
+                fileTitle == storageFolderName || book.title == storageFolderName
+            }
+            ?.url?.toUri()
     }
 
     private val validMIMES = setOf(

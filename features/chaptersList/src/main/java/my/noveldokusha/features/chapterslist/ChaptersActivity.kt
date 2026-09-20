@@ -79,7 +79,7 @@ class ChaptersActivity : BaseActivity() {
                     onPullRefresh = viewModel::onPullRefresh,
                     onCoverLongClick = { searchBookInDatabase(input = viewModel.bookTitle) },
                     onChangeCover = onDoAskForImage { viewModel.saveImageAsCover(it) },
-                    onOpenInBrowser = { navigationRoutes.webView(this, url = it).let(::startActivity) },
+                    onOpenInBrowser = { navigationRoutes.webView(this, url = it, bookUrl = it).let(::startActivity) },
                     onGlobalSearchClick = { navigationRoutes.globalSearch(this, text = it).let(::startActivity) },
                     onDownloadNext100Chapters = viewModel::downloadNext100Chapters,
                     onDownloadAllChapters = viewModel::downloadAllChapters,

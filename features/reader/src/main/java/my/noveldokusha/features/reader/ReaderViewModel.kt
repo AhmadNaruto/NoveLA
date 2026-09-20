@@ -112,6 +112,17 @@ internal class ReaderViewModel @Inject constructor(
                 lineHeight = appPreferences.READER_LINE_HEIGHT.state(viewModelScope),
                 paragraphSpacing = appPreferences.READER_PARAGRAPH_SPACING.state(viewModelScope),
                 letterSpacing = appPreferences.READER_LETTER_SPACING.state(viewModelScope),
+                textJustify = appPreferences.READER_TEXT_JUSTIFY.state(viewModelScope),
+                textHyphenation = appPreferences.READER_TEXT_HYPHENATION.state(viewModelScope),
+                textBold = appPreferences.READER_TEXT_BOLD.state(viewModelScope),
+                textItalic = appPreferences.READER_TEXT_ITALIC.state(viewModelScope),
+                textUnderline = appPreferences.READER_TEXT_UNDERLINE.state(viewModelScope),
+                textShadow = appPreferences.READER_TEXT_SHADOW.state(viewModelScope),
+                textSmooth = appPreferences.READER_TEXT_SMOOTH.state(viewModelScope),
+                marginLeft = appPreferences.READER_MARGIN_LEFT.state(viewModelScope),
+                marginRight = appPreferences.READER_MARGIN_RIGHT.state(viewModelScope),
+                marginTop = appPreferences.READER_MARGIN_TOP.state(viewModelScope),
+                marginBottom = appPreferences.READER_MARGIN_BOTTOM.state(viewModelScope),
             )
         ),
         showInvalidChapterDialog = mutableStateOf(false)

@@ -32,7 +32,7 @@ import my.noveldokusha.core.utils.Extra_StringNullable
 import my.noveldokusha.core.rememberResolvedBookImagePath
 import my.noveldokusha.coreui.BaseActivity
 import my.noveldokusha.coreui.components.BookImageButtonView
-import my.noveldokusha.coreui.components.BookTitlePosition
+import my.noveldokusha.core.appPreferences.SourceStripPosition
 import my.noveldokusha.coreui.theme.Theme
 import my.noveldokusha.data.ScraperRepository
 import my.noveldokusha.feature.local_database.BookMetadata
@@ -269,7 +269,7 @@ class MigrationActivity : BaseActivity() {
                                             onClick = { onResultPicked(flatIndex) },
                                             onLongClick = {},
                                             modifier = Modifier.width(130.dp),
-                                            bookTitlePosition = BookTitlePosition.Outside,
+                                            sourceStripPosition = SourceStripPosition.InfoPanel,
                                             topLeftBadge = {
                                                 if (state.chaptersLoadingIndex == flatIndex) {
                                                     CircularProgressIndicator(modifier = Modifier.size(19.dp), strokeWidth = 2.dp)

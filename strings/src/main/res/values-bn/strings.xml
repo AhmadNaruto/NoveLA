@@ -52,7 +52,7 @@
     <string name="updating_library_notice">লাইব্রেরি আপডেট করা হচ্ছে</string>
     <string name="chapter_downloaded">অধ্যায় ডাউনলোড করা হয়েছে</string>
     <string name="search_by_title">শিরোনাম দ্বারা অনুসন্ধান</string>
-    <string name="clean_images_folder">ছবির ফোল্ডার পরিষ্কার করুন</string>
+    <string name="clean_images_folder">ছবির ক্যাশে পরিষ্কার করুন</string>
     <string name="preserve_only_images_from_library_books">শুধুমাত্র লাইব্রেরির বইয়ের ছবি সংরক্ষণ করুন</string>
     <string name="add_delay">বিলম্ব যোগ করুন</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">ডাটাবেস পরিষ্কার করা হচ্ছে...</string>
     <string name="database_cleaned_successfully">ডাটাবেস সফলভাবে পরিষ্কার করা হয়েছে</string>
     <string name="database_clean_failed">ডাটাবেস পরিষ্কার করতে ব্যর্থ</string>
-    <string name="cleaning_images_folder">ছবির ফোল্ডার পরিষ্কার করা হচ্ছে...</string>
-    <string name="images_folder_cleaned">ছবির ফোল্ডার পরিষ্কার করা হয়েছে। %dটি ফোল্ডার মুছে ফেলা হয়েছে</string>
-    <string name="images_folder_already_clean">ছবির ফোল্ডার ইতিমধ্যে পরিষ্কার</string>
-    <string name="images_folder_clean_failed">ছবির ফোল্ডার পরিষ্কার করতে ব্যর্থ</string>
+    <string name="cleaning_images_folder">ছবির ক্যাশে পরিষ্কার করা হচ্ছে...</string>
+    <string name="images_folder_cleaned">ছবির ক্যাশে পরিষ্কার করা হয়েছে। %dটি ফোল্ডার মুছে ফেলা হয়েছে</string>
+    <string name="images_folder_already_clean">ছবির ক্যাশে ইতিমধ্যে পরিষ্কার</string>
+    <string name="images_folder_clean_failed">ছবির ক্যাশে পরিষ্কার করতে ব্যর্থ</string>
     <string name="close_selection_bar">নির্বাচন বার বন্ধ করুন</string>
     <string name="open_last_read_chapter">শেষ পঠিত অধ্যায় খুলুন</string>
     <string name="updating_book_info">বইয়ের তথ্য আপডেট করা হচ্ছে</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Cloudfare ফায়ারওয়াল বাইপাস করার চেষ্টা কিন্তু ব্যর্থ</string>
     <string name="features_reader_full_screen">পূর্ণ পর্দা</string>
     <string name="single_tap_to_open_settings">মেনু খুলতে একক ট্যাপ</string>
-    <string name="source_name_local">স্থানীয়</string>
+    <string name="source_name_local">স্থানীয় EPUB/FB2</string>
+    <string name="source_name_local_manga">স্থানীয় CBZ</string>
 
     <string name="delete_novel">নভেল মুছুন</string>
     <string name="delete_book_translations">এই উপন্যাসের সমস্ত অনুবাদ মুছুন</string>
@@ -423,13 +424,15 @@
     <string name="google_pa_api_keys_tip">One key per line. Keys are validated automatically — dead keys are skipped and a fresh key is fetched from wtr-lab if needed.</string>
     <string name="all_genres">সব</string>
     <string name="grid_columns">গ্রিডের আকার</string>
-    <string name="source_strip_position">সোর্স স্ট্রিপের অবস্থান</string>
+    <string name="card_style">কার্ডের স্টাইল</string>
+    <string name="source_strip_info_panel">তথ্য প্যানেল</string>
     <string name="source_strip_on_cover">কভারে</string>
     <string name="source_strip_below_cover">কভারের নিচে</string>
     <string name="apply">প্রয়োগ</string>
     <!-- Filters -->
     <string name="filters">ফিল্টার</string>
     <string name="filters_reset">রিসেট</string>
+    <string name="typography_reset">টাইপোগ্রাফি রিসেট</string>
     <string name="filters_apply">প্রয়োগ</string>
     <string name="filters_search_hint">অনুসন্ধান…</string>
 
@@ -447,7 +450,6 @@
     <string name="llm_save_preset">প্রিসেট হিসেবে সংরক্ষণ করুন</string>
     <string name="llm_preset_name">প্রিসেটের নাম</string>
     <string name="llm_preset_default">ডিফল্ট</string>
-
 
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">OpenAI-সামঞ্জস্যপূর্ণ API</string>
@@ -521,13 +523,18 @@
     <string name="auto_backup_interval_updated">ব্যাকআপ ব্যবধান আপডেট করা হয়েছে</string>
     <string name="auto_backup_last_time">সর্বশেষ ব্যাকআপ</string>
     <string name="auto_backup_never">কখনই নয়</string>
-    <string name="clean_chapter_cache">অধ্যায় ক্যাশে সাফ করুন</string>
     <string name="clean_database_confirmation">আপনি কি ডাটাবেস পরিষ্কার করতে চান? এটি লাইব্রেরির বাইরের সমস্ত বই এবং তাদের ডেটা মুছে ফেলবে।</string>
-    <string name="clean_images_folder_confirmation">আপনি কি ছবির ফোল্ডার পরিষ্কার করতে চান? এটি লাইব্রেরির বাইরের বইগুলির ছবি মুছে ফেলবে।</string>
-    <string name="clean_chapter_cache_confirmation">আপনি কি অধ্যায় ক্যাশে সাফ করতে চান? এটি ক্যাশে করা অধ্যায়ের বিষয়বস্তু এবং অনুবাদগুলি মুছে ফেলবে।</string>
-    <string name="cleaning_chapter_cache">অধ্যায় ক্যাশে সাফ করা হচ্ছে…</string>
-    <string name="chapter_cache_cleaned">অধ্যায় ক্যাশে সাফ করা হয়েছে</string>
-    <string name="chapter_cache_clean_failed">অধ্যায় ক্যাশে সাফ করতে ব্যর্থ</string>
+    <string name="clean_images_folder_confirmation">এটি অস্থায়ী ছবির ক্যাশে এবং লাইব্রেরিতে না থাকা বইয়ের ফাইলগুলি মুছে ফেলবে। লাইব্রেরির বইয়ের কভার অক্ষুণ্ণ থাকবে।</string>
+    <string name="clean_novel_cache">অফলাইন টেক্সট সাফ করুন</string>
+    <string name="clean_novel_cache_confirmation">আপনি কি অফলাইন টেক্সট সাফ করতে চান? এটি সংরক্ষিত অধ্যায়ের টেক্সট এবং অনুবাদগুলি মুছে ফেলবে। পড়ার সময় এগুলি পুনরায় ডাউনলোড করা হবে।</string>
+    <string name="cleaning_novel_cache">অফলাইন টেক্সট সাফ করা হচ্ছে…</string>
+    <string name="novel_cache_cleaned">অফলাইন টেক্সট সাফ করা হয়েছে</string>
+    <string name="novel_cache_clean_failed">অফলাইন টেক্সট সাফ করতে ব্যর্থ</string>
+    <string name="clean_manga_cache">অফলাইন মাঙ্গা সাফ করুন</string>
+    <string name="clean_manga_cache_confirmation">আপনি কি অফলাইন মাঙ্গা সাফ করতে চান? এটি ডাউনলোড করা অধ্যায়গুলি মুছে ফেলবে। অফলাইনে পড়তে হলে আবার ডাউনলোড করতে হবে।</string>
+    <string name="cleaning_manga_cache">অফলাইন মাঙ্গা সাফ করা হচ্ছে…</string>
+    <string name="manga_cache_cleaned">অফলাইন মাঙ্গা সাফ করা হয়েছে</string>
+    <string name="manga_cache_clean_failed">অফলাইন মাঙ্গা সাফ করতে ব্যর্থ</string>
     <string name="all_sources">সব উৎস</string>
     <string name="reset_filters">রিসেট</string>
 
@@ -649,7 +656,6 @@
     <string name="available">উপলব্ধ</string>
 
     <string name="book_fix">বuku মেরামত</string>
-
 
     <!-- History -->
     <string name="title_history">ইতিহাস</string>

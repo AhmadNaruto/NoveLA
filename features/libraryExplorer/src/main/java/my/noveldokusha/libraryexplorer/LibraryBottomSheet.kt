@@ -152,9 +152,9 @@ internal fun LibraryBottomSheet(
                 )
             }
 
-            // ── Позиция полосы источника ─────────────────────────────────────
+            // ── Стиль карточки ─────────────────────────────────────
             Text(
-                text = stringResource(id = R.string.source_strip_position),
+                text = stringResource(id = R.string.card_style),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.titleMedium
@@ -191,6 +191,20 @@ internal fun LibraryBottomSheet(
                     border = FilterChipDefaults.filterChipBorder(
                         enabled = true,
                         selected = uiState.sourceStripPosition == SourceStripPosition.BelowCover,
+                        selectedBorderColor = MaterialTheme.colorScheme.primary,
+                    )
+                )
+                FilterChip(
+                    selected = uiState.sourceStripPosition == SourceStripPosition.InfoPanel,
+                    onClick = { model.setSourceStripPosition(SourceStripPosition.InfoPanel) },
+                    label = { Text(stringResource(R.string.source_strip_info_panel)) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        selectedLabelColor = MaterialTheme.colorScheme.primary,
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = uiState.sourceStripPosition == SourceStripPosition.InfoPanel,
                         selectedBorderColor = MaterialTheme.colorScheme.primary,
                     )
                 )

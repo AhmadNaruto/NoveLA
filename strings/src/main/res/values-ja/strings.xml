@@ -52,7 +52,7 @@
     <string name="updating_library_notice">ライブラリを更新中</string>
     <string name="chapter_downloaded">チャプターをダウンロードしました</string>
     <string name="search_by_title">タイトルで検索</string>
-    <string name="clean_images_folder">画像フォルダをクリーン</string>
+    <string name="clean_images_folder">画像キャッシュをクリーン</string>
     <string name="preserve_only_images_from_library_books">ライブラリの書籍からの画像のみ保持</string>
     <string name="add_delay">遅延を追加</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">データベースをクリーン中...</string>
     <string name="database_cleaned_successfully">データベースのクリーンに成功しました</string>
     <string name="database_clean_failed">データベースのクリーンに失敗しました</string>
-    <string name="cleaning_images_folder">画像フォルダをクリーン中...</string>
-    <string name="images_folder_cleaned">画像フォルダをクリーンしました。%d個のフォルダを削除</string>
-    <string name="images_folder_already_clean">画像フォルダは既にクリーンです</string>
-    <string name="images_folder_clean_failed">画像フォルダのクリーンに失敗しました</string>
+    <string name="cleaning_images_folder">画像キャッシュをクリーン中...</string>
+    <string name="images_folder_cleaned">画像キャッシュをクリーンしました。%d個のフォルダを削除</string>
+    <string name="images_folder_already_clean">画像キャッシュは既にクリーンです</string>
+    <string name="images_folder_clean_failed">画像キャッシュのクリーンに失敗しました</string>
     <string name="close_selection_bar">選択バーを閉じる</string>
     <string name="open_last_read_chapter">最後に読んだチャプターを開く</string>
     <string name="updating_book_info">書籍情報を更新中</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Cloudflareファイアウォールのバイパスを試みましたが失敗しました</string>
     <string name="features_reader_full_screen">全画面</string>
     <string name="single_tap_to_open_settings">シングルタップでメニューを開く</string>
-    <string name="source_name_local">ローカル</string>
+    <string name="source_name_local">ローカル EPUB/FB2</string>
+    <string name="source_name_local_manga">ローカル CBZ</string>
 
     <string name="delete_novel">小説を削除</string>
     <string name="delete_book_translations">この小説のすべての翻訳を削除</string>
@@ -423,13 +424,15 @@
     <string name="google_pa_api_keys_tip">1行に1つのキー。キーは自動的に検証され、無効なキーはスキップされ、必要に応じてwtr-labから新しいキーが取得されます。</string>
     <string name="all_genres">すべて</string>
     <string name="grid_columns">グリッドサイズ</string>
-    <string name="source_strip_position">ソースストリップの位置</string>
+    <string name="card_style">カードスタイル</string>
+    <string name="source_strip_info_panel">情報パネル</string>
     <string name="source_strip_on_cover">表紙の上</string>
     <string name="source_strip_below_cover">表紙の下</string>
     <string name="apply">適用</string>
     <!-- Filters -->
     <string name="filters">フィルター</string>
     <string name="filters_reset">リセット</string>
+    <string name="typography_reset">タイポグラフィをリセット</string>
     <string name="filters_apply">適用</string>
     <string name="filters_search_hint">検索…</string>
 
@@ -447,7 +450,6 @@
     <string name="llm_save_preset">プリセットとして保存</string>
     <string name="llm_preset_name">プリセット名</string>
     <string name="llm_preset_default">デフォルト</string>
-
 
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">OpenAI互換API</string>
@@ -521,13 +523,18 @@
     <string name="auto_backup_interval_updated">バックアップ間隔を更新しました</string>
     <string name="auto_backup_last_time">最終バックアップ</string>
     <string name="auto_backup_never">なし</string>
-    <string name="clean_chapter_cache">チャプターキャッシュをクリア</string>
     <string name="clean_database_confirmation">データベースをクリーンしてもよろしいですか？ライブラリにないすべての本とそのデータが削除されます。</string>
-    <string name="clean_images_folder_confirmation">画像フォルダをクリーンしてもよろしいですか？ライブラリにない本の画像が削除されます。</string>
-    <string name="clean_chapter_cache_confirmation">チャプターキャッシュをクリアしてもよろしいですか？キャッシュされたチャプター本文と翻訳が削除されます。</string>
-    <string name="cleaning_chapter_cache">チャプターキャッシュをクリア中…</string>
-    <string name="chapter_cache_cleaned">チャプターキャッシュをクリアしました</string>
-    <string name="chapter_cache_clean_failed">チャプターキャッシュのクリアに失敗しました</string>
+    <string name="clean_images_folder_confirmation">画像キャッシュをクリーンしてもよろしいですか？一時的にキャッシュされた画像とライブラリにない本のファイルが削除されます。ライブラリの本の表紙画像は保持されます。</string>
+    <string name="clean_novel_cache">オフラインテキストをクリア</string>
+    <string name="clean_novel_cache_confirmation">オフラインテキストをクリアしてもよろしいですか？保存されたチャプター本文と翻訳が削除されます。読む時に再ダウンロードされます。</string>
+    <string name="cleaning_novel_cache">オフラインテキストをクリア中…</string>
+    <string name="novel_cache_cleaned">オフラインテキストをクリアしました</string>
+    <string name="novel_cache_clean_failed">オフラインテキストのクリアに失敗しました</string>
+    <string name="clean_manga_cache">オフラインマンガをクリア</string>
+    <string name="clean_manga_cache_confirmation">オフラインマンガをクリアしてもよろしいですか？ダウンロードされたマンガチャプターが削除されます。オフラインで読むには再度ダウンロードが必要です。</string>
+    <string name="cleaning_manga_cache">オフラインマンガをクリア中…</string>
+    <string name="manga_cache_cleaned">オフラインマンガをクリアしました</string>
+    <string name="manga_cache_clean_failed">オフラインマンガのクリアに失敗しました</string>
     <string name="all_sources">すべてのソース</string>
     <string name="reset_filters">リセット</string>
 

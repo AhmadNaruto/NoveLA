@@ -39,7 +39,8 @@ class AppRepository @Inject constructor(
         bookUrl: String,
         bookTitle: String,
         rating: String? = null,
-        contentType: String = ""
+        contentType: String = "",
+        coverImageUrl: String = ""
     ): Boolean {
         val realUrl = appFileResolver.getLocalIfContentType(bookUrl, bookFolderName = bookTitle)
         val normalizedUrl = normalizeBookUrl(realUrl)
@@ -54,7 +55,8 @@ class AppRepository @Inject constructor(
                 bookUrl = normalizedUrl,
                 bookTitle = bookTitle,
                 rating = rating,
-                contentType = contentType
+                contentType = contentType,
+                coverImageUrl = coverImageUrl
             )
         }
         return result
@@ -135,26 +137,35 @@ class AppRepository @Inject constructor(
         }
 
         /**
-         * Clears all cached chapter bodies and translations.
+         * Clears all cached novel chapter bodies and translations.
          * Library books, chapters, images and progress are NOT affected.
          */
-        suspend fun clearChapterCache() = withContext(Dispatchers.IO) {
+        suspend fun clearNovelCache() = withContext(Dispatchers.IO) {
             db.chapterBodyDao().deleteAll()
-            db.chapterPagesDao().deleteAll()
             db.chapterTranslationDao().deleteAllTranslations()
-            // Файлы скачанных страничных глав удаляем вместе со строками —
-            // иначе дисковый fallback в списке глав снова покажет их
-            // «скачанными» с размером, хотя кэш очищен.
+        }
+
+        /**
+         * Clears all cached manga page-chapter files.
+         * Library books, chapters, and progress are NOT affected.
+         */
+        suspend fun clearMangaCache() = withContext(Dispatchers.IO) {
+            db.chapterPagesDao().deleteAll()
             downloadedPageChaptersStore.deleteAll()
         }
 
         /**
-         * Approximate size (in bytes) of all cached chapter bodies.
+         * Approximate size (in bytes) of all cached novel chapter bodies.
+         */
+        suspend fun getNovelCacheSizeBytes(): Long =
+            db.chapterBodyDao().getCacheSizeBytes()
+
+        /**
+         * Approximate size (in bytes) of all cached manga page-chapter files.
          * Includes real bytes of downloaded page-chapter files on disk.
          */
-        suspend fun getChapterCacheSizeBytes(): Long =
-            db.chapterBodyDao().getCacheSizeBytes() +
-                db.chapterPagesDao().getCacheSizeBytes() +
+        suspend fun getMangaCacheSizeBytes(): Long =
+            db.chapterPagesDao().getCacheSizeBytes() +
                 downloadedPageChaptersStore.getDiskSizeBytes()
 
         /**

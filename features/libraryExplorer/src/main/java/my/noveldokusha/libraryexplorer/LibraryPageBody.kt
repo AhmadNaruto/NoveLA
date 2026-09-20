@@ -119,7 +119,7 @@ internal fun LibraryPageBody(
                             onLongClick = { onLongClick(it) },
                             sourceStripUnreadCount = notReadCount,
                             sourceStripSourceName = getSourceName(it.book.url),
-                            sourceStripOnCover = sourceStripPosition == SourceStripPosition.OnCover,
+                            sourceStripPosition = sourceStripPosition,
                             fadeInDurationMillis = 250,
                             topLeftBadge = {
                                 Box(

@@ -52,7 +52,7 @@
     <string name="updating_library_notice">Aktualizowanie biblioteki</string>
     <string name="chapter_downloaded">Rozdział pobrany</string>
     <string name="search_by_title">Szukaj po tytule</string>
-    <string name="clean_images_folder">Wyczyść folder obrazów</string>
+    <string name="clean_images_folder">Wyczyść pamięć podręczną obrazów</string>
     <string name="preserve_only_images_from_library_books">Zachowaj tylko obrazy z książek w bibliotece</string>
     <string name="add_delay">Dodaj opóźnienie</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">Czyszczenie bazy danych...</string>
     <string name="database_cleaned_successfully">Baza danych została pomyślnie wyczyszczona</string>
     <string name="database_clean_failed">Nie udało się wyczyścić bazy danych</string>
-    <string name="cleaning_images_folder">Czyszczenie folderu obrazów...</string>
-    <string name="images_folder_cleaned">Folder obrazów wyczyszczony. Usunięto %d folderów</string>
-    <string name="images_folder_already_clean">Folder obrazów jest już czysty</string>
-    <string name="images_folder_clean_failed">Nie udało się wyczyścić folderu obrazów</string>
+    <string name="cleaning_images_folder">Czyszczenie pamięci podręcznej obrazów…</string>
+    <string name="images_folder_cleaned">Pamięć podręczna obrazów wyczyszczona. Usunięto %d folderów</string>
+    <string name="images_folder_already_clean">Pamięć podręczna obrazów jest już czysta</string>
+    <string name="images_folder_clean_failed">Nie udało się wyczyścić pamięci podręcznej obrazów</string>
     <string name="close_selection_bar">Zamknij pasek wyboru</string>
     <string name="open_last_read_chapter">Otwórz ostatnio czytany rozdział</string>
     <string name="updating_book_info">Aktualizowanie informacji o książce</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Próbowano, ale nie udało się ominąć zapory Cloudflare</string>
     <string name="features_reader_full_screen">Pełny ekran</string>
     <string name="single_tap_to_open_settings">Pojedyncze dotknięcie, aby otworzyć menu</string>
-    <string name="source_name_local">Lokalne</string>
+    <string name="source_name_local">Lokalne EPUB/FB2</string>
+    <string name="source_name_local_manga">Lokalne CBZ</string>
 
     <string name="delete_novel">Usuń nowelę</string>
     <string name="delete_book_translations">Usuń wszystkie tłumaczenia tej noweli</string>
@@ -423,13 +424,15 @@
     <string name="google_pa_api_keys_tip">Jeden klucz na linię. Klucze są automatycznie weryfikowane — martwe klucze są pomijane, a nowy klucz jest pobierany z wtr-lab w razie potrzeby.</string>
     <string name="all_genres">Wszystkie</string>
     <string name="grid_columns">Rozmiar siatki</string>
-    <string name="source_strip_position">Pozycja paska źródła</string>
+    <string name="card_style">Styl karty</string>
+    <string name="source_strip_info_panel">Panel informacyjny</string>
     <string name="source_strip_on_cover">Na okładce</string>
     <string name="source_strip_below_cover">Pod okładką</string>
     <string name="apply">Zastosuj</string>
     <!-- Filters -->
     <string name="filters">Filtry</string>
     <string name="filters_reset">Resetuj</string>
+    <string name="typography_reset">Resetuj typografię</string>
     <string name="filters_apply">Zastosuj</string>
     <string name="filters_search_hint">Szukaj…</string>
 
@@ -447,7 +450,6 @@
     <string name="llm_save_preset">Zapisz jako preset</string>
     <string name="llm_preset_name">Nazwa presetu</string>
     <string name="llm_preset_default">Domyślny</string>
-
 
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">API zgodne z OpenAI</string>
@@ -521,13 +523,18 @@
     <string name="auto_backup_interval_updated">Zaktualizowano interwał kopii zapasowej</string>
     <string name="auto_backup_last_time">Ostatnia kopia zapasowa</string>
     <string name="auto_backup_never">Nigdy</string>
-    <string name="clean_chapter_cache">Wyczyść pamięć podręczną rozdziałów</string>
     <string name="clean_database_confirmation">Czy na pewno chcesz wyczyścić bazę danych? Spowoduje to usunięcie wszystkich książek spoza biblioteki i ich danych.</string>
-    <string name="clean_images_folder_confirmation">Czy na pewno chcesz wyczyścić folder obrazów? Spowoduje to usunięcie obrazów książek spoza biblioteki.</string>
-    <string name="clean_chapter_cache_confirmation">Czy na pewno chcesz wyczyścić pamięć podręczną rozdziałów? Spowoduje to usunięcie buforowanych treści rozdziałów i tłumaczeń.</string>
-    <string name="cleaning_chapter_cache">Czyszczenie pamięci podręcznej rozdziałów…</string>
-    <string name="chapter_cache_cleaned">Pamięć podręczna rozdziałów wyczyszczona</string>
-    <string name="chapter_cache_clean_failed">Nie udało się wyczyścić pamięci podręcznej rozdziałów</string>
+    <string name="clean_images_folder_confirmation">Spowoduje to usunięcie tymczasowej pamięci podręcznej obrazów i książek spoza biblioteki. Okładki książek z biblioteki nie zostaną usunięte.</string>
+    <string name="clean_novel_cache">Wyczyść teksty offline</string>
+    <string name="clean_novel_cache_confirmation">Spowoduje to usunięcie zapisanych tekstów rozdziałów i tłumaczeń. Zostaną one pobrane ponownie podczas czytania.</string>
+    <string name="cleaning_novel_cache">Czyszczenie tekstów offline…</string>
+    <string name="novel_cache_cleaned">Teksty offline wyczyszczone</string>
+    <string name="novel_cache_clean_failed">Nie udało się wyczyścić tekstów offline</string>
+    <string name="clean_manga_cache">Wyczyść mangę offline</string>
+    <string name="clean_manga_cache_confirmation">Spowoduje to usunięcie pobranych rozdziałów mangi. Aby czytać offline, należy je pobrać ponownie.</string>
+    <string name="cleaning_manga_cache">Czyszczenie mangi offline…</string>
+    <string name="manga_cache_cleaned">Manga offline wyczyszczona</string>
+    <string name="manga_cache_clean_failed">Nie udało się wyczyścić mangi offline</string>
     <string name="all_sources">Wszystkie źródła</string>
     <string name="reset_filters">Resetuj</string>
 
@@ -649,7 +656,6 @@
     <string name="available">Dostępne</string>
 
     <string name="book_fix">Napraw ksiazke</string>
-
 
     <!-- History -->
     <string name="title_history">Historia</string>

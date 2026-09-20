@@ -1,6 +1,7 @@
 package my.noveldokusha.data
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -32,28 +33,50 @@ class CoverRepository @Inject constructor(
         lock.withLock {
             if (isCoverValid(coverFile)) return@withLock true
 
-            val bytes = try {
-                // Пустой Referer недопустим: isHttpsUrl — лишь префиксная проверка,
-                // поэтому для некорректного URL (например "https://") refererFor вернёт "".
-                val headers = refererFor(remoteUrl).takeIf { it.isNotEmpty() }
-                    ?.let { mapOf("Referer" to it) } ?: emptyMap()
-                networkClient.getWithHeaders(remoteUrl, headers).use { response ->
-                    if (!response.isSuccessful) return@withLock false
-                    response.body?.bytes()
+            val maxAttempts = 3
+            for (attempt in 1..maxAttempts) {
+                val bytes = try {
+                    // Пустой Referer недопустим: isHttpsUrl — лишь префиксная проверка,
+                    // поэтому для некорректного URL (например "https://") refererFor вернёт "".
+                    val headers = refererFor(remoteUrl).takeIf { it.isNotEmpty() }
+                        ?.let { mapOf("Referer" to it) } ?: emptyMap()
+                    networkClient.getWithHeaders(remoteUrl, headers).use { response ->
+                        if (!response.isSuccessful) {
+                            if (attempt < maxAttempts) {
+                                delay(500L * attempt) // exponential backoff: 500ms, 1000ms
+                                continue
+                            }
+                            return@withLock false
+                        }
+                        response.body?.bytes()
+                    }
+                } catch (_: Exception) {
+                    if (attempt < maxAttempts) {
+                        delay(500L * attempt)
+                        continue
+                    }
+                    return@withLock false
                 }
-            } catch (_: Exception) {
-                return@withLock false
-            }
-            if (bytes == null || bytes.isEmpty() || !isImage(bytes)) {
-                return@withLock false
-            }
+                if (bytes == null || bytes.isEmpty() || !isImage(bytes)) {
+                    if (attempt < maxAttempts) {
+                        delay(500L * attempt)
+                        continue
+                    }
+                    return@withLock false
+                }
 
-            try {
-                atomicWrite(coverFile, bytes)
-                true
-            } catch (_: Exception) {
-                false
+                try {
+                    atomicWrite(coverFile, bytes)
+                    return@withLock true
+                } catch (_: Exception) {
+                    if (attempt < maxAttempts) {
+                        delay(500L * attempt)
+                        continue
+                    }
+                    return@withLock false
+                }
             }
+            false // unreachable, but satisfies compiler
         }
     }
 

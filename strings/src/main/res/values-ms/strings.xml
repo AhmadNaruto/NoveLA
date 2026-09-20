@@ -52,7 +52,7 @@
     <string name="updating_library_notice">Mengemas kini perpustakaan</string>
     <string name="chapter_downloaded">Bab dimuat turun</string>
     <string name="search_by_title">Cari mengikut tajuk</string>
-    <string name="clean_images_folder">Bersihkan folder imej</string>
+    <string name="clean_images_folder">Bersihkan cache imej</string>
     <string name="preserve_only_images_from_library_books">Simpan hanya imej daripada buku perpustakaan</string>
     <string name="add_delay">Tambah kelewatan</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">Membersihkan pangkalan data...</string>
     <string name="database_cleaned_successfully">Pangkalan data berjaya dibersihkan</string>
     <string name="database_clean_failed">Gagal membersihkan pangkalan data</string>
-    <string name="cleaning_images_folder">Membersihkan folder imej...</string>
-    <string name="images_folder_cleaned">Folder imej dibersihkan. %d folder dipadam</string>
-    <string name="images_folder_already_clean">Folder imej sudah bersih</string>
-    <string name="images_folder_clean_failed">Gagal membersihkan folder imej</string>
+    <string name="cleaning_images_folder">Membersihkan cache imej...</string>
+    <string name="images_folder_cleaned">Cache imej dibersihkan. %d folder dipadam</string>
+    <string name="images_folder_already_clean">Cache imej sudah bersih</string>
+    <string name="images_folder_clean_failed">Gagal membersihkan cache imej</string>
     <string name="close_selection_bar">Tutup bar pemilihan</string>
     <string name="open_last_read_chapter">Buka bab terakhir dibaca</string>
     <string name="updating_book_info">Mengemas kini info buku</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Cuba tetapi gagal memintas tembok api Cloudflare</string>
     <string name="features_reader_full_screen">Skrin penuh</string>
     <string name="single_tap_to_open_settings">Ketik sekali untuk buka menu</string>
-    <string name="source_name_local">Tempatan</string>
+    <string name="source_name_local">Tempatan EPUB/FB2</string>
+    <string name="source_name_local_manga">Tempatan CBZ</string>
 
     <string name="delete_novel">Padam novel</string>
     <string name="delete_book_translations">Padam semua terjemahan novel ini</string>
@@ -423,13 +424,15 @@
     <string name="google_pa_api_keys_tip">Satu kunci setiap baris. Kunci disahkan secara automatik — kunci mati dilangkau dan kunci baru diambil dari wtr-lab jika perlu.</string>
     <string name="all_genres">Semua</string>
     <string name="grid_columns">Saiz grid</string>
-    <string name="source_strip_position">Kedudukan jalur sumber</string>
+    <string name="card_style">Gaya kad</string>
+    <string name="source_strip_info_panel">Panel maklumat</string>
     <string name="source_strip_on_cover">Pada kulit</string>
     <string name="source_strip_below_cover">Di bawah kulit</string>
     <string name="apply">Guna</string>
     <!-- Filters -->
     <string name="filters">Penapis</string>
     <string name="filters_reset">Set semula</string>
+    <string name="typography_reset">Set semula tipografi</string>
     <string name="filters_apply">Guna</string>
     <string name="filters_search_hint">Cari…</string>
 
@@ -447,7 +450,6 @@
     <string name="llm_save_preset">Simpan sebagai praset</string>
     <string name="llm_preset_name">Nama praset</string>
     <string name="llm_preset_default">Lalai</string>
-
 
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">API serasi OpenAI</string>
@@ -521,13 +523,18 @@
     <string name="auto_backup_interval_updated">Selang sandaran dikemas kini</string>
     <string name="auto_backup_last_time">Sandaran terakhir</string>
     <string name="auto_backup_never">Tidak pernah</string>
-    <string name="clean_chapter_cache">Kosongkan cache bab</string>
     <string name="clean_database_confirmation">Adakah anda pasti mahu membersihkan pangkalan data? Ini akan mengalih keluar semua buku bukan perpustakaan dan data mereka.</string>
-    <string name="clean_images_folder_confirmation">Adakah anda pasti mahu membersihkan folder imej? Ini akan mengalih keluar imej buku bukan perpustakaan.</string>
-    <string name="clean_chapter_cache_confirmation">Adakah anda pasti mahu mengosongkan cache bab? Ini akan mengalih keluar teks bab dan terjemahan yang dicache.</string>
-    <string name="cleaning_chapter_cache">Mengosongkan cache bab…</string>
-    <string name="chapter_cache_cleaned">Cache bab dikosongkan</string>
-    <string name="chapter_cache_clean_failed">Gagal mengosongkan cache bab</string>
+    <string name="clean_images_folder_confirmation">Adakah anda pasti mahu membersihkan cache imej? Ini akan memadamkan imej cache sementara dan fail buku yang bukan dari perpustakaan. Sampul buku perpustakaan tidak akan terjejas.</string>
+    <string name="clean_novel_cache">Kosongkan teks offline</string>
+    <string name="clean_novel_cache_confirmation">Adakah anda pasti mahu mengosongkan teks offline? Ini akan memadamkan teks bab dan terjemahan yang disimpan. Teks akan dimuat turun semula apabila dibaca.</string>
+    <string name="cleaning_novel_cache">Mengosongkan teks offline…</string>
+    <string name="novel_cache_cleaned">Teks offline dikosongkan</string>
+    <string name="novel_cache_clean_failed">Gagal mengosongkan teks offline</string>
+    <string name="clean_manga_cache">Kosongkan manga offline</string>
+    <string name="clean_manga_cache_confirmation">Adakah anda pasti mahu mengosongkan manga offline? Ini akan memadamkan bab manga yang dimuat turun. Untuk membaca secara offline, bab perlu dimuat turun semula.</string>
+    <string name="cleaning_manga_cache">Mengosongkan manga offline…</string>
+    <string name="manga_cache_cleaned">Manga offline dikosongkan</string>
+    <string name="manga_cache_clean_failed">Gagal mengosongkan manga offline</string>
     <string name="all_sources">Semua sumber</string>
     <string name="reset_filters">Set semula</string>
 
@@ -649,7 +656,6 @@
     <string name="available">Tersedia</string>
 
     <string name="book_fix">Baiki buku</string>
-
 
     <!-- History -->
     <string name="title_history">Sejarah</string>

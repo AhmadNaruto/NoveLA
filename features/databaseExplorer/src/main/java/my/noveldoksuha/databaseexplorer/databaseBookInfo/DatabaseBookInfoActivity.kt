@@ -62,7 +62,7 @@ class DatabaseBookInfoActivity : BaseActivity() {
                     onSourcesClick = ::openGlobalSearchPage,
                     onGenresClick = ::openSearchPageByGenres,
                     onBookClick = ::openBookInfo,
-                    onOpenInWeb = { navigationRoutes.webView(this, viewModel.bookUrl).let(::startActivity) },
+                    onOpenInWeb = { navigationRoutes.webView(this, viewModel.bookUrl, bookUrl = viewModel.bookUrl).let(::startActivity) },
                     onPressBack = { backPressedCallback.handleOnBackPressed() }
                 )
             }

@@ -8,6 +8,7 @@ import android.graphics.drawable.Drawable
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import android.text.Layout
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.ReplacementSpan
@@ -53,6 +54,17 @@ internal class ReaderItemAdapter(
     private val currentLetterSpacing: () -> Float,
     private val currentTypeface: () -> Typeface,
     private val currentTypefaceBold: () -> Typeface,
+    private val currentTextJustify: () -> Boolean,
+    private val currentTextHyphenation: () -> Boolean,
+    private val currentTextBold: () -> Boolean,
+    private val currentTextItalic: () -> Boolean,
+    private val currentTextUnderline: () -> Boolean,
+    private val currentTextShadow: () -> Boolean,
+    private val currentTextSmooth: () -> Boolean,
+    private val currentMarginLeft: () -> Float,
+    private val currentMarginRight: () -> Float,
+    private val currentMarginTop: () -> Float,
+    private val currentMarginBottom: () -> Float,
     private val currentParallelEnabled: () -> Boolean,
     private val currentParallelOrder: () -> String,
     private val onChapterStartVisible: (chapterUrl: String) -> Unit,
@@ -165,6 +177,23 @@ internal class ReaderItemAdapter(
                 currentSpeakerActiveItem().itemPos.chapterItemPosition == item.chapterItemPosition &&
                 currentSpeakerActiveItem().playState == Utterance.PlayState.PLAYING
 
+        // ponytail: helper — apply 6 text-formatting features to a TextView
+        fun applyBodyFormatting(textView: TextView) {
+            val base = currentTypeface()
+            val style = when {
+                currentTextBold() && currentTextItalic() -> Typeface.BOLD_ITALIC
+                currentTextBold() -> Typeface.BOLD
+                currentTextItalic() -> Typeface.ITALIC
+                else -> Typeface.NORMAL
+            }
+            textView.typeface = if (style == Typeface.NORMAL) base else Typeface.create(base, style)
+            textView.paintFlags = if (currentTextUnderline()) textView.paintFlags or Paint.UNDERLINE_TEXT_FLAG else textView.paintFlags and Paint.UNDERLINE_TEXT_FLAG.inv()
+            if (currentTextShadow()) textView.setShadowLayer(1f, 1f, 1f, 0x66000000.toInt()) else textView.setShadowLayer(0f, 0f, 0f, 0)
+            textView.paint.isAntiAlias = currentTextSmooth()
+            textView.justificationMode = if (currentTextJustify()) 1 else 0 // ponytail: TextView.TEXT_JUSTIFICATION_MODE_INTER_WORD/NONE unresolved on compileSdk37; literals are API26-safe
+            textView.hyphenationFrequency = if (currentTextHyphenation()) Layout.HYPHENATION_FREQUENCY_FULL else Layout.HYPHENATION_FREQUENCY_NONE
+        }
+
         if (parallelEnabled) {
             val orderTranslationFirst = currentParallelOrder() == "TRANSLATION_FIRST"
 
@@ -179,7 +208,7 @@ internal class ReaderItemAdapter(
 
             bind.bodyTranslated.text = displayPrimary
             bind.bodyTranslated.textSize = currentFontSize()
-            bind.bodyTranslated.typeface = currentTypeface()
+            applyBodyFormatting(bind.bodyTranslated)
             bind.bodyTranslated.updateTextSelectability()
             bind.bodyTranslated.setLineSpacing(0f, currentLineHeight())
             bind.bodyTranslated.letterSpacing = currentLetterSpacing()
@@ -187,7 +216,7 @@ internal class ReaderItemAdapter(
 
             bind.bodyOriginal.text = secondaryText
             bind.bodyOriginal.textSize = currentFontSize() * 0.85f
-            bind.bodyOriginal.typeface = currentTypeface()
+            applyBodyFormatting(bind.bodyOriginal)
             bind.bodyOriginal.updateTextSelectability()
             bind.bodyOriginal.setLineSpacing(0f, currentLineHeight())
             bind.bodyOriginal.letterSpacing = currentLetterSpacing()
@@ -202,12 +231,13 @@ internal class ReaderItemAdapter(
 
             bind.bodyTranslated.text = displayText
             bind.bodyTranslated.textSize = currentFontSize()
-            bind.bodyTranslated.typeface = currentTypeface()
+            applyBodyFormatting(bind.bodyTranslated)
             bind.bodyTranslated.updateTextSelectability()
             bind.bodyTranslated.setLineSpacing(0f, currentLineHeight())
             bind.bodyTranslated.letterSpacing = currentLetterSpacing()
             applyTextColor(bind.bodyTranslated, currentTextColor())
 
+            applyBodyFormatting(bind.bodyOriginal)
             bind.bodyOriginal.visibility = View.GONE
         }
 
@@ -217,8 +247,12 @@ internal class ReaderItemAdapter(
             currentParagraphSpacing(),
             ctx.resources.displayMetrics
         ).toInt()
-        bind.bodyTranslated.setPadding(bind.bodyTranslated.paddingLeft, paddingVertical, bind.bodyTranslated.paddingRight, paddingVertical)
-        bind.bodyOriginal.setPadding(bind.bodyOriginal.paddingLeft, paddingVertical, bind.bodyOriginal.paddingRight, paddingVertical)
+        val marginLeft = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_DIP, currentMarginLeft(), ctx.resources.displayMetrics).toInt()
+        val marginRight = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_DIP, currentMarginRight(), ctx.resources.displayMetrics).toInt()
+        val marginTop = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_DIP, currentMarginTop(), ctx.resources.displayMetrics).toInt()
+        val marginBottom = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_DIP, currentMarginBottom(), ctx.resources.displayMetrics).toInt()
+        bind.bodyTranslated.setPadding(marginLeft, marginTop + paddingVertical, marginRight, marginBottom + paddingVertical)
+        bind.bodyOriginal.setPadding(marginLeft, marginTop + paddingVertical, marginRight, marginBottom + paddingVertical)
 
         when (item.location) {
             ReaderItem.Location.FIRST -> onChapterStartVisible(item.chapterUrl)

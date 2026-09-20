@@ -52,7 +52,7 @@
     <string name="updating_library_notice">Kütüphane güncelleniyor</string>
     <string name="chapter_downloaded">Bölüm indirildi</string>
     <string name="search_by_title">Başlığa göre ara</string>
-    <string name="clean_images_folder">Resim klasörünü temizle</string>
+    <string name="clean_images_folder">Resim önbelleğini temizle</string>
     <string name="preserve_only_images_from_library_books">Yalnızca kütüphane kitaplarından resimleri koru</string>
     <string name="add_delay">Gecikme ekle</string>
     <string name="wtr_lab_language">WTR-Lab Translation Language</string>
@@ -111,10 +111,10 @@
     <string name="cleaning_database">Veritabanı temizleniyor...</string>
     <string name="database_cleaned_successfully">Veritabanı başarıyla temizlendi</string>
     <string name="database_clean_failed">Veritabanı temizlenemedi</string>
-    <string name="cleaning_images_folder">Resim klasörü temizleniyor...</string>
-    <string name="images_folder_cleaned">Resim klasörü temizlendi. %d klasör silindi</string>
-    <string name="images_folder_already_clean">Resim klasörü zaten temiz</string>
-    <string name="images_folder_clean_failed">Resim klasörü temizlenemedi</string>
+    <string name="cleaning_images_folder">Resim önbelleği temizleniyor…</string>
+    <string name="images_folder_cleaned">Resim önbelleği temizlendi. %d klasör silindi</string>
+    <string name="images_folder_already_clean">Resim önbelleği zaten temiz</string>
+    <string name="images_folder_clean_failed">Resim önbelleği temizlenemedi</string>
     <string name="close_selection_bar">Seçim çubuğunu kapat</string>
     <string name="open_last_read_chapter">Son okunan bölümü aç</string>
     <string name="updating_book_info">Kitap bilgisi güncelleniyor</string>
@@ -348,7 +348,8 @@
     <string name="tried_but_failed_to_bypass_cloudfare_firewall">Cloudflare güvenlik duvarı atlatılmaya çalışıldı ancak başarısız olundu</string>
     <string name="features_reader_full_screen">Tam ekran</string>
     <string name="single_tap_to_open_settings">Menüyü açmak için tek dokunuş</string>
-    <string name="source_name_local">Yerel</string>
+    <string name="source_name_local">Yerel EPUB/FB2</string>
+    <string name="source_name_local_manga">Yerel CBZ</string>
 
     <string name="delete_novel">Romanı sil</string>
     <string name="delete_book_translations">Bu romanın tüm çevirilerini sil</string>
@@ -423,13 +424,15 @@
     <string name="google_pa_api_keys_tip">Her satıra bir anahtar. Anahtarlar otomatik olarak doğrulanır — ölü anahtarlar atlanır ve gerekirse wtr-lab\'dan yeni bir anahtar alınır.</string>
     <string name="all_genres">Tümü</string>
     <string name="grid_columns">Izgara boyutu</string>
-    <string name="source_strip_position">Kaynak şeridi konumu</string>
+    <string name="card_style">Kart stili</string>
+    <string name="source_strip_info_panel">Bilgi paneli</string>
     <string name="source_strip_on_cover">Kapakta</string>
     <string name="source_strip_below_cover">Kapağın altında</string>
     <string name="apply">Uygula</string>
     <!-- Filters -->
     <string name="filters">Filtreler</string>
     <string name="filters_reset">Sıfırla</string>
+    <string name="typography_reset">Tipografiyi sıfırla</string>
     <string name="filters_apply">Uygula</string>
     <string name="filters_search_hint">Ara…</string>
 
@@ -447,7 +450,6 @@
     <string name="llm_save_preset">Ön ayar olarak kaydet</string>
     <string name="llm_preset_name">Ön ayar adı</string>
     <string name="llm_preset_default">Varsayılan</string>
-
 
     <!-- ── OpenAI-compatible provider ──────────────────────────────────────── -->
     <string name="provider_openai">OpenAI uyumlu API</string>
@@ -521,13 +523,18 @@
     <string name="auto_backup_interval_updated">Yedekleme aralığı güncellendi</string>
     <string name="auto_backup_last_time">Son yedek</string>
     <string name="auto_backup_never">Hiçbir zaman</string>
-    <string name="clean_chapter_cache">Bölüm önbelleğini temizle</string>
     <string name="clean_database_confirmation">Veritabanını temizlemek istediğinize emin misiniz? Bu, kütüphane dışındaki tüm kitapları ve verilerini silecektir.</string>
-    <string name="clean_images_folder_confirmation">Resim klasörünü temizlemek istediğinize emin misiniz? Bu, kütüphane dışındaki kitapların resimlerini silecektir.</string>
-    <string name="clean_chapter_cache_confirmation">Bölüm önbelleğini temizlemek istediğinize emin misiniz? Bu, önbelleğe alınmış bölüm metinlerini ve çevirileri silecektir.</string>
-    <string name="cleaning_chapter_cache">Bölüm önbelleği temizleniyor…</string>
-    <string name="chapter_cache_cleaned">Bölüm önbelleği temizlendi</string>
-    <string name="chapter_cache_clean_failed">Bölüm önbelleği temizlenemedi</string>
+    <string name="clean_images_folder_confirmation">Geçici resim önbelleğini ve kütüphane dışındaki kitapları silecektir. Kütüphane kitaplarının kapakları etkilenmeyecektir.</string>
+    <string name="clean_novel_cache">Çevrimdışı metinleri temizle</string>
+    <string name="clean_novel_cache_confirmation">Kaydedilmiş bölüm metinlerini ve çevirileri silecektir. Okurken tekrar indirilecektir.</string>
+    <string name="cleaning_novel_cache">Çevrimdışı metinler temizleniyor…</string>
+    <string name="novel_cache_cleaned">Çevrimdışı metinler temizlendi</string>
+    <string name="novel_cache_clean_failed">Çevrimdışı metinler temizlenemedi</string>
+    <string name="clean_manga_cache">Çevrimdışı mangayı temizle</string>
+    <string name="clean_manga_cache_confirmation">İndirilmiş manga bölümlerini silecektir. Çevrimdışı okumak için tekrar indirmeniz gerekecektir.</string>
+    <string name="cleaning_manga_cache">Çevrimdışı manga temizleniyor…</string>
+    <string name="manga_cache_cleaned">Çevrimdışı manga temizlendi</string>
+    <string name="manga_cache_clean_failed">Çevrimdışı manga temizlenemedi</string>
     <string name="all_sources">Tüm kaynaklar</string>
     <string name="reset_filters">Sıfırla</string>
 
@@ -649,7 +656,6 @@
     <string name="available">Kullanılabilir</string>
 
     <string name="book_fix">Kitabı düzelt</string>
-
 
     <!-- History -->
     <string name="title_history">Geçmiş</string>

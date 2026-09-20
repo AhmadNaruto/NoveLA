@@ -138,7 +138,7 @@ internal class ChaptersViewModel @Inject constructor(
         sourceCatalogNameStrRes = mutableStateOf(source?.nameStrId),
         settingChapterSort = appPreferences.CHAPTERS_SORT_ASCENDING.state(viewModelScope),
         isLocalSource = mutableStateOf(bookUrl.isLocalUri),
-        isRefreshable = mutableStateOf(rawBookUrl.isContentUri || !bookUrl.isLocalUri),
+        isRefreshable = mutableStateOf(true),
         genres = mutableStateOf(emptyList()),
         rating = mutableStateOf(""),
         status = mutableStateOf(""),
@@ -371,12 +371,21 @@ internal class ChaptersViewModel @Inject constructor(
                     appFileResolver.getLocalIfContentType(rawBookUrl, bookFolderName = bookTitle)
                 )
                 if (appRepository.libraryBooks.get(localUrl) == null) {
-                    importUriContent()
+                    importUriContentSync()
                 }
                 bookUrl = localUrl
             }
 
-            if (state.isLocalSource.value) return@launch
+            if (state.isLocalSource.value) {
+                // ponytail: жанры загружаем здесь, после импорта — иначе race condition
+                val cachedBook = libraryDao.get(bookUrl)
+                if (cachedBook?.genres?.isNotBlank() == true) {
+                    state.genres.value = GenreUtils.parse(cachedBook.genres)
+                }
+                if (!appRepository.bookChapters.hasChapters(bookUrl))
+                    updateChaptersList()
+                return@launch
+            }
 
             if (!appRepository.bookChapters.hasChapters(bookUrl))
                 updateChaptersList()
@@ -659,6 +668,8 @@ internal class ChaptersViewModel @Inject constructor(
             viewModelScope.launch { updateRating() }
             viewModelScope.launch { updateStatus() }
             viewModelScope.launch { updateLastUpdateDate() }
+        } else {
+            updateChaptersList()
         }
     }
 
@@ -742,6 +753,11 @@ internal class ChaptersViewModel @Inject constructor(
             }
             state.isRefreshing.value = false
         }
+    }
+
+    private suspend fun importUriContentSync() {
+        importUriContent()
+        loadChaptersJob?.join()
     }
 
     private fun updateChaptersList() {

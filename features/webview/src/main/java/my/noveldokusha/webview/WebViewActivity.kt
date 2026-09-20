@@ -19,10 +19,12 @@ import my.noveldokusha.coreui.theme.Theme
 import my.noveldokusha.coreui.AppThemeProvider
 import my.noveldokusha.core.Toasty
 import my.noveldokusha.core.appPreferences.AppPreferences
+import my.noveldokusha.core.appPreferences.TranslationSettingsResolver
 import my.noveldokusha.network.interceptors.CloudflareBypassSignal
 import my.noveldokusha.network.interceptors.PluginUARegistry
 import my.noveldokusha.network.interceptors.resolveUserAgent
 import my.noveldokusha.text_translator.domain.TranslationManager
+import org.json.JSONTokener
 import timber.log.Timber
 import java.util.Locale
 import javax.inject.Inject
@@ -39,8 +41,10 @@ class WebViewActivity : ComponentActivity() {
     @Inject lateinit var themeProvider: AppThemeProvider
     @Inject lateinit var appPreferences: AppPreferences
     @Inject lateinit var translationManager: TranslationManager
+    @Inject lateinit var translationSettingsResolver: TranslationSettingsResolver
 
     private var currentTargetUrl: String = ""
+    private var bookUrl: String = ""
     private var isBypassMode: Boolean = false
     private var oldCfClearance: String = ""
     private var hasAutoClosed: Boolean = false  // ponytail: dedup guard for auto-close paths
@@ -74,7 +78,19 @@ class WebViewActivity : ComponentActivity() {
             var isReady by remember { mutableStateOf(isBypassMode) }
             var currentUrl by remember { mutableStateOf(currentTargetUrl) }
             var isTranslated by remember { mutableStateOf(false) }
-            val translationEnabled = !isBypassMode
+
+            // Резолв target: сначала по bookUrl (если передан), затем по URL WebView.
+            // scraper.getCompatibleSource ищет sourceId по baseUrl плагина.
+            val resolvedTarget = remember(bookUrl, currentTargetUrl) {
+                val fromBook = translationSettingsResolver.translationTargetForBook(bookUrl)
+                if (fromBook.isNotBlank()) fromBook
+                else {
+                    val sourceId = translationSettingsResolver.resolveSourceId(currentTargetUrl)
+                    if (sourceId != null) translationSettingsResolver.translationTargetForBook("", sourceId)
+                    else ""
+                }
+            }
+            val translationEnabled = !isBypassMode && resolvedTarget.isNotBlank()
 
             webView.webViewClient = object : WebViewClient() {
 
@@ -118,6 +134,10 @@ class WebViewActivity : ComponentActivity() {
                     // are already in CookieManager by onPageFinished; Turnstile JS cookies
                     // are caught by the polling fallback below.
                     if (isBypassMode) autoCloseOnClearance()
+                    // Извлечение localStorage для плагинов (Bearer Token и т.д.)
+                    if (!isBypassMode && url != null) {
+                        extractLocalStorage(url)
+                    }
                 }
 
                 // ✅ ИСПРАВЛЕНИЕ: логируем HTTP ошибки для диагностики
@@ -170,11 +190,21 @@ class WebViewActivity : ComponentActivity() {
             }
 
             // ponytail: polling fallback for Turnstile JS cookies (set AFTER onPageFinished)
+            // + localStorage extraction (catches async-written tokens)
             // + update currentUrl for toolbar display
             LaunchedEffect(Unit) {
+                var localStorageTick = 0
                 while (true) {
                     // In bypass mode, auto-close on new clearance (catches JS-set cookies)
                     if (isBypassMode) autoCloseOnClearance()
+                    // Re-extract localStorage every 3s to catch async-written tokens
+                    if (!isBypassMode) {
+                        localStorageTick++
+                        if (localStorageTick >= 6) {
+                            localStorageTick = 0
+                            webView.url?.let { extractLocalStorage(it) }
+                        }
+                    }
                     webView.url?.let { currentUrl = it }
                     delay(500)
                 }
@@ -207,11 +237,9 @@ class WebViewActivity : ComponentActivity() {
                             translateBridge.setActive(false)
                             webView.evaluateJavascript("window.__novelaPageTranslator.restore()", null)
                         } else {
-                            // Целевой язык всегда из белого списка GOOGLE_TRANSLATE_LANGUAGES
-                            // (или "en") — резолвер гарантирует отсутствие кавычек/небезопасных
-                            // символов, поэтому интерполяция в JS-литерал в одинарных кавычках безопасна.
+                            // Целевой язык через каскад: per-novel → per-plugin → global → fallback
                             val target = TargetLanguageResolver.resolve(
-                                appPreferences.GLOBAL_TRANSLATION_PREFERRED_TARGET.value,
+                                resolvedTarget,
                                 Locale.getDefault().language
                             )
                             // Микроокно (мс) между setActive(true) и исполнением start() в JS:
@@ -252,6 +280,7 @@ class WebViewActivity : ComponentActivity() {
 
     private fun readIntentExtras(intent: Intent) {
         currentTargetUrl = intent.getStringExtra("url") ?: intent.data?.toString().orEmpty()
+        bookUrl = intent.getStringExtra("bookUrl").orEmpty()
         isBypassMode = intent.getBooleanExtra("isBypassMode", false)
         oldCfClearance = intent.getStringExtra("oldCfClearance") ?: ""
     }
@@ -326,6 +355,19 @@ class WebViewActivity : ComponentActivity() {
         hasAutoClosed = true
         CloudflareBypassSignal.abort(host)
         finish()
+    }
+
+    private fun extractLocalStorage(url: String) {
+        val host = try { Uri.parse(url).host } catch (_: Exception) { null } ?: return
+        val script = """(function(){var r={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);r[k]=localStorage.getItem(k);}return JSON.stringify(r);})()"""
+        webView.evaluateJavascript(script) { value ->
+            if (value.isNullOrBlank() || value == "null") return@evaluateJavascript
+            val json = JSONTokener(value).nextValue() as String
+            if (json.isBlank() || json == "{}") return@evaluateJavascript
+            val prefs = getSharedPreferences("lua_localStorage", Context.MODE_PRIVATE)
+            prefs.edit().putString(host, json).apply()
+            Timber.d("localStorage saved: host=$host, keys=${json.length} chars")
+        }
     }
 
     override fun onDestroy() {

@@ -25,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import my.noveldokusha.coreui.components.BookImageButtonView
-import my.noveldokusha.coreui.components.BookTitlePosition
 import my.noveldokusha.coreui.components.InLibraryBadge
 import my.noveldokusha.coreui.components.LibraryBadgeMaps
 import my.noveldokusha.coreui.components.LibraryBadgeState
@@ -118,7 +117,6 @@ private fun SourceListView(
                 onLongClick = { },
                 modifier = Modifier
                     .width(130.dp),
-                bookTitlePosition = BookTitlePosition.Outside,
                 topLeftBadge = if (badge != null) {
                     { InLibraryBadge(inSameSource = badge.inSameSource, sourceCount = badge.sourceCount) }
                 } else null,
