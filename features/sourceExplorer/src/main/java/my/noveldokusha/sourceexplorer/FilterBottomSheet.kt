@@ -233,8 +233,32 @@ internal fun FilterBottomSheet(
 }
 
 @Composable
-private fun FilterSectionHeader(title: String) {
-    Text(title, style = MaterialTheme.typography.titleSmall, color = colorAccent(), fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
+private fun FilterSectionHeader(
+    title: String,
+    expanded: Boolean = true,
+    collapsible: Boolean = false,
+    onToggle: (() -> Unit)? = null,
+) {
+    if (collapsible) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onToggle?.invoke() }
+                .padding(top = 12.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = colorAccent(), fontWeight = FontWeight.Medium)
+            Icon(
+                if (expanded) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = colorAccent()
+            )
+        }
+    } else {
+        Text(title, style = MaterialTheme.typography.titleSmall, color = colorAccent(), fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
+    }
 }
 
 @Composable
@@ -310,19 +334,23 @@ private fun SelectSection(filter: LuaFilter.Select, value: String, onChange: (St
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CheckboxSection(filter: LuaFilter.CheckboxGroup, included: Set<String>, onToggle: (String) -> Unit) {
+    val isCollapsible = filter.options.size > 4
+    var expanded by rememberSaveable { mutableStateOf(included.isNotEmpty()) }
     Column {
-        FilterSectionHeader(filter.label)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            filter.options.sortedBy { it.label.lowercase() }.forEach { opt ->
-                val isIncluded = opt.value in included
-                FilterChip(
-                    selected = isIncluded,
-                    onClick = { onToggle(opt.value) },
-                    label = { Text(opt.label) },
-                    leadingIcon = if (isIncluded) ({ Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }) else null,
-                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = colorAccent().copy(alpha = 0.15f), selectedLabelColor = colorAccent(), selectedLeadingIconColor = colorAccent()),
-                    border = FilterChipDefaults.filterChipBorder(enabled = true, selected = isIncluded, selectedBorderColor = colorAccent(), selectedBorderWidth = 1.5.dp)
-                )
+        FilterSectionHeader(filter.label, expanded = expanded, collapsible = isCollapsible, onToggle = if (isCollapsible) {{ expanded = !expanded }} else null)
+        AnimatedVisibility(visible = !isCollapsible || expanded) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                filter.options.sortedBy { it.label.lowercase() }.forEach { opt ->
+                    val isIncluded = opt.value in included
+                    FilterChip(
+                        selected = isIncluded,
+                        onClick = { onToggle(opt.value) },
+                        label = { Text(opt.label) },
+                        leadingIcon = if (isIncluded) ({ Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }) else null,
+                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = colorAccent().copy(alpha = 0.15f), selectedLabelColor = colorAccent(), selectedLeadingIconColor = colorAccent()),
+                        border = FilterChipDefaults.filterChipBorder(enabled = true, selected = isIncluded, selectedBorderColor = colorAccent(), selectedBorderWidth = 1.5.dp)
+                    )
+                }
             }
         }
     }
@@ -331,11 +359,16 @@ private fun CheckboxSection(filter: LuaFilter.CheckboxGroup, included: Set<Strin
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TriStateSection(filter: LuaFilter.TriState, stateMap: Map<String, TriStateValue>, onToggle: (String) -> Unit) {
+    val isCollapsible = filter.options.size > 4
+    val hasActive = stateMap.any { it.value != TriStateValue.NEUTRAL }
+    var expanded by rememberSaveable { mutableStateOf(hasActive) }
     Column {
-        FilterSectionHeader(filter.label)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            filter.options.sortedBy { it.label.lowercase() }.forEach { opt ->
-                TriStateChip(opt.label, stateMap[opt.value] ?: TriStateValue.NEUTRAL) { onToggle(opt.value) }
+        FilterSectionHeader(filter.label, expanded = expanded, collapsible = isCollapsible, onToggle = if (isCollapsible) {{ expanded = !expanded }} else null)
+        AnimatedVisibility(visible = !isCollapsible || expanded) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                filter.options.sortedBy { it.label.lowercase() }.forEach { opt ->
+                    TriStateChip(opt.label, stateMap[opt.value] ?: TriStateValue.NEUTRAL) { onToggle(opt.value) }
+                }
             }
         }
     }
