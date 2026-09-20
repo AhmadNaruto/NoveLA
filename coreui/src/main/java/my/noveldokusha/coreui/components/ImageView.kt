@@ -34,6 +34,7 @@ import coil3.network.httpHeaders
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Precision
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import my.noveldokusha.core.utils.refererFor
@@ -76,6 +77,7 @@ fun ImageView(
         val context by rememberUpdatedState(LocalContext.current)
         val scope = rememberCoroutineScope()
         val retryCount = remember { mutableIntStateOf(0) }
+        var retryJob by remember { mutableStateOf<Job?>(null) }
         var isError by remember { mutableStateOf(false) }
 
         // ponytail: crossfade, allowHardware, allowRgb565 — задаются глобально в App.kt.
@@ -118,7 +120,8 @@ fun ImageView(
                 onError = {
                     isError = true
                     if (retryCount.intValue < 2) {
-                        scope.launch {
+                        retryJob?.cancel()
+                        retryJob = scope.launch {
                             delay(1000)
                             retryCount.intValue++
                         }
