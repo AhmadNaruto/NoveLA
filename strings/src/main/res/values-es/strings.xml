@@ -233,6 +233,10 @@
     <string name="dark_mode_black">Negro</string>
     <string name="color_scheme">Esquema de color</string>
     <string name="reader_text_color">Color del texto</string>
+    <string name="reader_paragraph">Párrafo</string>
+    <string name="reader_paragraph_indent">Sangría de primera línea</string>
+    <string name="reader_paragraph_first_letter_bold">Primera letra en negrita</string>
+    <string name="reader_sentence_splitting">Dividir párrafos en oraciones</string>
     <string name="reader_import_font">Importar fuente</string>
     <string name="reader_fonts_imported">Importadas</string>
     <string name="reader_delete_font">Eliminar fuente</string>

@@ -233,6 +233,10 @@
     <string name="dark_mode_black">Czarny</string>
     <string name="color_scheme">Schemat kolorów</string>
     <string name="reader_text_color">Kolor tekstu</string>
+    <string name="reader_paragraph">Akapit</string>
+    <string name="reader_paragraph_indent">Wcięcie pierwszej linii</string>
+    <string name="reader_paragraph_first_letter_bold">Pogrub pierwszą literę</string>
+    <string name="reader_sentence_splitting">Dziel akapity na zdania</string>
     <string name="reader_import_font">Importuj czcionkę</string>
     <string name="reader_fonts_imported">Zaimportowane</string>
     <string name="reader_delete_font">Usuń czcionkę</string>

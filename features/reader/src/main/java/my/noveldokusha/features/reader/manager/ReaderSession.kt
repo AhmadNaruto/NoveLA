@@ -148,6 +148,7 @@ internal class ReaderSession(
         readerViewHandlersActions = readerViewHandlersActions,
         chapterTranslationDao = chapterTranslationDao,
         regexRulesProvider = { appPreferences.effectiveRegexRules(bookUrl) },
+        sentenceSplittingEnabledProvider = { appPreferences.READER_SENTENCE_SPLITTING.value },
     )
 
     val items = readerChaptersLoader.getItems()

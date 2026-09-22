@@ -233,6 +233,10 @@
     <string name="dark_mode_black">أسود</string>
     <string name="color_scheme">نظام الألوان</string>
     <string name="reader_text_color">لون النص</string>
+    <string name="reader_paragraph">فقرة</string>
+    <string name="reader_paragraph_indent">إزاحة السطر الأول</string>
+    <string name="reader_paragraph_first_letter_bold">جعل الحرف الأول عريضًا</string>
+    <string name="reader_sentence_splitting">تقسيم الفقرات إلى جمل</string>
     <string name="reader_import_font">استيراد الخط</string>
     <string name="reader_fonts_imported">المستوردة</string>
     <string name="reader_delete_font">حذف الخط</string>

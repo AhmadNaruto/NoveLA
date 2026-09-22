@@ -848,6 +848,10 @@
     <!-- Reader typography settings -->
     <string name="reader_text_justify">Выравнивание по ширине</string>
     <string name="reader_text_hyphenation">Переносы слов</string>
+    <string name="reader_paragraph">Абзац</string>
+    <string name="reader_paragraph_indent">Отступ первой строки</string>
+    <string name="reader_paragraph_first_letter_bold">Жирная первая буква</string>
+    <string name="reader_sentence_splitting">Разбивать абзацы на предложения</string>
     <string name="reader_text_bold">Жирный</string>
     <string name="reader_text_italic">Курсив</string>
     <string name="reader_text_underline">Подчеркивание</string>

@@ -53,6 +53,7 @@ internal class ReaderChaptersLoader(
     private val readerViewHandlersActions: ReaderViewHandlersActions,
     private val chapterTranslationDao: ChapterTranslationDao,
     private val regexRulesProvider: () -> List<my.noveldokusha.core.models.RegexRule> = { emptyList() },
+    private val sentenceSplittingEnabledProvider: () -> Boolean = { false },
 ) : CoroutineScope {
     override val coroutineContext: CoroutineContext = SupervisorJob() + Dispatchers.Main.immediate
 
@@ -600,6 +601,7 @@ internal class ReaderChaptersLoader(
                     chapterItemPositionDisplacement = chapterItemPosition,
                     text = res.data,
                     userRegexRules = regexRules,
+                    sentenceSplittingEnabled = sentenceSplittingEnabledProvider(),
                 )
                 chapterItemPosition += itemsOriginal.size
 

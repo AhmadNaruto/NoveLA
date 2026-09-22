@@ -293,7 +293,7 @@ class MangaReaderViewModelTest {
         vm.init(bookUrl, "https://example.com/book/unknown")
         advanceUntilIdle()
 
-        assertTrue(events.contains(MangaReaderEvent.InvalidChapter))
+        assertTrue(events.contains(MangaReaderEvent.InvalidChapter()))
         assertTrue(vm.uiState.value is MangaReaderUiState.Loading) // ничего не открыто
     }
 
@@ -308,7 +308,7 @@ class MangaReaderViewModelTest {
         vm.init(bookUrl, ch1Url) // текстовая глава в манга-ридере
         advanceUntilIdle()
 
-        assertTrue(events.contains(MangaReaderEvent.InvalidChapter))
+        assertTrue(events.contains(MangaReaderEvent.InvalidChapter()))
     }
 
     // ---- Retry (6.5): ошибка не роняет последнее успешное состояние ----

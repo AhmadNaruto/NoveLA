@@ -233,6 +233,10 @@
     <string name="dark_mode_black">ดำ</string>
     <string name="color_scheme">โทนสี</string>
     <string name="reader_text_color">สีตัวอักษร</string>
+    <string name="reader_paragraph">ย่อหน้า</string>
+    <string name="reader_paragraph_indent">เยื้องบรรทัดแรก</string>
+    <string name="reader_paragraph_first_letter_bold">ตัวอักษรแรกตัวหนา</string>
+    <string name="reader_sentence_splitting">แบ่งย่อหน้าเป็นประโยค</string>
     <string name="reader_import_font">นำเข้าแบบอักษร</string>
     <string name="reader_fonts_imported">ที่นำเข้า</string>
     <string name="reader_delete_font">ลบแบบอักษร</string>

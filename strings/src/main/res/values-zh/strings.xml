@@ -233,6 +233,10 @@
     <string name="dark_mode_black">黑色</string>
     <string name="color_scheme">配色方案</string>
     <string name="reader_text_color">文字颜色</string>
+    <string name="reader_paragraph">段落</string>
+    <string name="reader_paragraph_indent">首行缩进</string>
+    <string name="reader_paragraph_first_letter_bold">首字母加粗</string>
+    <string name="reader_sentence_splitting">将段落拆分为句子</string>
     <string name="reader_import_font">导入字体</string>
     <string name="reader_fonts_imported">已导入</string>
     <string name="reader_delete_font">删除字体</string>
