@@ -9,7 +9,10 @@ package my.noveldokusha.features.reader.tools
  */
 object SentenceSplitter {
 
-    private const val MIN_PARAGRAPH_LENGTH = 250
+    // Threshold lowered from 250 to 100 (data-driven, issue-209): corpus measurement
+    // showed 165 of 1004 web-novel paragraphs in the 100–249 band would split into
+    // >=2 real sentences; 250 left those whole.
+    private const val MIN_PARAGRAPH_LENGTH = 100
     private const val SHORT_STATUS_LINE_LENGTH = 40
     private const val EM_DASH = '\u2014'
     private const val EN_DASH = '\u2013'
@@ -105,6 +108,14 @@ object SentenceSplitter {
      */
     fun splitParagraph(paragraph: String): List<String> {
         if (paragraph.length < MIN_PARAGRAPH_LENGTH) return listOf(paragraph)
+        return splitIgnoringMinLength(paragraph)
+    }
+
+    /**
+     * Test-only: the body of [splitParagraph] without the MIN_PARAGRAPH_LENGTH gate.
+     * Used by the corpus diagnostic to measure what short paragraphs would do.
+     */
+    internal fun splitIgnoringMinLength(paragraph: String): List<String> {
         if (isStatusBlock(paragraph) || isDashDialogue(paragraph)) return listOf(paragraph)
         val boundaries = findValidBoundaries(paragraph)
         if (boundaries.isEmpty()) return listOf(paragraph)
@@ -131,10 +142,15 @@ object SentenceSplitter {
 
     /**
      * Scans the paragraph left to right with a quote/bracket stack. A terminator
-     * is a split candidate only at stack depth 0; script terminators always yield
-     * a boundary, basic ones ( . ! ? ) are validated.
+     * is a split candidate at stack depth 0, or — for a frame-quoted paragraph —
+     * while only the wrapping quote is open (see [isFrameQuoted]); script
+     * terminators always yield a boundary, basic ones ( . ! ? ) are validated.
      */
-    private fun findValidBoundaries(paragraph: String): List<Int> {
+    internal fun findValidBoundaries(paragraph: String): List<Int> {
+        val frame = isFrameQuoted(paragraph)
+        val frameCloser = frame?.let { f ->
+            CLOSING_TO_OPENING_QUOTES.entries.first { it.value == f }.key
+        }
         val stack = ArrayDeque<Char>()
         val boundaries = mutableListOf<Int>()
 
@@ -171,13 +187,41 @@ object SentenceSplitter {
                     // "!" / "." / "?" segments are produced.
                     val rightAfter = paragraph.getOrNull(i + 1)
                     if (rightAfter == null || rightAfter !in ALL_TERMINATORS) {
-                        if (stack.isEmpty() && isBoundaryValid(paragraph, ch, i, i + 1)) boundaries.add(i)
+                        // Frame-dialogue relaxation: with only the wrapping quote
+                        // open, interior terminators become candidates (rules a–g
+                        // still apply). A terminator directly before the frame's
+                        // closing quote is left to the closing-quote branch above
+                        // (boundary after the closing quote) — otherwise a stray
+                        // segment containing only the quote char would appear.
+                        val onlyFrameOpen = frame != null && stack.size == 1 && stack.first() == frame
+                        // "Before the frame closer" means the next significant char
+                        // after the terminator is the closing quote — even when
+                        // separated by whitespace ("… конец. \"" vs "… конец.\"").
+                        val beforeFrameCloser = frameCloser != null &&
+                            nextSignificantChar(paragraph, i + 1) == frameCloser
+                        val candidate = stack.isEmpty() || (onlyFrameOpen && !beforeFrameCloser)
+                        if (candidate && isBoundaryValid(paragraph, ch, i, i + 1)) boundaries.add(i)
                     }
                 }
             }
             i++
         }
         return boundaries
+    }
+
+    /**
+     * The opening quote char iff the paragraph is wrapped whole in a matching
+     * quote pair (first non-ws char is an opening quote, last non-ws char is its
+     * closing partner; `"` pairs with `"`). Interior terminators of such a
+     * frame-quoted paragraph are validated instead of being blocked by the stack
+     * (frame-dialogue relaxation); nesting and brackets keep blocking.
+     */
+    private fun isFrameQuoted(paragraph: String): Char? {
+        val first = paragraph.firstOrNull { !it.isWhitespace() } ?: return null
+        val last = paragraph.lastOrNull { !it.isWhitespace() } ?: return null
+        if (first !in OPENING_QUOTES) return null
+        val opener = CLOSING_TO_OPENING_QUOTES[last] ?: return null
+        return if (opener == first) first else null
     }
 
     /**
@@ -277,5 +321,118 @@ object SentenceSplitter {
     private fun isDashDialogue(paragraph: String): Boolean {
         val trimmed = paragraph.trimStart()
         return trimmed.startsWith(EM_DASH) || trimmed.startsWith(EN_DASH)
+    }
+
+    // === Diagnostic API (test-only; additive, does not affect production paths) ===
+
+    /** Current split threshold, exposed for the corpus diagnostic. */
+    internal val minParagraphLength: Int get() = MIN_PARAGRAPH_LENGTH
+
+    internal enum class UnsplitReason { TOO_SHORT, STATUS_BLOCK, DASH_DIALOGUE, NO_VALID_BOUNDARY }
+
+    /**
+     * Test-only diagnostic: returns why [splitParagraph] keeps [paragraph] whole, or
+     * null when it would be split. Mirrors the decision order of [splitParagraph].
+     */
+    internal fun diagnose(paragraph: String): UnsplitReason? = when {
+        paragraph.length < MIN_PARAGRAPH_LENGTH -> UnsplitReason.TOO_SHORT
+        isStatusBlock(paragraph) -> UnsplitReason.STATUS_BLOCK
+        isDashDialogue(paragraph) -> UnsplitReason.DASH_DIALOGUE
+        findValidBoundaries(paragraph).isEmpty() -> UnsplitReason.NO_VALID_BOUNDARY
+        else -> null
+    }
+
+    internal data class BoundaryRejection(val terminatorPos: Int, val reason: String)
+
+    /**
+     * Test-only diagnostic: replays the [findValidBoundaries] scan and reports every
+     * terminator candidate that did not become a boundary, with the reason:
+     * 'stack non-empty' — candidate inside a genuinely blocking (nested/unclosed)
+     * quote or bracket stack — frame-relaxed terminators are NOT reported here;
+     * 'adjacent terminator' — part of a punctuation run (…!?/….);
+     * 'a'..'g' — the matching rule in [isBoundaryValid] rejected it.
+     */
+    internal fun boundaryRejections(paragraph: String): List<BoundaryRejection> {
+        val frame = isFrameQuoted(paragraph)
+        val frameCloser = frame?.let { f ->
+            CLOSING_TO_OPENING_QUOTES.entries.first { it.value == f }.key
+        }
+        val stack = ArrayDeque<Char>()
+        val rejections = mutableListOf<BoundaryRejection>()
+        var i = 0
+        while (i < paragraph.length) {
+            val ch = paragraph[i]
+            when {
+                CLOSING_TO_OPENING_QUOTES.containsKey(ch) -> {
+                    val opener = CLOSING_TO_OPENING_QUOTES.getValue(ch)
+                    if (stack.isNotEmpty() && stack.last() == opener) {
+                        stack.removeLast()
+                        val prev = paragraph.getOrNull(i - 1)
+                        if (stack.isEmpty() && prev != null && prev in ALL_TERMINATORS) {
+                            boundaryRejectionReason(paragraph, prev, i - 1, i + 1)?.let {
+                                rejections.add(BoundaryRejection(i, it))
+                            }
+                        }
+                    } else if (ch in OPENING_QUOTES) {
+                        stack.addLast(ch)
+                    }
+                }
+                ch in OPENING_QUOTES -> stack.addLast(ch)
+                CLOSING_TO_OPENING_BRACKETS.containsKey(ch) -> {
+                    val opener = CLOSING_TO_OPENING_BRACKETS.getValue(ch)
+                    if (stack.isNotEmpty() && stack.last() == opener) stack.removeLast()
+                }
+                ch in OPENING_BRACKETS -> stack.addLast(ch)
+                ch in ALL_TERMINATORS -> {
+                    val rightAfter = paragraph.getOrNull(i + 1)
+                    if (rightAfter == null || rightAfter !in ALL_TERMINATORS) {
+                        val onlyFrameOpen = frame != null && stack.size == 1 && stack.first() == frame
+                        val beforeFrameCloser = frameCloser != null &&
+                            nextSignificantChar(paragraph, i + 1) == frameCloser
+                        when {
+                            stack.isEmpty() -> boundaryRejectionReason(paragraph, ch, i, i + 1)?.let {
+                                rejections.add(BoundaryRejection(i, it))
+                            }
+                            onlyFrameOpen && beforeFrameCloser ->
+                                /* placed (or rejected) by the closing-quote branch */ Unit
+                            onlyFrameOpen -> boundaryRejectionReason(paragraph, ch, i, i + 1)?.let {
+                                rejections.add(BoundaryRejection(i, it))
+                            }
+                            else -> rejections.add(BoundaryRejection(i, "stack non-empty"))
+                        }
+                    } else {
+                        rejections.add(BoundaryRejection(i, "adjacent terminator"))
+                    }
+                }
+            }
+            i++
+        }
+        return rejections
+    }
+
+    /** Replays the rules of [isBoundaryValid]; returns the failing rule letter, or null when valid. */
+    private fun boundaryRejectionReason(paragraph: String, terminator: Char, terminatorPos: Int, nextFrom: Int): String? {
+        if (terminator !in BASIC_TERMINATORS) return null
+
+        val next = nextSignificantChar(paragraph, nextFrom)
+        val sigAfter = nextSignificantChar(paragraph, terminatorPos + 1)
+        val after = paragraph.getOrNull(terminatorPos + 1)
+        val before = paragraph.getOrNull(terminatorPos - 1)
+
+        if (after != null && isLatinCyrillicLetter(after)) return "a"
+        if (sigAfter != null && sigAfter.isDigit()) return "b"
+        if (before != null && before.isDigit() && after != null && after.isDigit()) return "b"
+        val lastWord = lastLatinWordBefore(paragraph, terminatorPos)
+        if (lastWord != null && lastWord in ABBREVIATIONS &&
+            paragraph.getOrNull(terminatorPos - lastWord.length - 1) != '.'
+        ) return "c"
+        if (before != null && isLatinCyrillicLetter(before) && before.isUpperCase() &&
+            isSingleLetterWord(paragraph, terminatorPos - 1) &&
+            next != null && next.isLetter() && next.isUpperCase()
+        ) return "d"
+        if (next != null && next.isLetter() && next.isLowerCase()) return "e"
+        if (sigAfter != null && sigAfter in SENTENCE_CONTINUATION) return "f"
+        if (next != null && (next == EM_DASH || next == EN_DASH)) return "g"
+        return null
     }
 }

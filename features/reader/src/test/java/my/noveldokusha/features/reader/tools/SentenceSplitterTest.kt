@@ -494,4 +494,94 @@ class SentenceSplitterTest {
             SentenceSplitter.splitParagraph(input)
         )
     }
+
+    @Test
+    fun frameQuoted_twoSentences_splitsIntoTwo() {
+        val input = "\"Junior Brothers and Sisters, you must cross the Daluo Immortal Bridge every morning to attend the lectures given by the Elders, and you must remember this rule well and never forget it. Otherwise, unless there is a truly valid reason, missing the morning class will result in a serious punishment for the whole group of newly inducted disciples.\""
+        assertTrue(input.length > 250)
+        assertEquals(
+            listOf(
+                "\"Junior Brothers and Sisters, you must cross the Daluo Immortal Bridge every morning to attend the lectures given by the Elders, and you must remember this rule well and never forget it.",
+                "Otherwise, unless there is a truly valid reason, missing the morning class will result in a serious punishment for the whole group of newly inducted disciples.\""
+            ),
+            SentenceSplitter.splitParagraph(input)
+        )
+    }
+
+    @Test
+    fun inlineQuote_interiorSentence_notSplitInsideQuote() {
+        val input = "He said \"Just wait right here and do not move. Things will be fine.\" Then he walked away down the long corridor without looking back even once, disappearing around the corner where the light was dim and the shadows were long and deep, and he never looked back even once."
+        assertTrue(input.length > 250)
+        assertEquals(
+            listOf(
+                "He said \"Just wait right here and do not move. Things will be fine.\"",
+                "Then he walked away down the long corridor without looking back even once, disappearing around the corner where the light was dim and the shadows were long and deep, and he never looked back even once."
+            ),
+            SentenceSplitter.splitParagraph(input)
+        )
+    }
+
+    @Test
+    fun frameQuoted_nestedQuote_keptWholeInsideNested() {
+        val input = "\"Он сказал: «Иди сейчас же. Немедленно!» Потом он развернулся и ушёл, не сказав больше ни слова, и не оглянулся ни разу. И больше они не виделись никогда, и она так и не узнала, что же произошло в тот вечер, хотя думала об этом каждый день на протяжении многих долгих лет.\""
+        assertTrue(input.length > 250)
+        assertEquals(
+            listOf(
+                "\"Он сказал: «Иди сейчас же. Немедленно!» Потом он развернулся и ушёл, не сказав больше ни слова, и не оглянулся ни разу.",
+                "И больше они не виделись никогда, и она так и не узнала, что же произошло в тот вечер, хотя думала об этом каждый день на протяжении многих долгих лет.\""
+            ),
+            SentenceSplitter.splitParagraph(input)
+        )
+    }
+
+    @Test
+    fun bracketedSystemPanel_keptWhole_evenWhenFramedByBrackets() {
+        val input = "[System: Mental Power 100 (When Mental Power is below 80, one will fall into a state of mental fatigue; below 50, one will enter self-doubt; below 20, one will fall into a state of sanity dissipation; below 1, what will happen to the host of this system panel?)]"
+        assertTrue(input.length > 100)
+        assertEquals(listOf(input), SentenceSplitter.splitParagraph(input))
+    }
+
+    @Test
+    fun frameQuoted_asymmetricQuotesGerman_splits() {
+        val input = "„Erster Satz ist ziemlich lang und beschreibt etwas ganz Wichtiges. Zweiter Satz gehört zur selben Zitatrede und endet ganz am Ende des Absatzes.\u201c"
+        assertTrue(input.length >= SentenceSplitter.minParagraphLength)
+        assertEquals(
+            listOf(
+                "„Erster Satz ist ziemlich lang und beschreibt etwas ganz Wichtiges.",
+                "Zweiter Satz gehört zur selben Zitatrede und endet ganz am Ende des Absatzes.\u201c"
+            ),
+            SentenceSplitter.splitParagraph(input)
+        )
+    }
+
+    @Test
+    fun frameQuoted_cjkScriptTerminator_splits() {
+        val input = "「今日は本当に良い天気なので、散歩に行くことにした。彼は公園のベンチに座って、長い時間を過ごし、この街の景色の美しさを眺めていた。それから家に帰って、静かに一日を終えた。そして翌朝も同じ時間に散歩に出かけるのだった。」"
+        assertTrue(input.length >= SentenceSplitter.minParagraphLength)
+        assertEquals(
+            listOf(
+                "「今日は本当に良い天気なので、散歩に行くことにした。",
+                "彼は公園のベンチに座って、長い時間を過ごし、この街の景色の美しさを眺めていた。",
+                "それから家に帰って、静かに一日を終えた。",
+                "そして翌朝も同じ時間に散歩に出かけるのだった。」"
+            ),
+            SentenceSplitter.splitParagraph(input)
+        )
+    }
+
+    @Test
+    fun frameQuoted_beforeCloserWithSpace_noStraySegment() {
+        val input = "\"This is the first sentence of the paragraph which is quite long and detailed. And this is the second sentence of the paragraph which is also long enough and ends right here. \""
+        assertTrue(input.length >= SentenceSplitter.minParagraphLength)
+        val segments = SentenceSplitter.splitParagraph(input)
+        assertTrue("no segment may be the bare closing quote", segments.none { it == "\"" })
+        assertTrue("all segments must be non-empty", segments.all { it.isNotEmpty() })
+        assertEquals(
+            listOf(
+                "\"This is the first sentence of the paragraph which is quite long and detailed.",
+                "And this is the second sentence of the paragraph which is also long enough and ends right here. \""
+            ),
+            segments
+        )
+    }
 }
