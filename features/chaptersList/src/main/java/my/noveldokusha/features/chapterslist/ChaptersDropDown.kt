@@ -103,7 +103,7 @@ internal fun ChaptersDropDown(
             )
         }
     )
-    if (!isLocalSource) DropdownMenuItem(
+    DropdownMenuItem(
         onClick = { onExport(bookUrl, bookTitle) },
         text = {
             Text(text = stringResource(StringsR.string.export))
