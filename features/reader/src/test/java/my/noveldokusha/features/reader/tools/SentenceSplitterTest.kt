@@ -496,16 +496,11 @@ class SentenceSplitterTest {
     }
 
     @Test
-    fun frameQuoted_twoSentences_splitsIntoTwo() {
+    fun frameQuoted_twoSentences_keptWhole() {
         val input = "\"Junior Brothers and Sisters, you must cross the Daluo Immortal Bridge every morning to attend the lectures given by the Elders, and you must remember this rule well and never forget it. Otherwise, unless there is a truly valid reason, missing the morning class will result in a serious punishment for the whole group of newly inducted disciples.\""
         assertTrue(input.length > 250)
-        assertEquals(
-            listOf(
-                "\"Junior Brothers and Sisters, you must cross the Daluo Immortal Bridge every morning to attend the lectures given by the Elders, and you must remember this rule well and never forget it.",
-                "Otherwise, unless there is a truly valid reason, missing the morning class will result in a serious punishment for the whole group of newly inducted disciples.\""
-            ),
-            SentenceSplitter.splitParagraph(input)
-        )
+        // Абзац, целиком обёрнутый в кавычки, — рамка: не режем внутри.
+        assertEquals(listOf(input), SentenceSplitter.splitParagraph(input))
     }
 
     @Test
@@ -522,16 +517,11 @@ class SentenceSplitterTest {
     }
 
     @Test
-    fun frameQuoted_nestedQuote_keptWholeInsideNested() {
+    fun frameQuoted_nestedQuote_keptWhole() {
         val input = "\"Он сказал: «Иди сейчас же. Немедленно!» Потом он развернулся и ушёл, не сказав больше ни слова, и не оглянулся ни разу. И больше они не виделись никогда, и она так и не узнала, что же произошло в тот вечер, хотя думала об этом каждый день на протяжении многих долгих лет.\""
         assertTrue(input.length > 250)
-        assertEquals(
-            listOf(
-                "\"Он сказал: «Иди сейчас же. Немедленно!» Потом он развернулся и ушёл, не сказав больше ни слова, и не оглянулся ни разу.",
-                "И больше они не виделись никогда, и она так и не узнала, что же произошло в тот вечер, хотя думала об этом каждый день на протяжении многих долгих лет.\""
-            ),
-            SentenceSplitter.splitParagraph(input)
-        )
+        // Абзац целиком в кавычках (с вложенной цитатой) — рамка: не режем внутри.
+        assertEquals(listOf(input), SentenceSplitter.splitParagraph(input))
     }
 
     @Test
@@ -542,46 +532,105 @@ class SentenceSplitterTest {
     }
 
     @Test
-    fun frameQuoted_asymmetricQuotesGerman_splits() {
+    fun frameQuoted_asymmetricQuotesGerman_keptWhole() {
         val input = "„Erster Satz ist ziemlich lang und beschreibt etwas ganz Wichtiges. Zweiter Satz gehört zur selben Zitatrede und endet ganz am Ende des Absatzes.\u201c"
         assertTrue(input.length >= SentenceSplitter.minParagraphLength)
-        assertEquals(
-            listOf(
-                "„Erster Satz ist ziemlich lang und beschreibt etwas ganz Wichtiges.",
-                "Zweiter Satz gehört zur selben Zitatrede und endet ganz am Ende des Absatzes.\u201c"
-            ),
-            SentenceSplitter.splitParagraph(input)
-        )
+        // Асимметричная пара „…“ целиком оборачивает абзац — рамка: не режем внутри.
+        assertEquals(listOf(input), SentenceSplitter.splitParagraph(input))
     }
 
     @Test
-    fun frameQuoted_cjkScriptTerminator_splits() {
+    fun frameQuoted_cjkScriptTerminator_keptWhole() {
         val input = "「今日は本当に良い天気なので、散歩に行くことにした。彼は公園のベンチに座って、長い時間を過ごし、この街の景色の美しさを眺めていた。それから家に帰って、静かに一日を終えた。そして翌朝も同じ時間に散歩に出かけるのだった。」"
         assertTrue(input.length >= SentenceSplitter.minParagraphLength)
+        // Абзац целиком в 「…」 — рамка: не режем внутри.
+        assertEquals(listOf(input), SentenceSplitter.splitParagraph(input))
+    }
+
+    @Test
+    fun frame_beforeCloserWithSpace_keptWhole() {
+        val input = "\"This is the first sentence of the paragraph which is quite long and detailed. And this is the second sentence of the paragraph which is also long enough and ends right here. \""
+        assertTrue(input.length >= SentenceSplitter.minParagraphLength)
+        // Абзац целиком в кавычках, даже с пробелом перед закрывающей — рамка: не режем.
+        assertEquals(listOf(input), SentenceSplitter.splitParagraph(input))
+    }
+
+    @Test
+    fun boxDrawing_frame_keptWhole() {
+        val input = "╔═══════════════════╗\n" +
+            "║   Уровень: 15      ║\n" +
+            "╚═══════════════════╝"
+        assertEquals(listOf(input), SentenceSplitter.splitIgnoringMinLength(input))
+    }
+
+    @Test
+    fun boxDrawing_statusFrame_keptWhole() {
+        val input = "┌─────────────┐\n" +
+            "│ Имя: Джон    │\n" +
+            "│ HP: 120/120  │\n" +
+            "└─────────────┘"
+        assertEquals(listOf(input), SentenceSplitter.splitIgnoringMinLength(input))
+    }
+
+    @Test
+    fun emoji_decoratedParagraph_keptWhole() {
+        val input = "Капитан поднялся на палубу и улыбнулся, глядя на горизонт, где уже вставало солнце и разгоняло утренний туман, окутывающий корабль, и на мачтах хлопали паруса, и чайки кружили над кормой, и команда готовилась к отплытию. 🌅"
+        assertTrue(input.length >= SentenceSplitter.minParagraphLength)
+        assertEquals(listOf(input), SentenceSplitter.splitParagraph(input))
+    }
+
+    @Test
+    fun decorativeDivider_lineOfTildes_keptWhole() {
+        val input = "Он долго шёл по лесу и наконец вышел к старой избушке, стоявшей на опушке среди высоких елей под вечерним небом и тихим ветром. \n~~~~~~~~\n Потом он постучал в дверь и стал ждать ответа, но в доме было тихо и никаких признаков жизни не наблюдалось."
+        assertTrue(input.length >= SentenceSplitter.minParagraphLength)
+        assertEquals(listOf(input), SentenceSplitter.splitParagraph(input))
+    }
+
+    @Test
+    fun decorativeDivider_asteriskLine_keptWhole() {
+        val input = "Первая часть истории была довольно длинной и заканчивалась на том, как герои выехали за ворота города под вечерним дождём и скрылись в темноте. \n♦♦♦♦\n Вторая часть начиналась уже в пути и описывала дорогу через горный перевал."
+        assertTrue(input.length >= SentenceSplitter.minParagraphLength)
+        assertEquals(listOf(input), SentenceSplitter.splitParagraph(input))
+    }
+
+    @Test
+    fun needsSplitting_framedParagraph_returnsFalse() {
+        assertFalse(SentenceSplitter.needsSplitting("╔══╗\n║ HP ║\n╚══╝"))
+        assertFalse(SentenceSplitter.needsSplitting("Обычный текст очень длинный и подробный, описывающий события. ✨ Конец."))
+    }
+
+    @Test
+    fun asciiDoubleQuotes_interiorPeriods_keptInsideQuote() {
+        val input = "His friend said \"Everything will be fine. Trust me.\" John nodded and walked away into the empty night, thinking about all the things they had discussed and wondering when he would see his friend again."
+        assertTrue(input.length >= SentenceSplitter.minParagraphLength)
         assertEquals(
             listOf(
-                "「今日は本当に良い天気なので、散歩に行くことにした。",
-                "彼は公園のベンチに座って、長い時間を過ごし、この街の景色の美しさを眺めていた。",
-                "それから家に帰って、静かに一日を終えた。",
-                "そして翌朝も同じ時間に散歩に出かけるのだった。」"
+                "His friend said \"Everything will be fine. Trust me.\"",
+                "John nodded and walked away into the empty night, thinking about all the things they had discussed and wondering when he would see his friend again."
             ),
             SentenceSplitter.splitParagraph(input)
         )
     }
 
     @Test
-    fun frameQuoted_beforeCloserWithSpace_noStraySegment() {
-        val input = "\"This is the first sentence of the paragraph which is quite long and detailed. And this is the second sentence of the paragraph which is also long enough and ends right here. \""
+    fun asciiQuotes_nestedMixed_doesNotSplitInsideOrAfterLowercase() {
+        val input = "He shouted \"I said don't move! Stay right where you are!\" and the crowd froze, then slowly stepped aside to let him through, and he walked past them with his head held high and his eyes fixed on the gate at the end of the hall."
         assertTrue(input.length >= SentenceSplitter.minParagraphLength)
-        val segments = SentenceSplitter.splitParagraph(input)
-        assertTrue("no segment may be the bare closing quote", segments.none { it == "\"" })
-        assertTrue("all segments must be non-empty", segments.all { it.isNotEmpty() })
+        // Внутри кавычек не режется; после закрывающей кавычки идёт строчное "and" (правило e) — резания нет.
+        assertEquals(listOf(input), SentenceSplitter.splitParagraph(input))
+    }
+
+    @Test
+    fun apostrophes_shouldNotOpenQuoteStack() {
+        val input = "I can't believe he said it's fine. He left the room without a word, but the door slammed shut behind him and the whole house fell silent again, and we just stood there looking at each other."
+        assertTrue(input.length >= SentenceSplitter.minParagraphLength)
+        // ASCII-апострофы не открывают стек кавычек — точка остаётся границей.
         assertEquals(
             listOf(
-                "\"This is the first sentence of the paragraph which is quite long and detailed.",
-                "And this is the second sentence of the paragraph which is also long enough and ends right here. \""
+                "I can't believe he said it's fine.",
+                "He left the room without a word, but the door slammed shut behind him and the whole house fell silent again, and we just stood there looking at each other."
             ),
-            segments
+            SentenceSplitter.splitParagraph(input)
         )
     }
 }

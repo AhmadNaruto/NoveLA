@@ -5,7 +5,8 @@ package my.noveldokusha.features.reader.tools
  *
  * Pure Kotlin stdlib, no dependencies. A paragraph is only split when it is long
  * enough and contains at least one valid sentence boundary; dialogue, status
- * blocks (litRPG) and dash-dialogue paragraphs are always kept whole.
+ * blocks (litRPG), dash-dialogue paragraphs and paragraphs with decorative
+ * symbols (frames, emoji, ornamentation) are always kept whole.
  */
 object SentenceSplitter {
 
@@ -20,7 +21,11 @@ object SentenceSplitter {
     /** Terminators that require boundary validation: . ! ? */
     private val BASIC_TERMINATORS = setOf('.', '!', '?')
 
-    /** Script terminators: the boundary is always valid (never inside quotes/brackets). */
+    /**
+     * Script terminators: bypass the a–g validation rules, but the quote/bracket
+     * stack gate still applies (a script terminator inside quotes/brackets is
+     * not a boundary).
+     */
     private val SCRIPT_TERMINATORS = setOf(
         // CJK / Japanese / Chinese / Korean
         '\u3002', // 。
@@ -100,11 +105,46 @@ object SentenceSplitter {
     /** Punctuation that continues a sentence rather than ending it ("и т. п., потому…"). */
     private val SENTENCE_CONTINUATION = setOf(',', ';', ':')
 
+    /** Line of one non-letter/digit char repeated >= 4 times — a decorative divider. */
+    private val REPEATED_CHAR_DIVIDER = Regex("^(.)\\1{3,}$")
+
+    /**
+     * Unicode blocks that signal non-prose ornamentation: box-drawing frames,
+     * block elements, geometric shapes, misc symbols, dingbats and emoji.
+     * Any paragraph containing one of these is kept whole — rule-based
+     * splitting would tear apart visual structure (frames, status boxes, dividers).
+     */
+    private val DECORATIVE_RANGES = listOf(
+        0x2500..0x257F, // Box Drawing
+        0x2580..0x259F, // Block Elements
+        0x25A0..0x25FF, // Geometric Shapes
+        0x2600..0x26FF, // Miscellaneous Symbols
+        0x2700..0x27BF, // Dingbats
+        0x1F300..0x1FAFF // Emoji & Pictographs
+    )
+
+    /** True when [paragraph] contains any framing/decoration symbol or emoji. */
+    private fun hasDecorationSymbols(paragraph: String): Boolean {
+        var i = 0
+        while (i < paragraph.length) {
+            val ch = paragraph[i]
+            val cp = if (ch.isHighSurrogate() && i + 1 < paragraph.length && paragraph[i + 1].isLowSurrogate()) {
+                Character.toCodePoint(ch, paragraph[i + 1])
+            } else {
+                ch.code
+            }
+            if (DECORATIVE_RANGES.any { cp in it }) return true
+            i++
+        }
+        return false
+    }
+
     /**
      * Splits a paragraph into sentences.
      *
      * Returns [paragraph] unchanged when it is too short to split, is a litRPG
-     * status block or dash dialogue, or contains no valid sentence boundary.
+     * status block or dash dialogue, contains decorative symbols (frames,
+     * emoji), or contains no valid sentence boundary.
      */
     fun splitParagraph(paragraph: String): List<String> {
         if (paragraph.length < MIN_PARAGRAPH_LENGTH) return listOf(paragraph)
@@ -116,7 +156,7 @@ object SentenceSplitter {
      * Used by the corpus diagnostic to measure what short paragraphs would do.
      */
     internal fun splitIgnoringMinLength(paragraph: String): List<String> {
-        if (isStatusBlock(paragraph) || isDashDialogue(paragraph)) return listOf(paragraph)
+        if (isStatusBlock(paragraph) || isDashDialogue(paragraph) || hasDecorationSymbols(paragraph)) return listOf(paragraph)
         val boundaries = findValidBoundaries(paragraph)
         if (boundaries.isEmpty()) return listOf(paragraph)
 
@@ -132,25 +172,21 @@ object SentenceSplitter {
 
     /**
      * True when the paragraph is long enough and contains at least one valid
-     * sentence boundary (and is not a status block or dash dialogue).
+     * sentence boundary (and is not a status block, dash dialogue, or contains
+     * decorative symbols).
      */
     fun needsSplitting(paragraph: String): Boolean {
         if (paragraph.length < MIN_PARAGRAPH_LENGTH) return false
-        if (isStatusBlock(paragraph) || isDashDialogue(paragraph)) return false
+        if (isStatusBlock(paragraph) || isDashDialogue(paragraph) || hasDecorationSymbols(paragraph)) return false
         return findValidBoundaries(paragraph).isNotEmpty()
     }
 
     /**
      * Scans the paragraph left to right with a quote/bracket stack. A terminator
-     * is a split candidate at stack depth 0, or — for a frame-quoted paragraph —
-     * while only the wrapping quote is open (see [isFrameQuoted]); script
-     * terminators always yield a boundary, basic ones ( . ! ? ) are validated.
+     * is a split candidate only at stack depth 0; script terminators always
+     * yield a boundary, basic ones ( . ! ? ) are validated.
      */
     internal fun findValidBoundaries(paragraph: String): List<Int> {
-        val frame = isFrameQuoted(paragraph)
-        val frameCloser = frame?.let { f ->
-            CLOSING_TO_OPENING_QUOTES.entries.first { it.value == f }.key
-        }
         val stack = ArrayDeque<Char>()
         val boundaries = mutableListOf<Int>()
 
@@ -167,6 +203,7 @@ object SentenceSplitter {
                         // closing quote ("大丈夫だ。」 そして去った。" → 2 segments).
                         val prev = paragraph.getOrNull(i - 1)
                         if (stack.isEmpty() && prev != null && prev in ALL_TERMINATORS &&
+                            i + 1 < paragraph.length &&
                             isBoundaryValid(paragraph, prev, i - 1, i + 1)
                         ) {
                             boundaries.add(i)
@@ -187,41 +224,15 @@ object SentenceSplitter {
                     // "!" / "." / "?" segments are produced.
                     val rightAfter = paragraph.getOrNull(i + 1)
                     if (rightAfter == null || rightAfter !in ALL_TERMINATORS) {
-                        // Frame-dialogue relaxation: with only the wrapping quote
-                        // open, interior terminators become candidates (rules a–g
-                        // still apply). A terminator directly before the frame's
-                        // closing quote is left to the closing-quote branch above
-                        // (boundary after the closing quote) — otherwise a stray
-                        // segment containing only the quote char would appear.
-                        val onlyFrameOpen = frame != null && stack.size == 1 && stack.first() == frame
-                        // "Before the frame closer" means the next significant char
-                        // after the terminator is the closing quote — even when
-                        // separated by whitespace ("… конец. \"" vs "… конец.\"").
-                        val beforeFrameCloser = frameCloser != null &&
-                            nextSignificantChar(paragraph, i + 1) == frameCloser
-                        val candidate = stack.isEmpty() || (onlyFrameOpen && !beforeFrameCloser)
-                        if (candidate && isBoundaryValid(paragraph, ch, i, i + 1)) boundaries.add(i)
+                        // Только на глубине 0 стека кавычек/скобок терминатор может
+                        // стать границей предложения; внутри цитат не режем.
+                        if (stack.isEmpty() && isBoundaryValid(paragraph, ch, i, i + 1)) boundaries.add(i)
                     }
                 }
             }
             i++
         }
         return boundaries
-    }
-
-    /**
-     * The opening quote char iff the paragraph is wrapped whole in a matching
-     * quote pair (first non-ws char is an opening quote, last non-ws char is its
-     * closing partner; `"` pairs with `"`). Interior terminators of such a
-     * frame-quoted paragraph are validated instead of being blocked by the stack
-     * (frame-dialogue relaxation); nesting and brackets keep blocking.
-     */
-    private fun isFrameQuoted(paragraph: String): Char? {
-        val first = paragraph.firstOrNull { !it.isWhitespace() } ?: return null
-        val last = paragraph.lastOrNull { !it.isWhitespace() } ?: return null
-        if (first !in OPENING_QUOTES) return null
-        val opener = CLOSING_TO_OPENING_QUOTES[last] ?: return null
-        return if (opener == first) first else null
     }
 
     /**
@@ -311,6 +322,7 @@ object SentenceSplitter {
         for (line in paragraph.split('\n')) {
             if (STATUS_KEY_VALUE_LINE.matches(line)) keyValueLines++
             if (STATUS_DIVIDER_LINE.matches(line)) return true
+            if (REPEATED_CHAR_DIVIDER.matches(line.trim())) return true
             if (line.length < SHORT_STATUS_LINE_LENGTH && line.none { it in ALL_TERMINATORS }) {
                 shortNoTerminatorLines++
             }
@@ -328,7 +340,7 @@ object SentenceSplitter {
     /** Current split threshold, exposed for the corpus diagnostic. */
     internal val minParagraphLength: Int get() = MIN_PARAGRAPH_LENGTH
 
-    internal enum class UnsplitReason { TOO_SHORT, STATUS_BLOCK, DASH_DIALOGUE, NO_VALID_BOUNDARY }
+    internal enum class UnsplitReason { TOO_SHORT, STATUS_BLOCK, DASH_DIALOGUE, DECORATIVE_SYMBOLS, NO_VALID_BOUNDARY }
 
     /**
      * Test-only diagnostic: returns why [splitParagraph] keeps [paragraph] whole, or
@@ -338,6 +350,7 @@ object SentenceSplitter {
         paragraph.length < MIN_PARAGRAPH_LENGTH -> UnsplitReason.TOO_SHORT
         isStatusBlock(paragraph) -> UnsplitReason.STATUS_BLOCK
         isDashDialogue(paragraph) -> UnsplitReason.DASH_DIALOGUE
+        hasDecorationSymbols(paragraph) -> UnsplitReason.DECORATIVE_SYMBOLS
         findValidBoundaries(paragraph).isEmpty() -> UnsplitReason.NO_VALID_BOUNDARY
         else -> null
     }
@@ -347,16 +360,11 @@ object SentenceSplitter {
     /**
      * Test-only diagnostic: replays the [findValidBoundaries] scan and reports every
      * terminator candidate that did not become a boundary, with the reason:
-     * 'stack non-empty' — candidate inside a genuinely blocking (nested/unclosed)
-     * quote or bracket stack — frame-relaxed terminators are NOT reported here;
+     * 'stack non-empty' — candidate inside a quote or bracket stack;
      * 'adjacent terminator' — part of a punctuation run (…!?/….);
      * 'a'..'g' — the matching rule in [isBoundaryValid] rejected it.
      */
     internal fun boundaryRejections(paragraph: String): List<BoundaryRejection> {
-        val frame = isFrameQuoted(paragraph)
-        val frameCloser = frame?.let { f ->
-            CLOSING_TO_OPENING_QUOTES.entries.first { it.value == f }.key
-        }
         val stack = ArrayDeque<Char>()
         val rejections = mutableListOf<BoundaryRejection>()
         var i = 0
@@ -368,7 +376,9 @@ object SentenceSplitter {
                     if (stack.isNotEmpty() && stack.last() == opener) {
                         stack.removeLast()
                         val prev = paragraph.getOrNull(i - 1)
-                        if (stack.isEmpty() && prev != null && prev in ALL_TERMINATORS) {
+                        if (stack.isEmpty() && prev != null && prev in ALL_TERMINATORS &&
+                            i + 1 < paragraph.length
+                        ) {
                             boundaryRejectionReason(paragraph, prev, i - 1, i + 1)?.let {
                                 rejections.add(BoundaryRejection(i, it))
                             }
@@ -386,16 +396,8 @@ object SentenceSplitter {
                 ch in ALL_TERMINATORS -> {
                     val rightAfter = paragraph.getOrNull(i + 1)
                     if (rightAfter == null || rightAfter !in ALL_TERMINATORS) {
-                        val onlyFrameOpen = frame != null && stack.size == 1 && stack.first() == frame
-                        val beforeFrameCloser = frameCloser != null &&
-                            nextSignificantChar(paragraph, i + 1) == frameCloser
                         when {
                             stack.isEmpty() -> boundaryRejectionReason(paragraph, ch, i, i + 1)?.let {
-                                rejections.add(BoundaryRejection(i, it))
-                            }
-                            onlyFrameOpen && beforeFrameCloser ->
-                                /* placed (or rejected) by the closing-quote branch */ Unit
-                            onlyFrameOpen -> boundaryRejectionReason(paragraph, ch, i, i + 1)?.let {
                                 rejections.add(BoundaryRejection(i, it))
                             }
                             else -> rejections.add(BoundaryRejection(i, "stack non-empty"))
