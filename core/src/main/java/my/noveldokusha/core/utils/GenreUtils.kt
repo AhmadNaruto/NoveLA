@@ -9,7 +9,7 @@ package my.noveldokusha.core.utils
  */
 object GenreUtils {
 
-    private val ALLOWED_CHARS_REGEX = Regex("[^a-zA-Zа-яА-Я0-9 \\-&]")
+    private val ALLOWED_CHARS_REGEX = Regex("[^\\p{L}0-9 \\-&]")
     private const val SEPARATOR = ","
 
     fun normalize(rawGenres: List<String>): String {

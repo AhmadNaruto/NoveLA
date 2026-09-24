@@ -9,9 +9,14 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.text.Layout
+import android.text.Spannable
 import android.text.SpannableString
+import android.text.SpannableStringBuilder
 import android.text.Spanned
+import android.text.style.LeadingMarginSpan
+import android.text.style.RelativeSizeSpan
 import android.text.style.ReplacementSpan
+import android.text.style.StyleSpan
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -52,6 +57,8 @@ internal class ReaderItemAdapter(
     private val currentLineHeight: () -> Float,
     private val currentParagraphSpacing: () -> Float,
     private val currentLetterSpacing: () -> Float,
+    private val currentParagraphIndent: () -> Boolean = { false },
+    private val currentParagraphFirstLetterBold: () -> Boolean = { false },
     private val currentTypeface: () -> Typeface,
     private val currentTypefaceBold: () -> Typeface,
     private val currentTextJustify: () -> Boolean,
@@ -192,6 +199,34 @@ internal class ReaderItemAdapter(
             textView.paint.isAntiAlias = currentTextSmooth()
             textView.justificationMode = if (currentTextJustify()) 1 else 0 // ponytail: TextView.TEXT_JUSTIFICATION_MODE_INTER_WORD/NONE unresolved on compileSdk37; literals are API26-safe
             textView.hyphenationFrequency = if (currentTextHyphenation()) Layout.HYPHENATION_FREQUENCY_FULL else Layout.HYPHENATION_FREQUENCY_NONE
+            // ponytail: 0.5em first-line indent (Foliate default; setTextIndent doesn't exist in this SDK; LeadingMarginSpan.Standard = indent of first line only)
+            if (currentParagraphIndent()) {
+                val span = LeadingMarginSpan.Standard((textView.textSize * 0.5f).toInt(), 0)
+                val text = textView.text
+                if (text is Spannable) {
+                    text.setSpan(span, 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                } else {
+                    textView.text = SpannableStringBuilder(text).apply {
+                        setSpan(span, 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                }
+            }
+            if (currentParagraphFirstLetterBold()) {
+                val text = textView.text
+                // ponytail: isLetter() = Unicode letter (CJK/arabic/cyrillic OK); skips quotes/dashes/digits/emoji
+                val firstLetterIndex = text.indexOfFirst { it.isLetter() }
+                if (firstLetterIndex >= 0) {
+                    if (text is Spannable) {
+                        text.setSpan(StyleSpan(Typeface.BOLD), firstLetterIndex, firstLetterIndex + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        text.setSpan(RelativeSizeSpan(1.15f), firstLetterIndex, firstLetterIndex + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    } else {
+                        textView.text = SpannableStringBuilder(text).apply {
+                            setSpan(StyleSpan(Typeface.BOLD), firstLetterIndex, firstLetterIndex + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            setSpan(RelativeSizeSpan(1.15f), firstLetterIndex, firstLetterIndex + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        }
+                    }
+                }
+            }
         }
 
         if (parallelEnabled) {
@@ -367,9 +402,9 @@ internal class ReaderItemAdapter(
         bind.error.text = item.text
         applyTextColor(bind.error, currentTextColor())
         bind.reloadButton.setOnClickListener { onRetryChapter(item.chapterIndex) }
-        if (item.chapterUrl.isNotBlank()) {
+        if (item.chapterUrl.isNotBlank() || item.authUrl != null) {
             bind.openInBrowserButton.visibility = View.VISIBLE
-            bind.openInBrowserButton.setOnClickListener { onOpenChapterInBrowser(item.chapterUrl) }
+            bind.openInBrowserButton.setOnClickListener { onOpenChapterInBrowser(item.authUrl ?: item.chapterUrl) }
         } else {
             bind.openInBrowserButton.visibility = View.GONE
         }

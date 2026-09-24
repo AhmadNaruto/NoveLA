@@ -111,6 +111,9 @@ internal fun StyleSettingDialog(
     onAppThemeChange: (AppTheme) -> Unit,
     onTextJustifyChange: (Boolean) -> Unit,
     onTextHyphenationChange: (Boolean) -> Unit,
+    onParagraphIndentChange: (Boolean) -> Unit,
+    onParagraphFirstLetterBoldChange: (Boolean) -> Unit,
+    onSentenceSplittingChange: (Boolean) -> Unit,
     onTextBoldChange: (Boolean) -> Unit,
     onTextItalicChange: (Boolean) -> Unit,
     onTextUnderlineChange: (Boolean) -> Unit,
@@ -494,6 +497,47 @@ internal fun StyleSettingDialog(
                     selected = state.textHyphenation.value,
                     onClick = { onTextHyphenationChange(!state.textHyphenation.value) },
                     label = { Text(stringResource(R.string.reader_text_hyphenation), maxLines = 1) },
+                    enabled = !isScrolling,
+                )
+            }
+        }
+
+        // Paragraph
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.reader_paragraph),
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            item {
+                FilterChip(
+                    selected = state.paragraphFirstLetterBold.value,
+                    onClick = { onParagraphFirstLetterBoldChange(!state.paragraphFirstLetterBold.value) },
+                    label = { Text(stringResource(R.string.reader_paragraph_first_letter_bold), maxLines = 1) },
+                    enabled = !isScrolling,
+                )
+            }
+            item {
+                FilterChip(
+                    selected = state.paragraphIndent.value,
+                    onClick = { onParagraphIndentChange(!state.paragraphIndent.value) },
+                    label = { Text(stringResource(R.string.reader_paragraph_indent), maxLines = 1) },
+                    enabled = !isScrolling,
+                )
+            }
+            item {
+                FilterChip(
+                    selected = state.sentenceSplitting.value,
+                    onClick = { onSentenceSplittingChange(!state.sentenceSplitting.value) },
+                    label = { Text(stringResource(R.string.reader_sentence_splitting), maxLines = 1) },
                     enabled = !isScrolling,
                 )
             }

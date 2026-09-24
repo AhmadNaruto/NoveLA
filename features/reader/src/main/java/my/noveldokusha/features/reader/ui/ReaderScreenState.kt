@@ -1,7 +1,9 @@
 package my.noveldokusha.features.reader.ui
-
 import androidx.compose.runtime.Immutable
+
 import androidx.compose.runtime.MutableState
+
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import my.noveldokusha.coreui.theme.AppTheme
@@ -65,6 +67,9 @@ internal data class ReaderScreenState(
             val marginRight: State<Float>,
             val marginTop: State<Float>,
             val marginBottom: State<Float>,
+            val paragraphIndent: State<Boolean> = mutableStateOf(false),
+            val paragraphFirstLetterBold: State<Boolean> = mutableStateOf(false),
+            val sentenceSplitting: State<Boolean> = mutableStateOf(false),
         )
 
         @Stable

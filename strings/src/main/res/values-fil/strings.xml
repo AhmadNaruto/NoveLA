@@ -233,6 +233,10 @@
     <string name="dark_mode_black">Itim</string>
     <string name="color_scheme">Color Scheme</string>
     <string name="reader_text_color">Kulay ng Teksto</string>
+    <string name="reader_paragraph">Talata</string>
+    <string name="reader_paragraph_indent">Indent sa unang linya</string>
+    <string name="reader_paragraph_first_letter_bold">Bold ang unang titik</string>
+    <string name="reader_sentence_splitting">Hatiin ang mga talata sa mga pangungusap</string>
     <string name="reader_import_font">Mag-import ng font</string>
     <string name="reader_fonts_imported">Na-import</string>
     <string name="reader_delete_font">Tanggalin ang font</string>
@@ -819,4 +823,14 @@
     <string name="plugin_translation_hide_search">Sa paghahanap</string>
     <string name="active_translator_label">Aktibong tagasalin: %s</string>
     <string name="translators_all_off">Naka-off ang mga tagasalin</string>
+
+    <!-- Support & About -->
+    <string name="support">Suporta</string>
+    <string name="export_logs">I-export ang log</string>
+    <string name="export_logs_description">Ibahagi ang log file para sa troubleshooting</string>
+    <string name="no_logs_available">Walang available na log</string>
+    <string name="about">Tungkol sa</string>
+    <string name="github_repository">GitHub repository</string>
+    <string name="report_issue">Mag-report ng isyu</string>
+    <string name="report_issue_description">Gumawa ng bug report sa GitHub</string>
 </resources>

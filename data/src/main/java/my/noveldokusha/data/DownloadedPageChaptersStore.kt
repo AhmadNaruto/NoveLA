@@ -128,7 +128,7 @@ class DownloadedPageChaptersStore @Inject constructor(
             val fetchUrl = pageUrl
             val request = Request.Builder()
                 .url(fetchUrl)
-                .header("Referer", refererFor(fetchUrl))
+                .header("Referer", refererFor(fetchUrl, chapterUrl))
                 .cacheControl(CacheControl.FORCE_NETWORK)
                 .build()
             networkClient.call(request.newBuilder()).use { response ->

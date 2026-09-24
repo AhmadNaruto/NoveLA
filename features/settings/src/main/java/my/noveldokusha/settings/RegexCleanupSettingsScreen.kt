@@ -250,10 +250,11 @@ fun RegexCleanupSettingsScreen(
                     .fillMaxSize()
                     .weight(1f)
                     .padding(horizontal = 14.dp)
+                    .then(if (applyStatusBarPadding) Modifier.navigationBarsPadding() else Modifier)
             ) {
                 itemsIndexed(
                     items = filteredRules,
-                    key = { index, rule -> "rule_${rule.pattern}" }
+                    key = { index, _ -> "rule_$index" }
                 ) { index, rule ->
                     RegexRuleRow(
                         rule = rule,
@@ -293,6 +294,7 @@ fun RegexCleanupSettingsScreen(
                     validationError = state.validationError?.let { pattern ->
                         stringResource(id = R.string.invalid_regex_pattern_with, pattern)
                     },
+                    duplicatePatternError = state.duplicatePatternError,
                     previewText = state.previewText.ifEmpty {
                         stringResource(id = R.string.preview_sample_text)
                     },
@@ -471,6 +473,7 @@ private fun RegexRuleRow(
 private fun RegexRuleBottomSheetContent(
     rule: RegexRule,
     validationError: String?,
+    duplicatePatternError: Boolean,
     previewText: String,
     onSave: (pattern: String, replacement: String, enabled: Boolean, description: String) -> Unit,
     onPreviewChange: (String) -> Unit,
@@ -560,6 +563,14 @@ private fun RegexRuleBottomSheetContent(
         if (showError && pattern.isNotEmpty() && !isPatternValid) {
             Text(
                 text = stringResource(id = R.string.invalid_regex_pattern),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 8.dp, top = 2.dp)
+            )
+        }
+        if (duplicatePatternError) {
+            Text(
+                text = stringResource(id = R.string.duplicate_regex_pattern),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(start = 8.dp, top = 2.dp)

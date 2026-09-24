@@ -475,6 +475,7 @@
     <string name="done">Готово</string>
 
     <string name="close">Закрыть</string>
+    <string name="plugin_error_open">Открыть</string>
 
     <string name="no_directories_added_please_add_them_to_see_them_in_the_source_catalog_list">Директории не добавлены, пожалуйста, добавьте их, чтобы увидеть их в списке каталога источников</string>
 
@@ -629,6 +630,7 @@
     <string name="enter_replacement_text">Введите текст замены</string>
 
     <string name="invalid_regex_pattern">Неверный шаблон регулярного выражения</string>
+    <string name="duplicate_regex_pattern">Такой шаблон уже существует</string>
 
     <string name="save">Сохранить</string>
 
@@ -846,6 +848,10 @@
     <!-- Reader typography settings -->
     <string name="reader_text_justify">Выравнивание по ширине</string>
     <string name="reader_text_hyphenation">Переносы слов</string>
+    <string name="reader_paragraph">Абзац</string>
+    <string name="reader_paragraph_indent">Отступ первой строки</string>
+    <string name="reader_paragraph_first_letter_bold">Жирная первая буква</string>
+    <string name="reader_sentence_splitting">Разбивать абзацы на предложения</string>
     <string name="reader_text_bold">Жирный</string>
     <string name="reader_text_italic">Курсив</string>
     <string name="reader_text_underline">Подчеркивание</string>
@@ -1282,5 +1288,15 @@
     <string name="plugin_translation_hide_search">В поиске</string>
     <string name="active_translator_label">Активный переводчик: %s</string>
     <string name="translators_all_off">Переводчики отключены</string>
+
+    <!-- Support & About -->
+    <string name="support">Поддержка</string>
+    <string name="export_logs">Экспорт логов</string>
+    <string name="export_logs_description">Поделиться файлом логов для диагностики</string>
+    <string name="no_logs_available">Логи отсутствуют</string>
+    <string name="about">О приложении</string>
+    <string name="github_repository">Репозиторий на GitHub</string>
+    <string name="report_issue">Сообщить об ошибке</string>
+    <string name="report_issue_description">Создать отчёт об ошибке на GitHub</string>
 </resources>
 

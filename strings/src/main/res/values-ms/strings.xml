@@ -233,6 +233,10 @@
     <string name="dark_mode_black">Hitam</string>
     <string name="color_scheme">Skema Warna</string>
     <string name="reader_text_color">Warna Teks</string>
+    <string name="reader_paragraph">Perenggan</string>
+    <string name="reader_paragraph_indent">Inden baris pertama</string>
+    <string name="reader_paragraph_first_letter_bold">Huruf pertama tebal</string>
+    <string name="reader_sentence_splitting">Bahagikan perenggan kepada ayat</string>
     <string name="reader_import_font">Import font</string>
     <string name="reader_fonts_imported">Diimport</string>
     <string name="reader_delete_font">Padam font</string>
@@ -819,4 +823,14 @@
     <string name="plugin_translation_hide_search">Dalam carian</string>
     <string name="active_translator_label">Penterjemah aktif: %s</string>
     <string name="translators_all_off">Penterjemah ditutup</string>
+
+    <!-- Support & About -->
+    <string name="support">Sokongan</string>
+    <string name="export_logs">Eksport log</string>
+    <string name="export_logs_description">Kongsi fail log untuk penyelesaian masalah</string>
+    <string name="no_logs_available">Tiada log tersedia</string>
+    <string name="about">Perihal</string>
+    <string name="github_repository">Repositori GitHub</string>
+    <string name="report_issue">Laporkan masalah</string>
+    <string name="report_issue_description">Cipta laporan bug di GitHub</string>
 </resources>

@@ -233,6 +233,10 @@
     <string name="dark_mode_black">ブラック</string>
     <string name="color_scheme">カラースキーム</string>
     <string name="reader_text_color">文字色</string>
+    <string name="reader_paragraph">段落</string>
+    <string name="reader_paragraph_indent">最初の行をインデント</string>
+    <string name="reader_paragraph_first_letter_bold">最初の文字を太字にする</string>
+    <string name="reader_sentence_splitting">段落を文に分割する</string>
     <string name="reader_import_font">フォントをインポート</string>
     <string name="reader_fonts_imported">インポート済み</string>
     <string name="reader_delete_font">フォントを削除</string>
@@ -831,4 +835,14 @@
     <string name="plugin_translation_hide_search">検索</string>
     <string name="active_translator_label">アクティブな翻訳者: %s</string>
     <string name="translators_all_off">翻訳者はオフです</string>
+
+    <!-- Support & About -->
+    <string name="support">サポート</string>
+    <string name="export_logs">ログをエクスポート</string>
+    <string name="export_logs_description">トラブルシューティング用にログファイルを共有</string>
+    <string name="no_logs_available">ログがありません</string>
+    <string name="about">概要</string>
+    <string name="github_repository">GitHub リポジトリ</string>
+    <string name="report_issue">問題を報告</string>
+    <string name="report_issue_description">GitHub でバグレポートを作成</string>
 </resources>

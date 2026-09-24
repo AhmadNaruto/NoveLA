@@ -62,6 +62,7 @@ data class SettingsScreenState(
     val isCleaningNovelCache: State<Boolean>,
     val isCleaningMangaCache: State<Boolean>,
     val cleanConfirmationType: MutableState<CleanConfirmationType?>,
+    val appVersion: String = "",
 ) {
     data class UpdateApp(
         val currentAppVersion: String,

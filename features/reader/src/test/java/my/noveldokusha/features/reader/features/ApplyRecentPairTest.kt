@@ -88,6 +88,10 @@ class ApplyRecentPairTest {
         whenever(prefs.recentTranslationPairs()).thenReturn(emptyList())
         resolver = mock()
         whenever(resolver.translationEnabledForBook("book1")).thenReturn(false)
+        // Каскадная пара для updateTranslatorState (по умолчанию en/ru; тесты
+        // про пустые пары переопределяют ниже).
+        whenever(resolver.translationPairForBook("book1"))
+            .thenReturn(TranslationLangPair(source = "en", target = "ru"))
     }
 
     private fun <T> pref(value: T): AppPreferences.Preference<T> =
@@ -185,14 +189,19 @@ class ApplyRecentPairTest {
         assertEquals(false, reader.state.enable.value)
     }
 
-    // ── FIX-C: Guard 2 — onTranslationGlobalModeChange блокирует без глобальной пары ──
+    // ── Глобальный режим: включается даже без глобальной пары (guard убран
+    // намеренно в 694774c9 — иначе нельзя открыть настройки глобального режима) ──
 
     @Test
-    fun `onTranslationGlobalModeChange blocks when no global pair is set`() = runTest {
+    fun `onTranslationGlobalModeChange enables global mode even without global pair`() = runTest {
         val emptyGlobalSource = pref("")
         val emptyGlobalTarget = pref("")
         whenever(prefs.GLOBAL_TRANSLATION_PREFERRED_SOURCE).thenReturn(emptyGlobalSource)
         whenever(prefs.GLOBAL_TRANSLATION_PREFERRED_TARGET).thenReturn(emptyGlobalTarget)
+        whenever(prefs.storedTranslationPairForBook("book1"))
+            .thenReturn(TranslationLangPair(source = "", target = ""))
+        whenever(resolver.translationPairForBook("book1"))
+            .thenReturn(TranslationLangPair(source = "", target = ""))
 
         val reader = ReaderLiveTranslation(
             translationManager = FakeTranslationManager(models),
@@ -204,8 +213,12 @@ class ApplyRecentPairTest {
 
         reader.state.onTranslationGlobalModeChange(true)
 
-        // translationGlobalMode остаётся false — guard отклонил включение глобала.
-        assertEquals(false, reader.state.translationGlobalMode.value)
+        // Синхронная часть: режим включается сразу (мок-преф не хранит запись,
+        // поэтому проверяем state до корутины refreshFromPrefs).
+        assertEquals(true, reader.state.translationGlobalMode.value)
+
+        // Корутина refreshFromPrefs не должна падать на отсутствии пары (NPE-регресс).
+        advanceUntilIdle()
     }
 
     @Test
@@ -214,6 +227,8 @@ class ApplyRecentPairTest {
         val emptyGlobalTarget = pref("")
         whenever(prefs.GLOBAL_TRANSLATION_PREFERRED_SOURCE).thenReturn(emptyGlobalSource)
         whenever(prefs.GLOBAL_TRANSLATION_PREFERRED_TARGET).thenReturn(emptyGlobalTarget)
+        whenever(prefs.storedTranslationPairForBook("book1"))
+            .thenReturn(TranslationLangPair(source = "", target = ""))
         whenever(resolver.translationPairForBook("book1"))
             .thenReturn(TranslationLangPair(source = "", target = ""))
 

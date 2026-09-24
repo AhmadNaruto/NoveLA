@@ -32,7 +32,7 @@ internal fun AppUpdates(
 ) {
     Column {
         Text(
-            text = stringResource(R.string.app_updates) + " | " + state.currentAppVersion,
+            text = stringResource(R.string.app_updates),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.textPadding(),
             color = colorAccent()

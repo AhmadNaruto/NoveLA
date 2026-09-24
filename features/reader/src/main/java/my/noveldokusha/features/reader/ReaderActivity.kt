@@ -217,6 +217,8 @@ class ReaderActivity : BaseActivity() {
                 currentManualHighlight = { viewModel.state.settings.manualHighlight.highlightedItem.value },
                 currentTextJustify = { appPreferences.READER_TEXT_JUSTIFY.value },
                 currentTextHyphenation = { appPreferences.READER_TEXT_HYPHENATION.value },
+                currentParagraphIndent = { appPreferences.READER_PARAGRAPH_INDENT.value },
+                currentParagraphFirstLetterBold = { appPreferences.READER_PARAGRAPH_FIRST_LETTER_BOLD.value },
                 currentTextBold = { appPreferences.READER_TEXT_BOLD.value },
                 currentTextItalic = { appPreferences.READER_TEXT_ITALIC.value },
                 currentTextUnderline = { appPreferences.READER_TEXT_UNDERLINE.value },
@@ -473,6 +475,8 @@ class ReaderActivity : BaseActivity() {
             listOf(
                 viewModel.state.settings.style.textJustify.value,
                 viewModel.state.settings.style.textHyphenation.value,
+                viewModel.state.settings.style.paragraphIndent.value,
+                viewModel.state.settings.style.paragraphFirstLetterBold.value,
                 viewModel.state.settings.style.textBold.value,
                 viewModel.state.settings.style.textItalic.value,
                 viewModel.state.settings.style.textUnderline.value,
@@ -574,6 +578,12 @@ class ReaderActivity : BaseActivity() {
                     onTtsHighlightColorChange = { appPreferences.TTS_HIGHLIGHT_COLOR.value = it },
                     onTextJustifyChange = { appPreferences.READER_TEXT_JUSTIFY.value = it },
                     onTextHyphenationChange = { appPreferences.READER_TEXT_HYPHENATION.value = it },
+                    onParagraphIndentChange = { appPreferences.READER_PARAGRAPH_INDENT.value = it },
+                    onParagraphFirstLetterBoldChange = { appPreferences.READER_PARAGRAPH_FIRST_LETTER_BOLD.value = it },
+                    onSentenceSplittingChange = {
+                        appPreferences.READER_SENTENCE_SPLITTING.value = it
+                        viewModel.reloadReader()
+                    },
                     onTextBoldChange = { appPreferences.READER_TEXT_BOLD.value = it },
                     onTextItalicChange = { appPreferences.READER_TEXT_ITALIC.value = it },
                     onTextUnderlineChange = { appPreferences.READER_TEXT_UNDERLINE.value = it },
@@ -591,6 +601,9 @@ class ReaderActivity : BaseActivity() {
                         appPreferences.READER_FONT_FAMILY.value = "serif"
                         appPreferences.READER_TEXT_JUSTIFY.value = false
                         appPreferences.READER_TEXT_HYPHENATION.value = false
+                        appPreferences.READER_PARAGRAPH_INDENT.value = false
+                        appPreferences.READER_PARAGRAPH_FIRST_LETTER_BOLD.value = false
+                        appPreferences.READER_SENTENCE_SPLITTING.value = false
                         appPreferences.READER_TEXT_BOLD.value = false
                         appPreferences.READER_TEXT_ITALIC.value = false
                         appPreferences.READER_TEXT_UNDERLINE.value = false

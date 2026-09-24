@@ -7,7 +7,7 @@ data class AppVersion(val major: Int, val minor: Int, val fix: Int) : Comparable
             version.uppercase()
                 .removePrefix("V")
                 .split(".")
-                .map { it.toInt() }
+                .map { it.takeWhile(Char::isDigit).toInt() }
                 .let { AppVersion(major = it[0], minor = it[1], fix = it[2]) }
         }.getOrDefault(AppVersion(0, 0, 0))
     }

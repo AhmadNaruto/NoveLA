@@ -233,6 +233,10 @@
     <string name="dark_mode_black">黑色</string>
     <string name="color_scheme">配色方案</string>
     <string name="reader_text_color">文字颜色</string>
+    <string name="reader_paragraph">段落</string>
+    <string name="reader_paragraph_indent">首行缩进</string>
+    <string name="reader_paragraph_first_letter_bold">首字母加粗</string>
+    <string name="reader_sentence_splitting">将段落拆分为句子</string>
     <string name="reader_import_font">导入字体</string>
     <string name="reader_fonts_imported">已导入</string>
     <string name="reader_delete_font">删除字体</string>
@@ -831,4 +835,14 @@
     <string name="plugin_translation_hide_search">在搜索</string>
     <string name="active_translator_label">当前翻译器：%s</string>
     <string name="translators_all_off">翻译器已关闭</string>
+
+    <!-- Support & About -->
+    <string name="support">支持</string>
+    <string name="export_logs">导出日志</string>
+    <string name="export_logs_description">分享日志文件用于故障排除</string>
+    <string name="no_logs_available">无可用日志</string>
+    <string name="about">关于</string>
+    <string name="github_repository">GitHub 仓库</string>
+    <string name="report_issue">报告问题</string>
+    <string name="report_issue_description">在 GitHub 上创建错误报告</string>
 </resources>

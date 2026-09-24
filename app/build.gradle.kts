@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.konan.properties.hasProperty
 import java.util.Properties
 
 plugins {
@@ -34,7 +33,7 @@ android {
         if (localPropertiesFile.exists())
             load(localPropertiesFile.inputStream())
     }
-    val hasDefaultSigningConfigData = defaultSigningConfigData.hasProperty("storeFile")
+    val hasDefaultSigningConfigData = defaultSigningConfigData.containsKey("storeFile")
     println("hasDefaultSigningConfigData: $hasDefaultSigningConfigData")
 
     if (cliCustomSettings.splitByAbi) splits {
@@ -46,13 +45,18 @@ android {
 
     defaultConfig {
         applicationId = "my.novela"
-        versionCode = 37
-        versionName = "1.5.1"
+        versionCode = 38
+        versionName = "1.6.0"
         base.archivesName.set("NoveLA_v$versionName")
         manifestPlaceholders["appLabel"] = "NoveLA"
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
+
+        val gitCommitHash = providers.exec {
+            commandLine("git", "rev-parse", "--short", "HEAD")
+        }.standardOutput.asText.get().trim().ifEmpty { "unknown" }
+        buildConfigField("String", "GIT_COMMIT_HASH", "\"$gitCommitHash\"")
     }
 
     signingConfigs {
@@ -85,6 +89,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
     namespace = "my.noveldokusha"
 }

@@ -58,6 +58,8 @@ import my.noveldokusha.settings.sections.SettingsNovelPromptsDialog
 import my.noveldokusha.settings.sections.SettingsNetwork
 import my.noveldokusha.settings.sections.SettingsTheme
 import my.noveldokusha.settings.sections.SettingsRegexCleanup
+import my.noveldokusha.settings.sections.SettingsSupport
+import my.noveldokusha.settings.sections.SettingsAbout
 
 @Composable
 internal fun SettingsScreenBody(
@@ -102,6 +104,7 @@ internal fun SettingsScreenBody(
     onAutoBackupIncludeImagesChange: (Boolean) -> Unit,
     onAutoBackupIncludeSettingsChange: (Boolean) -> Unit,
     onAutoBackupIncludePluginsChange: (Boolean) -> Unit,
+    onExportLogs: () -> Unit = {},
 ) {
     // Refresh size displays every time the user navigates to this screen
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -226,6 +229,14 @@ internal fun SettingsScreenBody(
         AppUpdates(
             state = state.updateAppSetting,
             onCheckForUpdatesManual = onCheckForUpdatesManual
+        )
+        HorizontalDivider()
+        SettingsSupport(
+            onExportLogs = onExportLogs,
+        )
+        HorizontalDivider()
+        SettingsAbout(
+            appVersion = state.appVersion,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(

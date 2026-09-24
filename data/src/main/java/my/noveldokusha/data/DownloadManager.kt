@@ -892,6 +892,12 @@ class DownloadManager @Inject constructor(
                 }
                 is my.noveldokusha.core.Response.Error -> {
                     Timber.w("fetch error attempt=$attempt: $chapterUrl — ${result.message}")
+                    // Ошибка авторизации плагина: ретраи не помогут (шаблонная
+                    // страница не исчезнет), поэтому сразу пауза задачи вместо
+                    // ~15 минут бесполезных backoff-ретраев.
+                    if (result.pluginErrorTitle != null) {
+                        return FetchResult.Failed
+                    }
                     if (isNetworkError(result)) {
                         Timber.w("network error, entering network wait: $chapterUrl")
                         return waitForNetworkThenRetry(bookUrl, chapterUrl)

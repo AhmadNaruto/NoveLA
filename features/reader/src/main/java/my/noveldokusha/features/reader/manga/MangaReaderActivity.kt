@@ -202,6 +202,7 @@ internal class MangaReaderActivity : ComponentActivity() {
     private val showPluginErrorDialog = mutableStateOf(false)
     private val pluginErrorTitle = mutableStateOf("")
     private val pluginErrorMessage = mutableStateOf("")
+    private val pluginAuthUrl = mutableStateOf<String?>(null)
 
     /**
      * Переход между главами пейджера в процессе: спиннер поверх вьюера
@@ -544,6 +545,7 @@ internal class MangaReaderActivity : ComponentActivity() {
                         if (event.title != null) {
                             pluginErrorTitle.value = event.title
                             pluginErrorMessage.value = event.message ?: ""
+                            pluginAuthUrl.value = event.authUrl
                             showPluginErrorDialog.value = true
                         } else {
                             showInvalidChapterDialog.value = true
@@ -797,6 +799,7 @@ internal class MangaReaderActivity : ComponentActivity() {
             PluginErrorDialog(
                 title = pluginErrorTitle.value,
                 message = pluginErrorMessage.value,
+                authUrl = pluginAuthUrl.value,
                 onDismiss = {
                     showPluginErrorDialog.value = false
                     finish()

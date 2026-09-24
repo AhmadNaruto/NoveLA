@@ -57,6 +57,7 @@ abstract class AppModule {
             override val isDebugMode = BuildConfig.DEBUG
             override val versionCode = BuildConfig.VERSION_CODE
             override val versionName = BuildConfig.VERSION_NAME
+            override val gitCommitHash = BuildConfig.GIT_COMMIT_HASH
         }
 
 

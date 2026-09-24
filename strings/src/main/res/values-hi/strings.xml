@@ -233,6 +233,10 @@
     <string name="dark_mode_black">ब्लैक</string>
     <string name="color_scheme">रंग योजना</string>
     <string name="reader_text_color">पाठ का रंग</string>
+    <string name="reader_paragraph">अनुच्छेद</string>
+    <string name="reader_paragraph_indent">पहली पंक्ति इंडेंट</string>
+    <string name="reader_paragraph_first_letter_bold">पहला अक्षर बोल्ड करें</string>
+    <string name="reader_sentence_splitting">अनुच्छेदों को वाक्यों में विभाजित करें</string>
     <string name="reader_import_font">फ़ॉन्ट आयात करें</string>
     <string name="reader_fonts_imported">आयातित</string>
     <string name="reader_delete_font">फ़ॉन्ट हटाएं</string>
@@ -819,4 +823,14 @@
     <string name="plugin_translation_hide_search">खोज में</string>
     <string name="active_translator_label">सक्रिय अनुवादक: %s</string>
     <string name="translators_all_off">अनुवादक बंद हैं</string>
+
+    <!-- Support & About -->
+    <string name="support">सहायता</string>
+    <string name="export_logs">लॉग निर्यात करें</string>
+    <string name="export_logs_description">समस्या निवारण के लिए लॉग फ़ाइल साझा करें</string>
+    <string name="no_logs_available">कोई लॉग उपलब्ध नहीं</string>
+    <string name="about">के बारे में</string>
+    <string name="github_repository">GitHub रिपॉज़िटरी</string>
+    <string name="report_issue">समस्या की रिपोर्ट करें</string>
+    <string name="report_issue_description">GitHub पर बग रिपोर्ट बनाएं</string>
 </resources>

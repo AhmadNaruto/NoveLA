@@ -213,7 +213,7 @@ class PageImageLoader @Inject constructor(
         val deferred = CompletableDeferred<PageImage?>()
         inflight[url] = deferred
         try {
-            val result = doLoad(url)
+            val result = doLoad(url, chapterUrl)
             if (result != null) dimsCache[url] = result.width to result.height
             deferred.complete(result)
             return result
@@ -350,7 +350,7 @@ class PageImageLoader @Inject constructor(
         return zipPath to entryName
     }
 
-    private suspend fun doLoad(url: String): PageImage? = withContext(Dispatchers.IO) {
+    private suspend fun doLoad(url: String, refererUrl: String? = null): PageImage? = withContext(Dispatchers.IO) {
         val file = fileFor(url)
         if (file.exists() && file.length() > 0) {
             decodeBounds(file)?.let { return@withContext PageImage(file, it.first, it.second) }
@@ -359,7 +359,7 @@ class PageImageLoader @Inject constructor(
         try {
             val request = Request.Builder()
                 .url(url)
-                .header("Referer", refererFor(url))
+                .header("Referer", refererFor(url, refererUrl))
                 .cacheControl(CacheControl.FORCE_NETWORK) // свой кэш, не OkHttp
                 .build()
             networkClient.call(request.newBuilder()).use { response ->

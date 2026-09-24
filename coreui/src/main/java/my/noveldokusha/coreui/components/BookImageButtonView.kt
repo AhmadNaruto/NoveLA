@@ -210,7 +210,7 @@ fun BookImageButtonView(
                             lineHeight = 16.sp,
                             lineHeightStyle = LineHeightStyle(
                                 alignment = LineHeightStyle.Alignment.Center,
-                                trim = LineHeightStyle.Trim.None,
+                                trim = LineHeightStyle.Trim.Both,
                             ),
                             lineBreak = LineBreak.Heading,
                             hyphens = Hyphens.Auto,

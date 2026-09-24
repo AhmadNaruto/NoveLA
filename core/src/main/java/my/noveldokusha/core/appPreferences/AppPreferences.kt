@@ -352,6 +352,15 @@ class AppPreferences @Inject constructor(
     val READER_TEXT_HYPHENATION = object : Preference<Boolean>("READER_TEXT_HYPHENATION") {
         override var value by SharedPreference_Boolean(name, preferences, false)
     }
+    val READER_PARAGRAPH_INDENT = object : Preference<Boolean>("READER_PARAGRAPH_INDENT") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
+    val READER_PARAGRAPH_FIRST_LETTER_BOLD = object : Preference<Boolean>("READER_PARAGRAPH_FIRST_LETTER_BOLD") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
+    val READER_SENTENCE_SPLITTING = object : Preference<Boolean>("READER_SENTENCE_SPLITTING") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
     val READER_TEXT_BOLD = object : Preference<Boolean>("READER_TEXT_BOLD") {
         override var value by SharedPreference_Boolean(name, preferences, false)
     }

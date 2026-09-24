@@ -18,7 +18,8 @@ internal suspend fun textToItemsConverter(
     chapterIndex: Int,
     chapterItemPositionDisplacement: Int,
     text: String,
-    userRegexRules: List<RegexRule> = emptyList()
+    userRegexRules: List<RegexRule> = emptyList(),
+    sentenceSplittingEnabled: Boolean = false
 ): List<ReaderItem> = withContext(Dispatchers.Default) {
 
     Timber.d("convert[%d] start: text.length=%d, displacement=%d", chapterIndex, text.length, chapterItemPositionDisplacement)
@@ -39,7 +40,8 @@ internal suspend fun textToItemsConverter(
                 chapterUrl = chapterUrl,
                 chapterIndex = chapterIndex,
                 startPosition = itemPosition,
-                userRegexRules = userRegexRules
+                userRegexRules = userRegexRules,
+                sentenceSplittingEnabled = sentenceSplittingEnabled
             )
             items.addAll(bodyItems)
             itemPosition += bodyItems.size
@@ -72,7 +74,8 @@ internal suspend fun textToItemsConverter(
             chapterUrl = chapterUrl,
             chapterIndex = chapterIndex,
             startPosition = itemPosition,
-            userRegexRules = userRegexRules
+            userRegexRules = userRegexRules,
+            sentenceSplittingEnabled = sentenceSplittingEnabled
         )
         items.addAll(bodyItems)
     }
@@ -125,7 +128,8 @@ private fun buildBodyItems(
     chapterUrl: String,
     chapterIndex: Int,
     startPosition: Int,
-    userRegexRules: List<RegexRule>
+    userRegexRules: List<RegexRule>,
+    sentenceSplittingEnabled: Boolean = false
 ): List<ReaderItem.Body> {
     val cleanText = text
         .replace(STRIP_HTML_TAGS, "")
@@ -136,7 +140,8 @@ private fun buildBodyItems(
         .replace(COLLAPSE_SPACES, " ")
 
     val processedText = applyUserRegexRules(cleanText, userRegexRules)
-    val paragraphs = processTextIntoLogicalBlocks(processedText)
+    val blocks = processTextIntoLogicalBlocks(processedText, splitLongParagraphs = !sentenceSplittingEnabled)
+    val paragraphs = if (sentenceSplittingEnabled) blocks.flatMap { SentenceSplitter.splitParagraph(it) } else blocks
 
     return paragraphs.mapIndexedNotNull { i, para ->
         val trimmed = para.trim()
@@ -151,7 +156,7 @@ private fun buildBodyItems(
     }
 }
 
-private fun processTextIntoLogicalBlocks(text: String): List<String> {
+internal fun processTextIntoLogicalBlocks(text: String, splitLongParagraphs: Boolean = true): List<String> {
     val result = mutableListOf<String>()
 
     var splitResult = text.split(PARAGRAPH_BREAK).filter { it.isNotBlank() }
@@ -167,7 +172,7 @@ private fun processTextIntoLogicalBlocks(text: String): List<String> {
         val firstNonSpace = paragraph.indexOfFirst { !it.isWhitespace() }
         val indentation = if (firstNonSpace > 0) paragraph.substring(0, firstNonSpace) else ""
 
-        val subBlocks = splitParagraphRespectingLogicalBlocks(trimmedParagraph)
+        val subBlocks = if (splitLongParagraphs) splitParagraphRespectingLogicalBlocks(trimmedParagraph) else listOf(trimmedParagraph)
 
         if (subBlocks.isNotEmpty()) {
             result.add(indentation + subBlocks[0])
@@ -179,7 +184,7 @@ private fun processTextIntoLogicalBlocks(text: String): List<String> {
     return result
 }
 
-private fun splitParagraphRespectingLogicalBlocks(paragraph: String): List<String> {
+internal fun splitParagraphRespectingLogicalBlocks(paragraph: String): List<String> {
     if (paragraph.length <= 800) {
         return listOf(paragraph)
     }

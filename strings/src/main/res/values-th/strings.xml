@@ -233,6 +233,10 @@
     <string name="dark_mode_black">ดำ</string>
     <string name="color_scheme">โทนสี</string>
     <string name="reader_text_color">สีตัวอักษร</string>
+    <string name="reader_paragraph">ย่อหน้า</string>
+    <string name="reader_paragraph_indent">เยื้องบรรทัดแรก</string>
+    <string name="reader_paragraph_first_letter_bold">ตัวอักษรแรกตัวหนา</string>
+    <string name="reader_sentence_splitting">แบ่งย่อหน้าเป็นประโยค</string>
     <string name="reader_import_font">นำเข้าแบบอักษร</string>
     <string name="reader_fonts_imported">ที่นำเข้า</string>
     <string name="reader_delete_font">ลบแบบอักษร</string>
@@ -819,4 +823,14 @@
     <string name="plugin_translation_hide_search">ในการค้นหา</string>
     <string name="active_translator_label">นักแปลที่ใช้งาน: %s</string>
     <string name="translators_all_off">นักแปลปิดอยู่</string>
+
+    <!-- Support & About -->
+    <string name="support">การสนับสนุน</string>
+    <string name="export_logs">ส่งออกล็อก</string>
+    <string name="export_logs_description">แชร์ไฟล์ล็อกสำหรับการแก้ไขปัญหา</string>
+    <string name="no_logs_available">ไม่มีล็อกที่ใช้ได้</string>
+    <string name="about">เกี่ยวกับ</string>
+    <string name="github_repository">คลัง GitHub</string>
+    <string name="report_issue">รายงานปัญหา</string>
+    <string name="report_issue_description">สร้างรายงานข้อผิดพลาดบน GitHub</string>
 </resources>

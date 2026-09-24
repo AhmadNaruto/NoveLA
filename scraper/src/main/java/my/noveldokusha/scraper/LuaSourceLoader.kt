@@ -64,14 +64,14 @@ class LuaEngine @Inject constructor(
     private val luaPrefs by lazy { context.getSharedPreferences("lua_preferences", Context.MODE_PRIVATE) }
     val currentSourceId = ThreadLocal<String?>()
 
-    private val pendingShowError = ThreadLocal<Pair<String, String>?>()
+    private val pendingShowError = ThreadLocal<Triple<String, String, String?>?>()
 
-    fun getPendingShowError(): Pair<String, String>? = pendingShowError.get()
+    fun getPendingShowError(): Triple<String, String, String?>? = pendingShowError.get()
 
     fun resetShowError() { pendingShowError.set(null) }
 
-    internal fun setPendingShowError(title: String, message: String) {
-        pendingShowError.set(title to message)
+    internal fun setPendingShowError(title: String, message: String, authUrl: String? = null) {
+        pendingShowError.set(Triple(title, message, authUrl))
     }
 
     // TTL-кэш ответов http_get: геттеры метаданных одной страницы книги делят один сетевой запрос.
@@ -278,12 +278,13 @@ class LuaEngine @Inject constructor(
         g.set("base64_encode",          Base64EncodeFunction()         as LuaValue)
         g.set("os_time",                OsTimeFunction()               as LuaValue)
         // Plugin error signaling
-        g.set("show_error", object : TwoArgFunction() {
-            override fun call(titleArg: LuaValue, messageArg: LuaValue): LuaValue {
+        g.set("show_error", object : ThreeArgFunction() {
+            override fun call(titleArg: LuaValue, messageArg: LuaValue, authArg: LuaValue): LuaValue {
                 val title = titleArg.toString()
                 val message = messageArg.toString()
-                pendingShowError.set(title to message)
-                Timber.d("Lua show_error: title=%s message=%s", title, message)
+                val authUrl = authArg.optjstring(null)
+                pendingShowError.set(Triple(title, message, authUrl))
+                Timber.d("Lua show_error: title=%s message=%s authUrl=%s", title, message, authUrl)
                 return LuaValue.NIL
             }
         })
@@ -831,19 +832,27 @@ class LuaEngine @Inject constructor(
                     "id" -> LuaValue.valueOf(el.attr("id"))
                     "get_text" -> object : ZeroArgFunction() { override fun call() = LuaValue.valueOf(el.text()) }
                     "get_html" -> object : ZeroArgFunction() { override fun call() = LuaValue.valueOf(el.html()) }
-                    "attr" -> object : OneArgFunction() {
-                        override fun call(a: LuaValue) = try {
-                            LuaValue.valueOf(el.attr(a.checkjstring()))
-                        } catch (_: Exception) { LuaValue.valueOf("") }
+                    // Lua `el:attr("x")` == `el.attr(el, "x")` — колонический вызов добавляет self
+                    // первым аргументом. Берём последний аргумент, чтобы поддерживать оба стиля.
+                    "attr" -> object : VarArgFunction() {
+                        override fun invoke(args: Varargs): Varargs {
+                            val name = if (args.narg() >= 2) args.arg(2) else args.arg(1)
+                            return try {
+                                LuaValue.valueOf(el.attr(name.checkjstring()))
+                            } catch (_: Exception) { LuaValue.valueOf("") }
+                        }
                     }
                     "remove" -> object : ZeroArgFunction() {
                         override fun call(): LuaValue { el.remove(); return LuaValue.NIL }
                     }
-                    "select" -> object : OneArgFunction() {
-                        override fun call(a: LuaValue): LuaValue = try {
-                            val elems = el.select(a.checkjstring())
-                            LuaTable().also { t2 -> elems.forEachIndexed { i, e -> t2.set(i + 1, elementToTable(e)) } }
-                        } catch (_: Exception) { LuaTable() }
+                    "select" -> object : VarArgFunction() {
+                        override fun invoke(args: Varargs): Varargs {
+                            val selector = if (args.narg() >= 2) args.arg(2) else args.arg(1)
+                            return try {
+                                val elems = el.select(selector.checkjstring())
+                                LuaTable().also { t2 -> elems.forEachIndexed { i, e -> t2.set(i + 1, elementToTable(e)) } }
+                            } catch (_: Exception) { LuaTable() }
+                        }
                     }
                     else -> LuaValue.NIL
                 }
@@ -1004,8 +1013,12 @@ class LuaEngine @Inject constructor(
     fun convertToLua(obj: Any?): LuaValue = when (obj) {
         null        -> LuaValue.NIL
         is String   -> LuaValue.valueOf(obj)
-        is Number   -> LuaValue.valueOf(obj.toDouble())
         is Boolean  -> LuaValue.valueOf(obj)
+        is Int      -> LuaValue.valueOf(obj)
+        is Long     -> LuaValue.valueOf(obj.toDouble())
+        is Double   -> LuaValue.valueOf(obj)
+        is Float    -> LuaValue.valueOf(obj.toDouble())
+        is Number   -> LuaValue.valueOf(obj.toDouble())
         is Map<*,*> -> LuaTable().also { t ->
             obj.forEach { (k, v) -> t.set(LuaValue.valueOf(k.toString()), convertToLua(v)) }
         }

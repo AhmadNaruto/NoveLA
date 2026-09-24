@@ -30,7 +30,9 @@ import my.noveldokusha.data.DownloadManager
 import my.noveldokusha.network.NetworkClient
 import my.noveldokusha.network.ScraperNetworkClient
 import my.noveldokusha.debug.MemoryDiagnostics
+import my.noveldokusha.logging.FileTree
 import timber.log.Timber
+import java.io.File
 import javax.inject.Inject
 import java.util.Locale
 
@@ -70,6 +72,10 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
                 }
             }
         }
+
+        // File tree for log export — all build types
+        val logFile = File(filesDir, "logs/app.log")
+        Timber.plant(FileTree(logFile))
     }
 
     override fun newImageLoader(context: Context): ImageLoader {

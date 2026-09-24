@@ -312,6 +312,10 @@
     <!-- Reader typography settings -->
     <string name="reader_text_justify">Justify text</string>
     <string name="reader_text_hyphenation">Hyphenation</string>
+    <string name="reader_paragraph">Paragraph</string>
+    <string name="reader_paragraph_indent">Indent first line</string>
+    <string name="reader_paragraph_first_letter_bold">Bold first letter</string>
+    <string name="reader_sentence_splitting">Split paragraphs into sentences</string>
     <string name="reader_text_bold">Bold</string>
     <string name="reader_text_italic">Italic</string>
     <string name="reader_text_underline">Underline</string>
@@ -363,6 +367,7 @@
     <string name="configuration">Configuration</string>
     <string name="done">Done</string>
     <string name="close">Close</string>
+    <string name="plugin_error_open">Open</string>
     <string name="no_directories_added_please_add_them_to_see_them_in_the_source_catalog_list">No directories added, please add them to see them in the source catalog list</string>
     <string name="import_all_books">Import all books</string>
     <string name="auto_import_local_books">Auto import local books</string>
@@ -457,6 +462,7 @@
     <string name="enter_regex_pattern">Enter regex pattern</string>
     <string name="enter_replacement_text">Enter replacement text</string>
     <string name="invalid_regex_pattern">Invalid regex pattern</string>
+    <string name="duplicate_regex_pattern">This pattern already exists</string>
     <string name="save">Save</string>
     <string name="cancel_editing">Cancel editing</string>
     <string name="go_back">Go back</string>
@@ -838,5 +844,16 @@
     <string name="plugin_translation_hide_history">In history</string>
     <string name="plugin_translation_hide_catalog">In catalog</string>
     <string name="plugin_translation_hide_search">In search</string>
+
+    <!-- Support & About -->
+    <string name="support">Support</string>
+    <string name="export_logs">Export logs</string>
+    <string name="export_logs_description">Share log file for troubleshooting</string>
+    <string name="no_logs_available">No logs available</string>
+    <string name="about">About</string>
+    <string name="version_format">%1$s</string>
+    <string name="github_repository">GitHub repository</string>
+    <string name="report_issue">Report an issue</string>
+    <string name="report_issue_description">Create a bug report on GitHub</string>
 
 </resources>

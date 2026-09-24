@@ -94,9 +94,9 @@
     public static *** d(...);
     public static *** v(...);
     public static *** i(...);
-    public static *** w(...);
-    public static *** e(...);
 }
+
+-keep class my.noveldokusha.logging.FileTree { *; }
 
 # =============================================================================
 # TRANSLATION MANAGERS — регистрируются по имени/рефлексией

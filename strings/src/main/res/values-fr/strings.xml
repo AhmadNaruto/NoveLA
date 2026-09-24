@@ -233,6 +233,10 @@
     <string name="dark_mode_black">Noir</string>
     <string name="color_scheme">Schéma de couleurs</string>
     <string name="reader_text_color">Couleur du texte</string>
+    <string name="reader_paragraph">Paragraphe</string>
+    <string name="reader_paragraph_indent">Retrait de première ligne</string>
+    <string name="reader_paragraph_first_letter_bold">Première lettre en gras</string>
+    <string name="reader_sentence_splitting">Diviser les paragraphes en phrases</string>
     <string name="reader_import_font">Importer une police</string>
     <string name="reader_fonts_imported">Importées</string>
     <string name="reader_delete_font">Supprimer la police</string>
@@ -829,4 +833,14 @@
     <string name="plugin_translation_hide_search">Dans la recherche</string>
     <string name="active_translator_label">Traducteur actif : %s</string>
     <string name="translators_all_off">Les traducteurs sont désactivés</string>
+
+    <!-- Support & About -->
+    <string name="support">Support</string>
+    <string name="export_logs">Exporter les journaux</string>
+    <string name="export_logs_description">Partager le fichier journal pour le dépannage</string>
+    <string name="no_logs_available">Aucun journal disponible</string>
+    <string name="about">À propos</string>
+    <string name="github_repository">Dépôt GitHub</string>
+    <string name="report_issue">Signaler un problème</string>
+    <string name="report_issue_description">Créer un rapport de bug sur GitHub</string>
 </resources>

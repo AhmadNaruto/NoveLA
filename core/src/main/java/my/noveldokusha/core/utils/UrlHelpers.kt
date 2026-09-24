@@ -32,10 +32,13 @@ fun normalizeBookUrl(url: String): String {
 
 /**
  * Build a referer header value from a page URL.
+ * If [refererUrl] is provided, its host is used instead of [url]'s host —
+ * needed for CDN domains (e.g. mmm.one-way.work) that require the
+ * originating site as Referer.
  * Returns `"scheme://host/"` or empty string on parse failure.
  */
-fun refererFor(url: String): String = try {
-    val uri = URI(url)
+fun refererFor(url: String, refererUrl: String? = null): String = try {
+    val uri = URI(refererUrl ?: url)
     "${uri.scheme}://${uri.host}/"
 } catch (_: Exception) {
     ""
