@@ -486,6 +486,20 @@ internal class ReaderTextToSpeech(
         }
     }
 
+    /**
+     * Сбрасывает активную позицию TTS на указанный элемент, не запуская воспроизведение.
+     * Используется авто-остановкой при уходе пользователя на ≥1 главу вперёд: без сброса
+     * последующий «Старт» продолжал бы чтение со старой далёкой позиции.
+     * isThereActiveItem остаётся true (валидный chapterIndex) → уведомление живо.
+     */
+    fun forceResetState(itemPos: ReaderItem.Position?) {
+        if (itemPos == null) return
+        state.isPlaying.value = false
+        manager.setCurrentSpeakState(
+            TextSynthesis(itemPos, Utterance.PlayState.FINISHED)
+        )
+    }
+
     fun shutdownTts() {
         runCatching { manager.shutdown() }
     }
