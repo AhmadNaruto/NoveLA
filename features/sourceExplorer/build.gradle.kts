@@ -35,4 +35,6 @@ dependencies {
 
     implementation(libs.compose.androidx.material.icons.extended)
     implementation(libs.compose.coil)
+
+    testImplementation(libs.test.junit)
 }

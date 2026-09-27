@@ -5,14 +5,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.State
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlin.random.Random
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.ViewModel
 import my.noveldokusha.coreui.components.ToolbarMode
@@ -83,6 +89,20 @@ internal class SourceCatalogViewModel @Inject constructor(
     // поэтому title должен читаться из реактивного источника ВНУТРИ item-контента.
     private val _translatedTitles = mutableStateMapOf<String, String>()
     val translatedTitles: Map<String, String> = _translatedTitles
+
+    // Lazy backfill пустых обложек каталога (bookUrl -> resolved cover URL).
+    // Некоторые источники отдают coverImageUrl == "": AppFileResolver вернёт "",
+    // Coil ошибки не построит и item навсегда останется с заглушкой. Реальный
+    // cover дозапрашиваем через source.getBookCoverImageUrl() и отдаём в UI этим
+    // map'ом — как и у названий, list[i] = copy() при key={it.url} item'а не
+    // перекомпозирует.
+    private val _covers = mutableStateMapOf<String, String>()
+    val covers: SnapshotStateMap<String, String> = _covers
+
+    // Поколение списка каталога: +1 при смене поиска/фильтров (setFunction+reset).
+    // Устаревшие coroutine backfill'а видят несовпадение поколения и не пишут
+    // результаты чужого поиска в _covers.
+    private val coversGeneration = mutableIntStateOf(0)
 
     // In-library badge data: normalized URL -> count, title -> count
     private val _libraryBadgeData = mutableStateOf(LibraryBadgeMaps())
@@ -284,16 +304,86 @@ internal class SourceCatalogViewModel @Inject constructor(
                     }
                 }
         }
+
+        // Lazy backfill пустых обложек: аналогично переводам названий наблюдаем
+        // список реактивно и обновляем UI только через _covers (никакой мутации
+        // list[i] = copy() — LazyGrid с key={it.url} такой item не перекомпозирует).
+        viewModelScope.launch {
+            // url с уже пробованным fetch: успех ИЛИ ошибка, чтобы не долбить источник
+            val done = mutableSetOf<String>()
+            // url, fetch которых уже выполняется — инфлайт-защита
+            val inflight = mutableSetOf<String>()
+            // rate-limit: не больше 2 параллельных запросов + пауза перед каждым
+            val semaphore = Semaphore(2)
+            // coroutine'ы текущего поколения — отменяются при смене поиска
+            var workers = mutableListOf<Job>()
+            var lastGeneration = coversGeneration.intValue
+
+            snapshotFlow {
+                val generation = coversGeneration.intValue
+                val items = state.fetchIterator.list.map { Triple(it.url, it.coverImageUrl, it.title) }
+                generation to items
+            }.collect { (generation, items) ->
+                // Смена поиска/источника: прерываем устаревшие запросы, чтобы их
+                // ответы не примешивались к новому списку.
+                if (generation != lastGeneration) {
+                    lastGeneration = generation
+                    workers.forEach { it.cancel() }
+                    workers = mutableListOf()
+                    inflight.clear()
+                }
+
+                val urls = items.map { it.first }.toSet()
+                // Как у translatedTitles: убираем записи url, которых больше нет в
+                // списке. done чистим синхронно с _covers — иначе url, вернувшийся
+                // в выдачу, уже никогда не дозапросится.
+                _covers.keys.retainAll(urls)
+                done.retainAll(urls)
+
+                for ((url, coverImageUrl, _) in items) {
+                    if (!shouldFetchCover(url, coverImageUrl, done)) continue
+                    if (!inflight.add(url)) continue
+                    val myGeneration = generation
+                    workers += launch {
+                        try {
+                            semaphore.withPermit {
+                                // Пауза перед запросом — образец batch-догрузки
+                                // CatalogExplorerViewModel.startBackgroundUpdate.
+                                delay(Random.nextLong(300L, 501L))
+                                val newCover = source.getBookCoverImageUrl(url).toSuccessOrNull()?.data
+                                // Пока шли запросы, поиск мог смениться — не пишем.
+                                if (myGeneration == coversGeneration.intValue && !newCover.isNullOrBlank()) {
+                                    _covers[url] = newCover
+                                }
+                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Timber.e(e, "catalog cover backfill failed")
+                        } finally {
+                            // Устаревшее поколение уже почистило общие set'ы —
+                            // не трогаем их повторно.
+                            if (myGeneration == coversGeneration.intValue) {
+                                done.add(url)
+                                inflight.remove(url)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun onSearchCatalog() {
         state.fetchIterator.setFunction { source.getCatalogList(it).mapToBookMetadata() }
+        coversGeneration.intValue += 1
         state.fetchIterator.reset()
         state.fetchIterator.fetchNext()
     }
 
     fun onSearchText(input: String) {
         state.fetchIterator.setFunction { source.getCatalogSearch(it, input).mapToBookMetadata() }
+        coversGeneration.intValue += 1
         state.fetchIterator.reset()
         state.fetchIterator.fetchNext()
     }
@@ -309,6 +399,7 @@ internal class SourceCatalogViewModel @Inject constructor(
         } else {
             state.fetchIterator.setFunction { source.getCatalogList(it).mapToBookMetadata() }
         }
+        coversGeneration.intValue += 1
         state.fetchIterator.reset()
         state.fetchIterator.fetchNext()
     }
@@ -450,3 +541,12 @@ internal class SourceCatalogViewModel @Inject constructor(
         loadTextHistory()
     }
 }
+
+/**
+ * Нужен ли lazy backfill обложки для элемента каталога:
+ * - cover в каталоге пустой — непустые обложки не перезапрашиваем вообще;
+ * - url ещё не обрабатывался — done содержит и успех, и ошибку, чтобы не долбить
+ *   источник по одному и тому же url.
+ */
+fun shouldFetchCover(url: String, coverImageUrl: String, done: Set<String>): Boolean =
+    coverImageUrl.isBlank() && url !in done

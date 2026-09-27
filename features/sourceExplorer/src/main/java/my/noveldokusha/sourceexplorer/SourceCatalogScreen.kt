@@ -185,6 +185,7 @@ internal fun SourceCatalogScreen(
                     onWebViewOpen = onOpenSourceWebPage,
                     innerPadding = innerPadding,
                     translatedTitles = state.translatedTitles,
+                    coverOverrides = viewModel.covers,
                     topLeftBadge = { bookMeta ->
                         val badge = getLibraryBadge(bookMeta.url, bookMeta.title)
                         if (badge != null) {

@@ -236,7 +236,12 @@ open class LuaSourceAdapter(
                 withSourceContext {
                     luaEngine.resetShowError()
                     try {
-                        val result = luaScript.get("getCatalogList").call(LuaValue.valueOf(index))
+                        // Fresh-network scope: lua http_* go with no-cache, past both the
+                        // memory TTL cache and the OkHttp disk cache. Set/restore happens
+                        // on this very thread — the lua call below is synchronous.
+                        val result = luaEngine.withForceNetwork {
+                            luaScript.get("getCatalogList").call(LuaValue.valueOf(index))
+                        }
                         checkShowError() ?: convertLuaResultToPagedList(result)
                     } catch (e: Exception) {
                         checkShowError() ?: run {
@@ -676,10 +681,14 @@ class LuaSourceAdapterFilterable(
                 luaEngine.resetShowError()
                 try {
                     val luaFilters = filters.toLuaTable(luaEngine)
-                    val result = luaScript.get("getCatalogFiltered").call(
-                        LuaValue.valueOf(index),
-                        luaFilters
-                    )
+                    // Fresh-network scope: see getCatalogList — lua http_* run on this
+                    // thread, so the ThreadLocal set here is visible to them.
+                    val result = luaEngine.withForceNetwork {
+                        luaScript.get("getCatalogFiltered").call(
+                            LuaValue.valueOf(index),
+                            luaFilters
+                        )
+                    }
                     checkShowError() ?: convertLuaResultToPagedList(result)
                 } catch (e: Exception) {
                     checkShowError() ?: run {
@@ -736,10 +745,14 @@ class LuaSourceAdapterFull(
                 luaEngine.resetShowError()
                 try {
                     val luaFilters = filters.toLuaTable(luaEngine)
-                    val result = luaScript.get("getCatalogFiltered").call(
-                        LuaValue.valueOf(index),
-                        luaFilters
-                    )
+                    // Fresh-network scope: see getCatalogList — lua http_* run on this
+                    // thread, so the ThreadLocal set here is visible to them.
+                    val result = luaEngine.withForceNetwork {
+                        luaScript.get("getCatalogFiltered").call(
+                            LuaValue.valueOf(index),
+                            luaFilters
+                        )
+                    }
                     checkShowError() ?: convertLuaResultToPagedList(result)
                 } catch (e: Exception) {
                     checkShowError() ?: run {

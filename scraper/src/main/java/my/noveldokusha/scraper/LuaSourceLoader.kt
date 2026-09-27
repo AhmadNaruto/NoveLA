@@ -64,6 +64,23 @@ class LuaEngine @Inject constructor(
     private val luaPrefs by lazy { context.getSharedPreferences("lua_preferences", Context.MODE_PRIVATE) }
     val currentSourceId = ThreadLocal<String?>()
 
+    // Catalog freshness: while getCatalogList/getCatalogFiltered runs, http_get/http_post/
+    // http_get_batch skip the memory TTL cache and send Cache-Control: no-cache, which forces
+    // OkHttp to bypass its disk cache (CacheStrategy checks request.noCache()).
+    // Same ThreadLocal mechanics as currentSourceId: set and read on the lua execution thread.
+    private val forceNetworkFlag = ThreadLocal.withInitial { false }
+
+    /**
+     * Runs [block] with fresh-network mode on: Lua http_* calls inside skip the memory
+     * TTL cache and add `Cache-Control: no-cache` to the request. Set/restore happens on
+     * the caller thread — the same thread where lua executes (see withSourceContext in
+     * LuaSourceAdapter); ThreadLocal does not survive dispatcher switches.
+     */
+    fun <T> withForceNetwork(block: () -> T): T {
+        forceNetworkFlag.set(true)
+        try { return block() } finally { forceNetworkFlag.set(false) }
+    }
+
     private val pendingShowError = ThreadLocal<Triple<String, String, String?>?>()
 
     fun getPendingShowError(): Triple<String, String, String?>? = pendingShowError.get()
@@ -310,8 +327,11 @@ class LuaEngine @Inject constructor(
             val headers       = defaultHeaders(url) + pluginHeaders
             // sourceId читается на вызывающем потоке: ThreadLocal не переживает переключение диспетчера.
             val sourceId      = currentSourceId.get()
+            // Force-network flag is captured here for the same reason, before withContext(IO).
+            val forceNetwork  = forceNetworkFlag.get()
             // Binary-ответы не кэшируются: они обычно Большие и одноразовые.
-            if (!binary) {
+            // Force-network (catalog) also skips the memory cache: the catalog must be fresh.
+            if (!binary && !forceNetwork) {
                 val cacheKey = "$url|$charset|${sourceId ?: "default"}|${headers.toString().hashCode()}"
                 httpGetCache[cacheKey]?.let { entry ->
                     if (System.currentTimeMillis() - entry.storedAt < httpGetCacheTtlMs) {
@@ -325,6 +345,9 @@ class LuaEngine @Inject constructor(
                 withContext(Dispatchers.IO) {
                     val builder = getRequest(url)
                     headers.forEach { (k, v) -> builder.header(k, v) }
+                    // Applied after plugin headers: catalog freshness overrides any
+                    // Cache-Control set by the plugin (getRequest default: max-age=600).
+                    if (forceNetwork) builder.header("Cache-Control", "no-cache")
                     sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
                     networkClient.call(builder).use { r ->
                         val bytes = r.body.bytes()
@@ -365,11 +388,14 @@ class LuaEngine @Inject constructor(
             val charset       = config.get("charset").optjstring("UTF-8")
             val headers       = defaultHeaders(url) + pluginHeaders
             val sourceId      = currentSourceId.get()
+            // Force-network flag is captured here for the same reason, before withContext(IO).
+            val forceNetwork  = forceNetworkFlag.get()
             try {
                 withContext(Dispatchers.IO) {
                     val mediaType = (headers["Content-Type"] ?: detectContentType(bodyStr)).toMediaType()
                     val body = bodyStr.toRequestBody(mediaType)
                     val builder = postRequest(url, body = body, headers = headers.toHeaders())
+                    if (forceNetwork) builder.header("Cache-Control", "no-cache")
                     sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
                     networkClient.call(builder).use { r ->
                         val bytes = r.body.bytes()
@@ -517,6 +543,8 @@ class LuaEngine @Inject constructor(
             val urls = (1..urlTable.length()).map { urlTable.get(it).checkjstring() }
             val binary = arg2.opttable(LuaTable()).get("binary").optboolean(false)
             val sourceId = currentSourceId.get()
+            // Force-network flag: captured before async(Dispatchers.IO) hops threads.
+            val forceNetwork = forceNetworkFlag.get()
 
             if (binary) {
                 val results = runBlocking {
@@ -527,6 +555,7 @@ class LuaEngine @Inject constructor(
                                 val builder = getRequest(url)
                                 val headers = defaultHeaders(url)
                                 headers.forEach { (k, v) -> builder.header(k, v) }
+                                if (forceNetwork) builder.header("Cache-Control", "no-cache")
                                 sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
                                 networkClient.call(builder).use { r ->
                                     Triple(r.body.bytes(), r.code, r.headers.toMultimap())
@@ -554,6 +583,7 @@ class LuaEngine @Inject constructor(
                                 val builder = getRequest(url)
                                 val headers = defaultHeaders(url)
                                 headers.forEach { (k, v) -> builder.header(k, v) }
+                                if (forceNetwork) builder.header("Cache-Control", "no-cache")
                                 sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
                                 networkClient.call(builder).use { r ->
                                     val body = r.body.string()

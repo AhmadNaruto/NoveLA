@@ -15,6 +15,7 @@ import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -176,5 +177,30 @@ class LuaEngineHttpGetCacheTest {
 
         // Оба вызова должны уйти в сеть (кэш пропускается)
         runBlocking { verify(networkClient, times(2)).call(any(), any()) }
+    }
+
+    // ── Force-network (catalog freshness) ─────────────────────────────────────
+
+    /**
+     * Fresh-network scope for catalog calls: withForceNetwork forces http_get to skip
+     * the memory TTL cache and send `Cache-Control: no-cache` (bypasses OkHttp disk cache).
+     */
+    @Test
+    fun `force network sends no-cache header and bypasses memory cache`() {
+        val (engine, networkClient) = createEngine()
+        val url = "http://example.com/catalog"
+        val globals = runBlocking { engine.loadScript("-- force network probe") }
+
+        engine.withForceNetwork {
+            globals.get("http_get").call(LuaValue.valueOf(url), LuaValue.NIL)
+            globals.get("http_get").call(LuaValue.valueOf(url), LuaValue.NIL)
+        }
+
+        // Both calls went to network: the memory TTL cache was skipped
+        val captor = argumentCaptor<Request.Builder>()
+        runBlocking { verify(networkClient, times(2)).call(captor.capture(), any()) }
+        captor.allValues.forEach {
+            assertEquals("no-cache", it.build().header("Cache-Control"))
+        }
     }
 }

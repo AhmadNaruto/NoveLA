@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +41,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import my.noveldokusha.core.utils.refererFor
 import my.noveldokusha.coreui.R
+
+// Int-модель — заглушка/placeholder без реальной картинки, retry там бесполезен.
+internal fun shouldShowRetry(model: Any?): Boolean = model !is Int
 
 @Composable
 fun ImageView(
@@ -109,30 +113,37 @@ fun ImageView(
         // ponytail: error-painter не задействован — retry button показывается
         // поверх AsyncImage через isError state.
         Box(modifier = modifier) {
-            AsyncImage(
-                model = imageRequest,
-                contentDescription = contentDescription,
-                contentScale = contentScale,
-                // fillMaxSize вместо matchParentSize: Box должен получать высоту
-                // от AsyncImage, когда внешний модификатор задаёт только ширину
-                // (диалог обложки) — иначе Box нулевой высоты и картинки не видно.
-                modifier = Modifier.fillMaxSize(),
-                colorFilter = colorFilter,
-                placeholder = placeholderPainter,
-                error = painterResource(error),
-                onSuccess = { isError = false },
-                onError = {
-                    isError = true
-                    if (retryCount.intValue < 2) {
-                        retryJob?.cancel()
-                        retryJob = scope.launch {
-                            delay(1000)
-                            retryCount.intValue++
+            // key(retryCount) пересоздаёт ContentPainterNode/AsyncImagePainter:
+            // AsyncImageModelEqualityDelegate.Default сравнивает запросы по
+            // context/data/cacheKeys/sizeResolver/scale/precision и НЕ видит
+            // retryCount → без key() painter._input не меняется и restart()
+            // не вызывается, повторного запроса нет.
+            key(retryCount.intValue) {
+                AsyncImage(
+                    model = imageRequest,
+                    contentDescription = contentDescription,
+                    contentScale = contentScale,
+                    // fillMaxSize вместо matchParentSize: Box должен получать высоту
+                    // от AsyncImage, когда внешний модификатор задаёт только ширину
+                    // (диалог обложки) — иначе Box нулевой высоты и картинки не видно.
+                    modifier = Modifier.fillMaxSize(),
+                    colorFilter = colorFilter,
+                    placeholder = placeholderPainter,
+                    error = painterResource(error),
+                    onSuccess = { isError = false },
+                    onError = {
+                        isError = true
+                        if (retryCount.intValue < 2) {
+                            retryJob?.cancel()
+                            retryJob = scope.launch {
+                                delay(1000)
+                                retryCount.intValue++
+                            }
                         }
                     }
-                }
-            )
-            if (isError && retryCount.intValue >= 2 && model is String) {
+                )
+            }
+            if (isError && retryCount.intValue >= 2 && shouldShowRetry(model)) {
                 FilledIconButton(
                     onClick = {
                         isError = false

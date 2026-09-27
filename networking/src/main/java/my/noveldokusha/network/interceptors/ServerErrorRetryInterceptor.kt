@@ -19,6 +19,13 @@ class ServerErrorRetryInterceptor(
         if (!request.method.equals("GET", ignoreCase = true)) {
             return chain.proceed(request)
         }
+        // Cache-only запрос (Coil офлайн: only-if-cached) — OkHttp отвечает
+        // 504 из кэша мгновенно и в сеть не ходит. Повтор бессмыслен:
+        // ответ офлайн детерминирован, а backoff (до 7.5с) тормозит
+        // авто-ретраи ImageView вместо быстрого показа кнопки retry.
+        if (request.header("Cache-Control")?.contains("only-if-cached") == true) {
+            return chain.proceed(request)
+        }
 
         var lastResponse: Response? = null
         var lastException: IOException? = null
