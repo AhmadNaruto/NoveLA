@@ -124,7 +124,13 @@ class RegexCleanupSettingsViewModel @Inject constructor(
         )
     }
 
-    fun onSaveRule(pattern: String, replacement: String, enabled: Boolean, description: String) {
+    fun onSaveRule(
+        pattern: String,
+        replacement: String,
+        enabled: Boolean,
+        wholeWordsOnly: Boolean,
+        description: String
+    ) {
         if (!validateRegex(pattern)) {
             uiState.value = uiState.value.copy(
                 validationError = pattern,
@@ -155,7 +161,8 @@ class RegexCleanupSettingsViewModel @Inject constructor(
                 pattern = pattern.trim(),
                 replacement = replacement.trim(),
                 isEnabled = enabled,
-                description = description.trim()
+                description = description.trim(),
+                wholeWordsOnly = wholeWordsOnly
             )
 
             val editingIndex = uiState.value.editingIndex
@@ -246,15 +253,6 @@ class RegexCleanupSettingsViewModel @Inject constructor(
 
     fun updatePreview(text: String) {
         uiState.value = uiState.value.copy(previewText = text)
-    }
-
-    fun getPreviewResult(rule: RegexRule, text: String): String {
-        if (!rule.isEnabled) return text
-        return try {
-            text.replace(Regex(rule.pattern), rule.replacement)
-        } catch (e: Exception) {
-            text
-        }
     }
 
     // ── Validation ─────────────────────────────────────────────────────────

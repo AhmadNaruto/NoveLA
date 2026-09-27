@@ -822,7 +822,8 @@ class RestoreDataService : Service() {
                             pattern = obj.getString("pattern"),
                             replacement = obj.optString("replacement", ""),
                             isEnabled = obj.optBoolean("isEnabled", true),
-                            description = obj.optString("description", "")
+                            description = obj.optString("description", ""),
+                            wholeWordsOnly = obj.optBoolean("wholeWordsOnly", false)
                         )
                     }
                     appPreferences.USER_REGEX_CLEANUP_RULES.value = rules
@@ -840,7 +841,8 @@ class RestoreDataService : Service() {
                                 pattern = obj.getString("pattern"),
                                 replacement = obj.optString("replacement", ""),
                                 isEnabled = obj.optBoolean("isEnabled", true),
-                                description = obj.optString("description", "")
+                                description = obj.optString("description", ""),
+                                wholeWordsOnly = obj.optBoolean("wholeWordsOnly", false)
                             )
                         }
                     }

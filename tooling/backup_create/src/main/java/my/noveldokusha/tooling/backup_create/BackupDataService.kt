@@ -454,6 +454,7 @@ class BackupDataService : Service() {
                                     put("replacement", rule.replacement)
                                     put("isEnabled", rule.isEnabled)
                                     put("description", rule.description)
+                                    put("wholeWordsOnly", rule.wholeWordsOnly)
                                 }
                             }
                         ))
@@ -465,6 +466,7 @@ class BackupDataService : Service() {
                                         put("replacement", rule.replacement)
                                         put("isEnabled", rule.isEnabled)
                                         put("description", rule.description)
+                                        put("wholeWordsOnly", rule.wholeWordsOnly)
                                     }
                                 }))
                             }

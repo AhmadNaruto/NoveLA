@@ -682,6 +682,8 @@
 
     <string name="enabled">Включено</string>
 
+    <string name="whole_words_only">Только целые слова</string>
+
     <string name="wtr_lab_no_translation_hint">Перевод отключён — контент будет загружаться на английском (или китайском в RAW-режиме).</string>
 
     <string name="scroll_to_last_read_chapter">Последняя читаемая</string>

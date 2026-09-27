@@ -376,6 +376,7 @@ class AutoBackupWorker(
                                     put("replacement", rule.replacement)
                                     put("isEnabled", rule.isEnabled)
                                     put("description", rule.description)
+                                    put("wholeWordsOnly", rule.wholeWordsOnly)
                                 }
                             }
                         ))
@@ -387,6 +388,7 @@ class AutoBackupWorker(
                                         put("replacement", rule.replacement)
                                         put("isEnabled", rule.isEnabled)
                                         put("description", rule.description)
+                                        put("wholeWordsOnly", rule.wholeWordsOnly)
                                     }
                                 }))
                             }

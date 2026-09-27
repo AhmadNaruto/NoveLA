@@ -275,10 +275,10 @@ internal fun applyUserRegexRules(text: String, rules: List<RegexRule>): String {
     var result = text
     rules.filter { it.isEnabled }.forEach { rule ->
         try {
-            val regex = Regex(rule.pattern)
+            val regex = Regex(rule.effectivePattern)
             result = result.replace(regex, rule.replacement)
         } catch (e: Exception) {
-            println("Failed to apply user regex rule: ${e.message}, pattern: ${rule.pattern}")
+            println("Failed to apply user regex rule: ${e.message}, pattern: ${rule.effectivePattern}")
         }
     }
     return result

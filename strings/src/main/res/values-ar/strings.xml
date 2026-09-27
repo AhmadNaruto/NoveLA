@@ -410,6 +410,7 @@
     <string name="invalid_regex_pattern_with">نمط تعبير نمطي غير صالح: %s</string>
     <string name="regex_cleanup_title">تعبير نمطي</string>
     <string name="enabled">مفعل</string>
+    <string name="whole_words_only">الكلمات الكاملة فقط</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">آخر مقروء</string>

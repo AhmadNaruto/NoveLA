@@ -483,6 +483,7 @@
     <string name="invalid_regex_pattern_with">Invalid regex pattern: %s</string>
     <string name="regex_cleanup_title">Regex</string>
     <string name="enabled">Enabled</string>
+    <string name="whole_words_only">Whole words only</string>
     <string name="regex_cleanup_novel_rules">Regex rules (this novel)</string>
     <string name="regex_cleanup_novel_title_format">Novel: %s</string>
     <string name="regex_cleanup_move_to_global">Move to global</string>
