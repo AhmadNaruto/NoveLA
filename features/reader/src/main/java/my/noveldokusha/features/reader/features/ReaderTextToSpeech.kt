@@ -490,6 +490,15 @@ internal class ReaderTextToSpeech(
         runCatching { manager.shutdown() }
     }
 
+    /**
+     * Сбрасывает активную позицию TTS-подсветки к пустому состоянию.
+     * Вызывается после перестройки списка (reload), чтобы подсветка
+     * не указывала на абзац, которого больше нет в списке.
+     */
+    fun clearActiveItemState() {
+        manager.clearActiveItemState()
+    }
+
     suspend fun readChapterStartingFromStart(
         chapterIndex: Int
     ) = withContext(Dispatchers.Main.immediate) {

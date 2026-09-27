@@ -345,6 +345,11 @@ class ReaderActivity : BaseActivity() {
                     chapterItemPosition = it.chapterItemPosition,
                     offset = it.chapterItemOffset
                 )
+                // Индикатор главы/прогресса обновляется только из onScroll; если
+                // setSelectionFromTop не меняет позицию, onScroll не приходит и
+                // панель показывает 0/0 до первого свайпа. Дёргаем явно: к этому
+                // моменту chaptersStats уже записан (addChapter завершён).
+                updateInfoView()
             }
         }
 
@@ -594,6 +599,7 @@ class ReaderActivity : BaseActivity() {
                     onMarginTopChange = { appPreferences.READER_MARGIN_TOP.value = it },
                     onMarginBottomChange = { appPreferences.READER_MARGIN_BOTTOM.value = it },
                     onTextDefaultsReset = {
+                        val splitBefore = appPreferences.READER_SENTENCE_SPLITTING.value
                         appPreferences.READER_FONT_SIZE.value = 14f
                         appPreferences.READER_LINE_HEIGHT.value = 1.35f
                         appPreferences.READER_PARAGRAPH_SPACING.value = 8f
@@ -613,6 +619,14 @@ class ReaderActivity : BaseActivity() {
                         appPreferences.READER_MARGIN_RIGHT.value = 16f
                         appPreferences.READER_MARGIN_TOP.value = 0f
                         appPreferences.READER_MARGIN_BOTTOM.value = 0f
+                        // Смена сплита меняет нумерацию элементов списка: без перестройки
+                        // список остаётся сплитнутым при pref=false, позиция сохраняется
+                        // в несовместимой нумерации и глава при следующем открытии
+                        // восстанавливается не на своём месте. Один reload в конце
+                        // блока покрывает итоговое состояние всех преференсов.
+                        if (appPreferences.READER_SENTENCE_SPLITTING.value != splitBefore) {
+                            viewModel.reloadReader()
+                        }
                     },
                     onManualHighlightEnabledChange = {
                         appPreferences.MANUAL_HIGHLIGHT_ENABLED.value = it
@@ -1123,7 +1137,8 @@ class ReaderActivity : BaseActivity() {
         viewModel.readingCurrentChapter = ChapterState(
             chapterUrl = item.chapterUrl,
             chapterItemPosition = item.chapterItemPosition,
-            offset = offset
+            offset = offset,
+            savedWithSplit = appPreferences.READER_SENTENCE_SPLITTING.value
         )
     }
 }

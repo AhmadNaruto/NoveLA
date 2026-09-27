@@ -19,7 +19,12 @@ internal enum class ReaderState {
 internal data class ChapterState(
     val chapterUrl: String,
     val chapterItemPosition: Int,
-    val offset: Int
+    val offset: Int,
+    /**
+     * Granularity of [chapterItemPosition]: true = sentence numbering (split mode),
+     * false = paragraph numbering. Encoded into the sign of the stored position on save.
+     */
+    val savedWithSplit: Boolean = false
 )
 
 internal data class ReadingChapterPosStats(

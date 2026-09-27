@@ -25,6 +25,7 @@ import my.noveldokusha.data.AppRepository
 import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.core.appPreferences.TranslationSettingsResolver
 import my.noveldokusha.features.reader.ReaderRepository
+import my.noveldokusha.features.reader.decodeLastReadPosition
 import my.noveldokusha.features.reader.domain.ChapterLoaded
 import my.noveldokusha.features.reader.domain.ChapterState
 import my.noveldokusha.features.reader.domain.ReaderItem
@@ -73,7 +74,6 @@ internal class ReaderSession(
 
     private var lastChapterIndex: Int = -1
     private var preloadTriggeredForChapter = -1
-    private val sessionCreatedTime = System.currentTimeMillis()
 
     var bookTitle: String? = null
     var bookCoverUrl: String? = null
@@ -82,7 +82,8 @@ internal class ReaderSession(
         ChapterState(
             chapterUrl = chapterUrl,
             chapterItemPosition = 0,
-            offset = 0
+            offset = 0,
+            savedWithSplit = appPreferences.READER_SENTENCE_SPLITTING.value
         )
     ) { _, old, new ->
         chapterUrl = new.chapterUrl
@@ -187,9 +188,7 @@ internal class ReaderSession(
             getParallelOrder = appPreferences.TRANSLATION_PARALLEL_ORDER.state(scope)::value,
             onBufferLow = {
                 val currentChapterIndex = ttsCurrentChapterIndex
-                val sessionAge = System.currentTimeMillis() - sessionCreatedTime
                 if (currentChapterIndex < 0) return@ReaderTextToSpeech
-                if (sessionAge < 3000) return@ReaderTextToSpeech
                 if (
                     readerTextToSpeech.isSpeaking.value &&
                     !readerChaptersLoader.hasLoadingError &&
@@ -268,10 +267,13 @@ internal class ReaderSession(
             bookCoverUrl = book.await()?.coverImageUrl
             bookTitle = book.await()?.title
             readerLiveTranslation.bookTitle = bookTitle ?: ""
+            // Позиция из БД может быть закодирована знаком (гранулярность сплита), декодируем.
+            val savedPosition = decodeLastReadPosition(chapter.await()?.lastReadPosition ?: 0)
             currentChapter = ChapterState(
                 chapterUrl = chapterUrl,
-                chapterItemPosition = chapter.await()?.lastReadPosition ?: 0,
+                chapterItemPosition = savedPosition.position,
                 offset = chapter.await()?.lastReadOffset ?: 0,
+                savedWithSplit = savedPosition.savedWithSplit,
             )
 
             // Загружаем главу только после того как translatorState готов
@@ -431,14 +433,15 @@ internal class ReaderSession(
     }
 
     fun reloadReader(chapterLastState: ChapterState) {
+        // Перестройка списка: старые позиции подсветок больше не существуют,
+        // иначе ручная подсветка/TTS указывают на чужой или несуществующий абзац.
+        readerManualHighlight.clear()
         readerChaptersLoader.restartInitial(chapterLastState)
         readerTextToSpeech.stop()
+        readerTextToSpeech.clearActiveItemState()
     }
 
     fun updateInfoViewTo(itemIndex: Int, userHasScrolled: Boolean = false) {
-        val sessionAge = System.currentTimeMillis() - sessionCreatedTime
-        if (sessionAge < 3000) return
-
         val stats = readerChaptersLoader.getItemContext(
             itemIndex = itemIndex,
             chapterUrl = chapterUrl
@@ -515,7 +518,8 @@ internal class ReaderSession(
             newChapter = ChapterState(
                 chapterUrl = item.chapterUrl,
                 chapterItemPosition = item.chapterItemPosition,
-                offset = 0
+                offset = 0,
+                savedWithSplit = appPreferences.READER_SENTENCE_SPLITTING.value
             )
         )
     }

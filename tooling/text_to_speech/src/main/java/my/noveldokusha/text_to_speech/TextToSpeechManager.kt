@@ -85,7 +85,7 @@ internal fun calibrationRegressionSlope(pairs: List<Pair<Long, Long>>): Float? {
 class TextToSpeechManager<T : Utterance<T>>(
     private val context: Context,
     private val appTtsEngine: AppTtsEngine,
-    initialItemState: T,
+    private val initialItemState: T,
 ) {
     private val scope = CoroutineScope(
         SupervisorJob() + Dispatchers.Default +
@@ -418,6 +418,17 @@ class TextToSpeechManager<T : Utterance<T>>(
     fun setCurrentSpeakState(textSynthesis: T) {
         currentActiveItemState.value = textSynthesis
         scope.launch { _currentTextSpeakFlow.emit(textSynthesis) }
+    }
+
+    /**
+     * Сброс активной позиции подсветки к исходному (пустому) состоянию.
+     * Нужен при перестройке списка (reload главы): старый item больше не существует,
+     * и без сброса подсветка указывала бы на чужой/несуществующий абзац.
+     * В отличие от [setCurrentSpeakState] не эмитит currentTextSpeakFlow — сброс
+     * не должен выглядеть как завершение очередной озвучки.
+     */
+    fun clearActiveItemState() {
+        currentActiveItemState.value = initialItemState
     }
 
     fun trySetVoiceById(id: String): Boolean {
