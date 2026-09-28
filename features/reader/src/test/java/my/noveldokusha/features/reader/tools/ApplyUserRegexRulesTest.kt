@@ -72,6 +72,29 @@ class ApplyUserRegexRulesTest {
     }
 
     @Test
+    fun `global and per novel rules are applied in order`() {
+        // Порядок списков повторяет AppPreferences.effectiveRegexRules:
+        // глобальные правила идут первыми, затем персональные для новеллы.
+        val globalRules = listOf(
+            RegexRule(pattern = "да", replacement = "G", wholeWordsOnly = false)
+        )
+        val novelRules = listOf(
+            RegexRule(pattern = "да", replacement = "N", wholeWordsOnly = true)
+        )
+
+        val result = applyUserRegexRules(
+            text = "да был и не да",
+            rules = globalRules + novelRules
+        )
+
+        // Глобальное правило без wholeWordsOnly заменяет ОБА вхождения "да" на "G"
+        // ещё до запуска персонального правила, поэтому к его применению в тексте
+        // не остаётся ни одного standalone "да" — и правило с флагом ничего не находит.
+        // Ожидаемый результат: "G был и не G" (а не "G был и не N").
+        assertEquals("G был и не G", result)
+    }
+
+    @Test
     fun `pattern with own anchors works inside the wrapper`() {
         val result = applyUserRegexRules(
             text = "Глава 1",
