@@ -28,6 +28,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.doOnNextLayout
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.asLiveData
@@ -148,8 +149,22 @@ class ReaderActivity : BaseActivity() {
     private val fadeInTextLiveData = MutableLiveData(false)
     // Предотвращает загрузку следующей главы до первого реального скролла пользователя.
     // Сбрасывается в false при каждом открытии Activity, устанавливается в true только при
-    // TOUCH_SCROLL или FLING — т.е. при реальном жесте, не при programmatic setSelectionFromTop.
+    // SCROLL_STATE_TOUCH_SCROLL — реальном жесте пальцем (AOSP ставит это состояние раньше
+    // FLING, уже на первом драге). Программные скроллы (TTS-follow, catch-up) состояние не
+    // меняют вовсе, а их smooth-scroll даёт FLING — флаг не ставят ни те, ни другие.
     private var userHasScrolled = false
+    // Снапшот userHasScrolled, зафиксированный в onPause: onResume читает его в
+    // catch-up-гейте, потому что сброс текущего флага стоит перед этим гейтом.
+    private var userHasScrolledAtPause = false
+    // Разрешение stopped-follow: выставляется в onPause. Защищает окно
+    // onCreate→onResume нового инстанса (после config-change) от борьбы с
+    // restore-позицией — пока первый onPause не прошёл, stopped-ветка не скроллит.
+    // Per-instance, ставится один раз, не сбрасывается.
+    private var followWhileStoppedEnabled = false
+    // stopped-ветка записала pending setSelectionFromTop; catch-up в onResume
+    // применит идемпотентный re-issue вместо smoothScroll (иначе stale-distance
+    // анимация до traversal → двойной дёрг).
+    private var followAppliedWhileStopped = false
     // Гейт создаёт ReaderViewModel только в initNovelReader (её property-initializer
     // запускает ReaderSession). Для MANGA-пути VM не создаётся вовсе — флаг защищает
     // onDestroy от обращения к viewModel после finish() манга-маршрута.
@@ -389,15 +404,35 @@ class ReaderActivity : BaseActivity() {
             )
         }
 
-        viewModel.readerSpeaker.currentReaderItem
-            .filter { it.playState == Utterance.PlayState.PLAYING || it.playState == Utterance.PlayState.LOADING }
-            .asLiveData().observe(this) {
-                scrollToReadingPositionOptional(
-                    chapterIndex = it.itemPos.chapterIndex,
-                    chapterItemPosition = it.itemPos.chapterItemPosition,
-                    playState = it.playState,
-                )
-            }
+        // Один перманентный коллектор (без repeatOnLifecycle: scope Activity живёт
+        // до ON_DESTROY) вместо asLiveData-наблюдателя: asLiveData буферизует значение,
+        // пришедшее ≤5 с после onStop, и воспроизводит при re-active → двойной скролл.
+        // replay=0 у shareIn(Eagerly) даёт live-эмиссии без ложного первого скролла.
+        lifecycleScope.launch {
+            viewModel.readerSpeaker.currentReaderItem
+                .filter { it.playState == Utterance.PlayState.PLAYING || it.playState == Utterance.PlayState.LOADING }
+                .collect { item ->
+                    val started = lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+                    if (started) {
+                        scrollToReadingPositionOptional(
+                            chapterIndex = item.itemPos.chapterIndex,
+                            chapterItemPosition = item.itemPos.chapterItemPosition,
+                            playState = item.playState,
+                        )
+                    } else {
+                        // stopped: view едет за TTS инстантно; позиция юзера священна,
+                        // followWhileStoppedEnabled выставляется в onPause (см. поле).
+                        if (!followWhileStoppedEnabled || userHasScrolledAtPause) return@collect
+                        followAppliedWhileStopped = true
+                        scrollToReadingPositionOptional(
+                            chapterIndex = item.itemPos.chapterIndex,
+                            chapterItemPosition = item.itemPos.chapterItemPosition,
+                            playState = item.playState,
+                            instant = true,
+                        )
+                    }
+                }
+        }
 
         viewModel.readerSpeaker.scrollToReaderItem.asLiveData().observe(this) {
             if (it !is ReaderItem.Position) return@observe
@@ -706,9 +741,7 @@ class ReaderActivity : BaseActivity() {
                     lastScrollEventTime = SystemClock.elapsedRealtime()
                     lastScrollState = scrollState
                     listIsScrolling = scrollState != AbsListView.OnScrollListener.SCROLL_STATE_IDLE
-                    if (scrollState == AbsListView.OnScrollListener.SCROLL_STATE_FLING ||
-                        scrollState == AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL
-                    ) {
+                    if (scrollState == AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL) {
                         userHasScrolled = true
                     }
                     // When the user lifts their finger, check if we need to load more chapters
@@ -850,6 +883,7 @@ class ReaderActivity : BaseActivity() {
         chapterIndex: Int,
         chapterItemPosition: Int,
         playState: Utterance.PlayState,
+        instant: Boolean = false,
     ) {
         // Always update the view to show current TTS item highlighting.
         // Полный rebind — только при смене абзаца или его состояния: currentReaderItem
@@ -901,7 +935,11 @@ class ReaderActivity : BaseActivity() {
 
                 // Scroll only if item is below the desired visible position (fast scroll)
                 if (currentOffsetPx > newOffsetPx) {
-                    viewBind.listView.smoothScrollToPositionFromTop(index, newOffsetPx, 400)
+                    if (instant) {
+                        viewBind.listView.setSelectionFromTop(index, newOffsetPx)
+                    } else {
+                        viewBind.listView.smoothScrollToPositionFromTop(index, newOffsetPx, 400)
+                    }
                 }
                 return
             }
@@ -922,6 +960,13 @@ class ReaderActivity : BaseActivity() {
         val distanceBelow = itemPosition - lastIndex
         val distanceAbove = firstIndex - itemPosition
         val threshold = 5 // Items within this distance get smooth scroll
+
+        if (instant) {
+            // stopped-follow: один инстантный прыжок вместо smooth-под-веток —
+            // smoothScroll при невидимом окне недетерминирован до первого layout.
+            viewBind.listView.setSelectionFromTop(itemPosition, newOffsetPx)
+            return
+        }
 
         when {
             distanceBelow in 1..threshold -> {
@@ -1060,10 +1105,12 @@ class ReaderActivity : BaseActivity() {
             // Пауза при озвучке: TTS говорит (isSpeaking) или пользователь поставил
             // TTS на паузу (userPaused). Возобновление — только после полной остановки
             // TTS (floating player → requestTtsStop → stop(), userPaused=false).
-            // Движок никогда не ставит userHasScrolled=true, поэтому авто-стоп TTS в
-            // updateInfoViewTo (userHasScrolled && isActive && !isSpeaking &&
-            // chapterIndex >= ttsCurrent+1 → stop()) не срабатывает на границе глав —
-            // приостановленная сессия TTS переживает автопрокрутку.
+            // Ни автопрокрутка, ни TTS-follow не ставят userHasScrolled=true: флаг
+            // выставляется только по SCROLL_STATE_TOUCH_SCROLL, а FLING от программного
+            // smooth-scroll мы больше не ловим. Поэтому авто-стоп TTS в updateInfoViewTo
+            // (userHasScrolled && isActive && !isSpeaking && chapterIndex >= ttsCurrent+1
+            // → stop()) не срабатывает на границе глав — приостановленная сессия TTS
+            // переживает автопрокрутку.
             val ttsPaused = viewModel.readerSpeaker.isSpeaking.value || ReaderTextToSpeech.userPaused
             if (!autoScrollPaused && !ttsPaused && viewBind.listView.height > 0) {
                 // Читаем скорость каждый тик — смена в настройках применяется на лету.
@@ -1092,6 +1139,10 @@ class ReaderActivity : BaseActivity() {
         )
         // Explicitly save to database when app pauses
         viewModel.saveCurrentReadingPosition()
+        // Снапшот для catch-up-гейта в onResume: там флаг читается ДО своего сброса,
+        // поэтому фиксируем его значение на момент ухода из экрана.
+        userHasScrolledAtPause = userHasScrolled
+        followWhileStoppedEnabled = true
         super.onPause()
     }
 
@@ -1105,20 +1156,30 @@ class ReaderActivity : BaseActivity() {
 
         NarratorMediaControlsService.maybeAutoResume()
 
-        // Сброс перед catch-up-гейтом: каждый возврат в приложение заново разрешает
-        // дотягивание до позиции TTS (семантика поля — «сбрасывается при каждом
-        // открытии Activity»). Раньше флаг не сбрасывался нигде, и программный
-        // smooth-scroll (TTS follow/catch-up) по AOSP репортит SCROLL_STATE_FLING,
-        // «отравляя» флаг навсегда — после первого авто-дотягивания catch-up в onResume
-        // был заблокирован до конца сессии. Сам же catch-up тут же вернёт флаг в true,
-        // поэтому гейты догрузки следующей главы (:1017) и preload не успевают измениться.
+        // Сброс текущего флага — семантика поля: каждый возврат в приложение снова
+        // разрешает реальный жест (TOUCH_SCROLL) как триггер догрузки глав
+        // (гейт в updateReadingState и updateInfoViewTo → ReaderSession preload/авто-стоп).
+        // На catch-up-гейт ниже сброс не влияет: тот читает снапшот
+        // userHasScrolledAtPause, зафиксированный в onPause.
         userHasScrolled = false
 
-        // isActive (а не isSpeaking): при паузе TTS с погашенным экраном (пауза через
-        // наушники) follow-скролл заморожен и список остаётся на видимой позиции момента
-        // оффскрина — при возврате дотягиваем до позиции остановленной озвучки.
-        // Гейт !userHasScrolled: если юзер после паузы сам листал, его позицию не трогаем.
-        if (viewModel.readerSpeaker.isActive.value && !userHasScrolled) {
+        // catch-up дотягивает view только к ЖИВОЙ озвучке: говорит (экран погашен,
+        // follow-скролл заморожен) или паузнута системой (наушники). Авто-остановленный
+        // TTS (isActive, но не isSpeaking и не pausedBySystem) catch-up не дёргает:
+        // его позиция сброшена на заголовок главы, и прыжок к ней на каждом
+        // lock/unlock — это баг «перекидывает на начало главы» (OEM-гонка
+        // pause→resume→pause→resume стирала снапшот ниже).
+        // Гейт читает снапшот флага момента onPause: если юзер после паузы сам листал
+        // (TOUCH_SCROLL), его позицию не трогаем — и это работает, потому что сброс
+        // выше обнуляет только текущий флаг, а не снапшот.
+        // Прочитали и очистили независимо от гейта catch-up ниже: если stopped-ветка
+        // успела записать pending-позицию, catch-up обязан пойти re-issue'ем, а не
+        // smoothScroll'ом (иначе stale-расстояние до первого layout → двойной дёрг).
+        val snapPendingFromStopped = followAppliedWhileStopped
+        followAppliedWhileStopped = false
+
+        val ttsAlive = viewModel.readerSpeaker.isSpeaking.value || ReaderTextToSpeech.pausedBySystem
+        if (viewModel.readerSpeaker.isActive.value && ttsAlive && !userHasScrolledAtPause) {
             viewModel.readerSpeaker.forceUpdateCurrentItemState()
             val position = viewModel.readerSpeaker.getActualPlayingPosition()
                 ?: viewModel.readerSpeaker.currentTextPlaying.value.itemPos
@@ -1130,7 +1191,13 @@ class ReaderActivity : BaseActivity() {
             if (itemIndex == -1) return
             val itemPosition = viewAdapter.listView.fromIndexToPosition(itemIndex)
             val newOffsetPx = 200.dpToPx(this)
-            viewBind.listView.smoothScrollToPositionFromTop(itemPosition, newOffsetPx, 500)
+            if (snapPendingFromStopped) {
+                // Идемпотентный re-issue уже записанного pending-позиции: smoothScroll зафиксировал бы
+                // stale-расстояние до первого layout, а traversal затем применит snap → двойной дёрг.
+                viewBind.listView.setSelectionFromTop(itemPosition, newOffsetPx)
+            } else {
+                viewBind.listView.smoothScrollToPositionFromTop(itemPosition, newOffsetPx, 500)
+            }
         }
 
         if (viewModel.chaptersLoader.hasLoadingError) {
