@@ -77,6 +77,17 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
         val logFile = File(filesDir, "logs/app.log")
         Timber.plant(FileTree(logFile))
 
+        // Заголовок сессии: к какому билду относится лог.
+        // Пишем напрямую в файл — Timber.i вырезается R8 из релизного dex.
+        runCatching {
+            val buildType = if (BuildConfig.DEBUG) "debug" else "release"
+            logFile.appendText(
+                "=== ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())} " +
+                    "app start ${BuildConfig.VERSION_NAME}-$buildType (${BuildConfig.GIT_COMMIT_HASH}) " +
+                    "API${Build.VERSION.SDK_INT} ${Build.MANUFACTURER} ${Build.MODEL} ===\n"
+            )
+        }
+
         // Ловим незахваченные исключения: пишем краш в app.log перед смертью процесса
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->

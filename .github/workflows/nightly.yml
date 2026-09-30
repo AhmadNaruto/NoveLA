@@ -67,6 +67,10 @@ jobs:
           mkdir -p release-artifacts
           find app/build/outputs/apk/release -maxdepth 1 -name '*.apk' \
             -exec cp {} release-artifacts/ \;
+          # R8 mapping — нужен для деобфускации стекрейсов крашей
+          if [ -f app/build/outputs/mapping/release/mapping.txt ]; then
+            cp app/build/outputs/mapping/release/mapping.txt release-artifacts/mapping.txt
+          fi
           ls -lah release-artifacts
 
       - name: Build changelog and move nightly tag
@@ -120,4 +124,5 @@ jobs:
           prerelease: true
           draft: false
           body_path: release-body.md
-          files: release-artifacts/*.apk
+          files: release-artifacts/*
+          # mapping.txt (R8) лежит рядом с APK — для деобфускации крашей

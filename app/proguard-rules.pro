@@ -5,8 +5,8 @@
 -keep public class * extends androidx.lifecycle.ViewModel { *; }
 
 # Минимальный набор: нужен для @Serializable и деобфускации крашей.
-# SourceFile / EnclosingMethod убраны — на работу не влияют, только вес.
--keepattributes RuntimeVisibleAnnotations, AnnotationDefault, Signature, LineNumberTable
+# SourceFile даёт имена файлов в стекрейсах — без них краш-лог нечитаем.
+-keepattributes RuntimeVisibleAnnotations, AnnotationDefault, Signature, LineNumberTable, SourceFile
 
 # =============================================================================
 # ИСПРАВЛЕНИЕ ОШИБОК СБОРКИ (R8 / MISSING CLASSES)

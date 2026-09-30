@@ -10,7 +10,8 @@ import java.util.Locale
 /**
  * Timber.Tree that appends logs to a file.
  * Only logs at or above [minPriority] are written.
- * File is truncated when it exceeds [maxFileSizeBytes].
+ * On overflow the current file is kept as `<name>.1` (one previous copy),
+ * so crash reports from the session before rotation are not lost.
  */
 class FileTree(
     private val file: File,
@@ -20,9 +21,7 @@ class FileTree(
 
     init {
         file.parentFile?.mkdirs()
-        if (file.exists() && file.length() > maxFileSizeBytes) {
-            file.delete()
-        }
+        rotateIfNeeded()
     }
 
     override fun isLoggable(tag: String?, priority: Int): Boolean = priority >= minPriority
@@ -38,9 +37,7 @@ class FileTree(
         synchronized(lock) {
             try {
                 // Rotate if needed (check inside lock for thread safety)
-                if (file.exists() && file.length() > maxFileSizeBytes) {
-                    file.delete()
-                }
+                rotateIfNeeded()
                 val timestamp = DATE_FORMAT.format(Date())
                 // Log.getStackTraceString возвращает "" для null — стек дописываем только если он есть
                 val stack = Log.getStackTraceString(t)
@@ -51,6 +48,14 @@ class FileTree(
                 // Swallow — logging should never crash the app
             }
         }
+    }
+
+    // Вызывается только под lock (или в init до публикации объекта)
+    private fun rotateIfNeeded() {
+        if (!file.exists() || file.length() <= maxFileSizeBytes) return
+        val backup = File(file.parentFile, file.name + ".1")
+        backup.delete()
+        file.renameTo(backup)
     }
 
     companion object {
