@@ -736,6 +736,7 @@
     <string name="retry">Retry</string>
     <string name="top">↑ Top</string>
     <string name="copy">Copy</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="paste">Paste</string>
     <string name="clear">Clear</string>
     <string name="no_extensions_available">No extensions available</string>

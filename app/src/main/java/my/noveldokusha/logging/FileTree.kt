@@ -42,7 +42,10 @@ class FileTree(
                     file.delete()
                 }
                 val timestamp = DATE_FORMAT.format(Date())
-                val line = "$timestamp $level/${tag ?: "unknown"}: $message\n"
+                // Log.getStackTraceString возвращает "" для null — стек дописываем только если он есть
+                val stack = Log.getStackTraceString(t)
+                val stackSuffix = if (stack.isEmpty()) "" else "\n$stack"
+                val line = "$timestamp $level/${tag ?: "unknown"}: $message$stackSuffix\n"
                 file.appendText(line)
             } catch (_: Exception) {
                 // Swallow — logging should never crash the app

@@ -90,13 +90,32 @@ class DnsOverHttps : Dns {
         fun isValid(): Boolean = System.currentTimeMillis() - timestamp < CACHE_TTL_MS
     }
 
+    // Negative cache: домен недавно не резолвился (мёртв или заблокирован) —
+    // полный цикл system + 6 DoH (~4.5с) откладывается на NEGATIVE_TTL_MS.
+    // Короткий TTL нужен потому, что домен может быть жив после поднятия VPN;
+    // негативные попадания НЕ продлевают окно (иначе при ритмичных запросах
+    // запись залипает навсегда) — честная повторная проба ровно через TTL.
+    // Fallback в NetworkClient при этом всё равно идёт в Dns.SYSTEM, так что
+    // системный резолв через уже поднятый VPN работает и внутри TTL.
+    private val failedAt = ConcurrentHashMap<String, Long>()
+
     companion object {
         private const val TAG = "DnsOverHttps"
         private const val MEDIA_TYPE = "application/dns-json"
         private const val CACHE_TTL_MS = 300_000L
+        private const val NEGATIVE_TTL_MS = 60_000L
+        private const val NEGATIVE_MAX_SIZE = 512
     }
 
     override fun lookup(hostname: String): List<InetAddress> {
+        // 0. Negative cache: недавний полный фейл — быстро отклоняем без сети
+        failedAt[hostname]?.let { ts ->
+            if (System.currentTimeMillis() - ts < NEGATIVE_TTL_MS) {
+                Timber.tag(TAG).d("NEGATIVE: %s -> fast fail", hostname)
+                throw UnknownHostException("Unable to resolve host \"$hostname\": failed recently (negative cache)")
+            }
+        }
+
         // 1. Проверяем кэш
         cache[hostname]?.let { entry ->
             if (entry.isValid() && entry.addresses.isNotEmpty()) {
@@ -111,6 +130,7 @@ class DnsOverHttps : Dns {
             if (systemResult.isNotEmpty()) {
                 Timber.tag(TAG).d("SYSTEM: %s -> %s", hostname, systemResult.firstOrNull()?.hostAddress)
                 cache[hostname] = CacheEntry(systemResult, System.currentTimeMillis())
+                failedAt.remove(hostname)
                 return systemResult
             }
         } catch (_: UnknownHostException) {
@@ -120,10 +140,18 @@ class DnsOverHttps : Dns {
         // 3. Перебираем DoH-провайдеров через домен (сертификат валиден!)
         for (provider in providers) {
             val result = tryResolveViaProvider(hostname, provider)
-            if (result != null) return result
+            if (result != null) {
+                failedAt.remove(hostname)
+                return result
+            }
         }
 
-        // 4. Все методы исчерпаны
+        // 4. Все методы исчерпаны — запоминаем фейл для быстрых повторов
+        failedAt[hostname] = System.currentTimeMillis()
+        if (failedAt.size >= NEGATIVE_MAX_SIZE) {
+            val now = System.currentTimeMillis()
+            failedAt.entries.removeIf { now - it.value >= NEGATIVE_TTL_MS }
+        }
         Timber.tag(TAG).w("ALL DNS FAILED: %s", hostname)
         throw UnknownHostException("Unable to resolve host \"$hostname\": all DNS methods (system + 6 DoH providers) failed")
     }

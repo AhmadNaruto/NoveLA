@@ -76,6 +76,17 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
         // File tree for log export — all build types
         val logFile = File(filesDir, "logs/app.log")
         Timber.plant(FileTree(logFile))
+
+        // Ловим незахваченные исключения: пишем краш в app.log перед смертью процесса
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                Timber.e(throwable, "FATAL uncaught on ${thread.name}")
+            } catch (_: Exception) {
+                // логирование не должно помешать дефолтному обработчику
+            }
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
     }
 
     override fun newImageLoader(context: Context): ImageLoader {
