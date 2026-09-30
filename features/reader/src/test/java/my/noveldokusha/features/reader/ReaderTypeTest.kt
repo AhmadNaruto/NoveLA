@@ -14,7 +14,8 @@ import org.mockito.kotlin.whenever
 
 /**
  * Маршрутизация гейта ридера: "manga" → MANGA-путь (MangaReaderActivity),
- * всё остальное ("" / "novel" / null / отсутствие книги / ошибка БД) → NOVEL-путь.
+ * "video" → VIDEO-путь (VideoPlayerActivity), всё остальное ("" / "novel" /
+ * null / отсутствие книги / ошибка БД) → NOVEL-путь.
  *
  * Книга, открытая напрямую из каталога (не в библиотеке), маршрутизируется
  * по contentType источника (плагина), чей baseUrl совпадает с host'ом bookUrl.
@@ -45,6 +46,11 @@ class ReaderTypeTest {
         assertEquals(ReaderType.NOVEL, resolveReaderType("novel"))
     }
 
+    @Test
+    fun videoContentTypeRoutesToVideo() {
+        assertEquals(ReaderType.VIDEO, resolveReaderType("video"))
+    }
+
     // ---- resolveGateType: решение гейта по БД (mock LibraryBooksRepository.get) ----
 
     private fun mangaSource(baseUrl: String = "https://example.com"): SourceInterface.Catalog =
@@ -67,6 +73,15 @@ class ReaderTypeTest {
             Book(title = "Manga", url = bookUrl, contentType = "manga")
         )
         assertEquals(ReaderType.MANGA, resolveGateType(repo, scraperWith(), bookUrl))
+    }
+
+    @Test
+    fun storedVideoContentTypeRoutesToVideo() = runBlocking {
+        val repo = mock<LibraryBooksRepository>()
+        whenever(repo.get(bookUrl)).thenReturn(
+            Book(title = "Anime", url = bookUrl, contentType = "video")
+        )
+        assertEquals(ReaderType.VIDEO, resolveGateType(repo, scraperWith(), bookUrl))
     }
 
     @Test

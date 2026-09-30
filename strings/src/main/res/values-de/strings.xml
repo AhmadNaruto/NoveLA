@@ -79,6 +79,7 @@
     <string name="filter">Filter</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Roman</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">Alle</string>
     <string name="read">Gelesen</string>
     <string name="sort">Sortieren</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">Offline-Manga wird gelöscht…</string>
     <string name="manga_cache_cleaned">Offline-Manga gelöscht</string>
     <string name="manga_cache_clean_failed">Offline-Manga konnte nicht gelöscht werden</string>
+    <string name="clean_offline_video">Offline-Videos löschen</string>
+    <string name="clean_offline_video_confirmation">Dadurch werden heruntergeladene Videos entfernt. Für die Offline-Wiedergabe müssen Sie sie erneut herunterladen.</string>
+    <string name="cleaning_offline_video">Offline-Videos werden gelöscht…</string>
+    <string name="offline_video_clean_failed">Offline-Videos konnten nicht gelöscht werden</string>
     <string name="all_sources">Alle Quellen</string>
     <string name="reset_filters">Zurücksetzen</string>
 
@@ -844,4 +849,25 @@
     <string name="github_repository">GitHub-Repository</string>
     <string name="report_issue">Fehler melden</string>
     <string name="report_issue_description">Einen Fehlerbericht auf GitHub erstellen</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Quellen werden geladen…</string>
+    <string name="video_open_in_other">In anderer App öffnen</string>
+    <string name="video_no_app_to_play">Keine App vorhanden, um dieses Video abzuspielen</string>
+    <string name="video_quality">Qualität</string>
+    <string name="video_sources_not_found">Quellen nicht gefunden</string>
+    <string name="video_source_not_found">Quelle nicht gefunden</string>
+    <string name="video_source_no_video">Quelle unterstützt kein Video</string>
+    <string name="video_translate_unavailable">Übersetzung ist für Videos nicht verfügbar</string>
+    <string name="video_resolution">Auflösung</string>
+    <string name="video_voiceover">Voiceover</string>
+    <string name="video_variant_title">Variante auswählen</string>
+    <string name="video_variant_fallback">Variante %1$d</string>
+    <string name="video_settings_title">Einstellungen</string>
+    <string name="video_playback_speed">Geschwindigkeit</string>
+    <string name="video_audio_track">Audiospur</string>
+    <string name="video_subtitles">Untertitel</string>
+    <string name="video_subtitles_none">Keine Untertitel</string>
+    <string name="video_subtitles_off">Aus</string>
+    <string name="video_keep_screen_on">Bildschirm eingeschaltet lassen</string>
 </resources>

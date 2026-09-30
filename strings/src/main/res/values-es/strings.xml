@@ -79,6 +79,7 @@
     <string name="filter">Filtrar</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Novela</string>
+    <string name="content_type_video">Vídeo</string>
     <string name="filter_all">Todos</string>
     <string name="read">Leer</string>
     <string name="sort">Ordenar</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">Limpiando manga sin conexión…</string>
     <string name="manga_cache_cleaned">Manga sin conexión limpiado</string>
     <string name="manga_cache_clean_failed">Error al limpiar el manga sin conexión</string>
+    <string name="clean_offline_video">Eliminar vídeos sin conexión</string>
+    <string name="clean_offline_video_confirmation">Esto eliminará los vídeos descargados. Tendrás que descargarlos de nuevo para verlos sin conexión.</string>
+    <string name="cleaning_offline_video">Eliminando vídeos sin conexión…</string>
+    <string name="offline_video_clean_failed">Error al eliminar los vídeos sin conexión</string>
     <string name="all_sources">Todas las fuentes</string>
     <string name="reset_filters">Restablecer</string>
 
@@ -844,4 +849,25 @@
     <string name="github_repository">Repositorio de GitHub</string>
     <string name="report_issue">Reportar un problema</string>
     <string name="report_issue_description">Crear un reporte de error en GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Obteniendo fuentes…</string>
+    <string name="video_open_in_other">Abrir en otra aplicación</string>
+    <string name="video_no_app_to_play">No hay ninguna aplicación disponible para reproducir el vídeo</string>
+    <string name="video_quality">Calidad</string>
+    <string name="video_sources_not_found">Fuentes no encontradas</string>
+    <string name="video_source_not_found">Fuente no encontrada</string>
+    <string name="video_source_no_video">La fuente no admite vídeo</string>
+    <string name="video_translate_unavailable">La traducción no está disponible para el vídeo</string>
+    <string name="video_resolution">Resolución</string>
+    <string name="video_voiceover">Voz en off</string>
+    <string name="video_variant_title">Seleccionar variante</string>
+    <string name="video_variant_fallback">Variante %1$d</string>
+    <string name="video_settings_title">Ajustes</string>
+    <string name="video_playback_speed">Velocidad</string>
+    <string name="video_audio_track">Pista de audio</string>
+    <string name="video_subtitles">Subtítulos</string>
+    <string name="video_subtitles_none">Sin subtítulos</string>
+    <string name="video_subtitles_off">Desactivados</string>
+    <string name="video_keep_screen_on">Mantener la pantalla encendida</string>
 </resources>

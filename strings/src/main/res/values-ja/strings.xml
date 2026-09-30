@@ -79,6 +79,7 @@
     <string name="filter">フィルター</string>
     <string name="content_type_manga">マンガ</string>
     <string name="content_type_novel">小説</string>
+    <string name="content_type_video">ビデオ</string>
     <string name="filter_all">すべて</string>
     <string name="read">読む</string>
     <string name="sort">並べ替え</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">オフラインマンガをクリア中…</string>
     <string name="manga_cache_cleaned">オフラインマンガをクリアしました</string>
     <string name="manga_cache_clean_failed">オフラインマンガのクリアに失敗しました</string>
+    <string name="clean_offline_video">オフラインビデオを削除</string>
+    <string name="clean_offline_video_confirmation">これによりダウンロード済みのビデオが削除されます。オフラインで視聴するには再度ダウンロードする必要があります。</string>
+    <string name="cleaning_offline_video">オフラインビデオを削除中…</string>
+    <string name="offline_video_clean_failed">オフラインビデオの削除に失敗しました</string>
     <string name="all_sources">すべてのソース</string>
     <string name="reset_filters">リセット</string>
 
@@ -846,4 +851,25 @@
     <string name="github_repository">GitHub リポジトリ</string>
     <string name="report_issue">問題を報告</string>
     <string name="report_issue_description">GitHub でバグレポートを作成</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">ソースを取得中…</string>
+    <string name="video_open_in_other">他のアプリで開く</string>
+    <string name="video_no_app_to_play">このビデオを再生できるアプリがありません</string>
+    <string name="video_quality">画質</string>
+    <string name="video_sources_not_found">ソース一覧が見つかりません</string>
+    <string name="video_source_not_found">ソースが見つかりません</string>
+    <string name="video_source_no_video">ソースはビデオに対応していません</string>
+    <string name="video_translate_unavailable">ビデオでは翻訳を使用できません</string>
+    <string name="video_resolution">解像度</string>
+    <string name="video_voiceover">吹き替え</string>
+    <string name="video_variant_title">バージョンを選択</string>
+    <string name="video_variant_fallback">バージョン %1$d</string>
+    <string name="video_settings_title">設定</string>
+    <string name="video_playback_speed">再生速度</string>
+    <string name="video_audio_track">音声トラック</string>
+    <string name="video_subtitles">字幕</string>
+    <string name="video_subtitles_none">字幕なし</string>
+    <string name="video_subtitles_off">オフ</string>
+    <string name="video_keep_screen_on">画面をオンのままにする</string>
 </resources>

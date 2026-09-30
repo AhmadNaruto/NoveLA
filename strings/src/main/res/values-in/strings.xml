@@ -79,6 +79,7 @@
     <string name="filter">Filter</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Novel</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">Semua</string>
     <string name="read">Baca</string>
     <string name="sort">Urutkan</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">Membersihkan manga offline…</string>
     <string name="manga_cache_cleaned">Manga offline dibersihkan</string>
     <string name="manga_cache_clean_failed">Gagal membersihkan manga offline</string>
+    <string name="clean_offline_video">Hapus video offline</string>
+    <string name="clean_offline_video_confirmation">Ini akan menghapus video yang diunduh. Untuk menonton offline, video harus diunduh ulang.</string>
+    <string name="cleaning_offline_video">Menghapus video offline…</string>
+    <string name="offline_video_clean_failed">Gagal menghapus video offline</string>
     <string name="all_sources">Semua sumber</string>
     <string name="reset_filters">Atur ulang</string>
 
@@ -834,4 +839,25 @@
     <string name="github_repository">Repositori GitHub</string>
     <string name="report_issue">Laporkan masalah</string>
     <string name="report_issue_description">Buat laporan bug di GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Mengambil sumber…</string>
+    <string name="video_open_in_other">Buka di aplikasi lain</string>
+    <string name="video_no_app_to_play">Tidak ada aplikasi untuk memutar video ini</string>
+    <string name="video_quality">Kualitas</string>
+    <string name="video_sources_not_found">Sumber tidak ditemukan</string>
+    <string name="video_source_not_found">Sumber tidak ditemukan</string>
+    <string name="video_source_no_video">Sumber tidak mendukung video</string>
+    <string name="video_translate_unavailable">Terjemahan tidak tersedia untuk video</string>
+    <string name="video_resolution">Resolusi</string>
+    <string name="video_voiceover">Sulih suara</string>
+    <string name="video_variant_title">Pilih varian</string>
+    <string name="video_variant_fallback">Varian %1$d</string>
+    <string name="video_settings_title">Pengaturan</string>
+    <string name="video_playback_speed">Kecepatan</string>
+    <string name="video_audio_track">Trek audio</string>
+    <string name="video_subtitles">Subtitle</string>
+    <string name="video_subtitles_none">Tanpa subtitle</string>
+    <string name="video_subtitles_off">Mati</string>
+    <string name="video_keep_screen_on">Biarkan layar tetap menyala</string>
 </resources>

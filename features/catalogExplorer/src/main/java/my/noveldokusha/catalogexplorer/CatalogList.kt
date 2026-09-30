@@ -139,14 +139,17 @@ internal fun CatalogList(
                         val contentType = it.catalog.contentType
                         val labelRes = when (contentType) {
                             "manga" -> StringsR.string.content_type_manga
+                            "video" -> StringsR.string.content_type_video
                             else -> StringsR.string.content_type_novel
                         }
                         val bgColor = when (contentType) {
                             "manga" -> colorAccent().copy(alpha = 0.12f)
+                            "video" -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)
                             else -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
                         }
                         val fgColor = when (contentType) {
                             "manga" -> colorAccent()
+                            "video" -> MaterialTheme.colorScheme.secondary
                             else -> MaterialTheme.colorScheme.tertiary
                         }
                         Text(
@@ -219,11 +222,11 @@ internal fun CatalogList(
                             }
                         }
                         val extensionId = translationSettingsExtensionIds[it.catalog.id]
-                        if (extensionId != null && it.catalog.contentType != "manga") {
+                        if (extensionId != null && it.catalog.contentType !in setOf("manga", "video")) {
                             // Открываем настройки под catalog.id (ключ чтения каскада) — для
                             // Lua-плагинов он равен metadata.id ("lua_<ext.id>" или кастомному id).
-                            // Для манга-источников переводить нечего (контент — картинки), поэтому
-                            // иконка настройки переводчика скрывается.
+                            // Для манга-источников переводить нечего (контент — картинки), для
+                            // аниме (video) — тоже, поэтому иконка переводчика скрывается.
                             IconButton(onClick = { onTranslationSettingsClick(it.catalog.id) }) {
                                 Icon(
                                     Icons.Filled.Translate,

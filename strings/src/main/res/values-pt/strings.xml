@@ -79,6 +79,7 @@
     <string name="filter">Filtro</string>
     <string name="content_type_manga">Mangá</string>
     <string name="content_type_novel">Romance</string>
+    <string name="content_type_video">Vídeo</string>
     <string name="filter_all">Tudo</string>
     <string name="read">Ler</string>
     <string name="sort">Ordenar</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">A limpar mangá offline…</string>
     <string name="manga_cache_cleaned">Mangá offline limpo</string>
     <string name="manga_cache_clean_failed">Falha ao limpar mangá offline</string>
+    <string name="clean_offline_video">Excluir vídeos offline</string>
+    <string name="clean_offline_video_confirmation">Isso removerá os vídeos transferidos. Para assistir offline, será necessário transferi-los novamente.</string>
+    <string name="cleaning_offline_video">A excluir vídeos offline…</string>
+    <string name="offline_video_clean_failed">Falha ao excluir vídeos offline</string>
     <string name="all_sources">Todas as fontes</string>
     <string name="reset_filters">Repor</string>
 
@@ -844,4 +849,25 @@
     <string name="github_repository">Repositório no GitHub</string>
     <string name="report_issue">Reportar um problema</string>
     <string name="report_issue_description">Criar um relatório de bug no GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Obtendo fontes…</string>
+    <string name="video_open_in_other">Abrir em outro aplicativo</string>
+    <string name="video_no_app_to_play">Nenhum aplicativo disponível para reproduzir este vídeo</string>
+    <string name="video_quality">Qualidade</string>
+    <string name="video_sources_not_found">Fontes não encontradas</string>
+    <string name="video_source_not_found">Fonte não encontrada</string>
+    <string name="video_source_no_video">A fonte não suporta vídeo</string>
+    <string name="video_translate_unavailable">A tradução não está disponível para o vídeo</string>
+    <string name="video_resolution">Resolução</string>
+    <string name="video_voiceover">Narração</string>
+    <string name="video_variant_title">Selecionar variante</string>
+    <string name="video_variant_fallback">Variante %1$d</string>
+    <string name="video_settings_title">Configurações</string>
+    <string name="video_playback_speed">Velocidade</string>
+    <string name="video_audio_track">Faixa de áudio</string>
+    <string name="video_subtitles">Legendas</string>
+    <string name="video_subtitles_none">Sem legendas</string>
+    <string name="video_subtitles_off">Desativadas</string>
+    <string name="video_keep_screen_on">Manter a tela ligada</string>
 </resources>

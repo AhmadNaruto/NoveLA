@@ -73,6 +73,7 @@ import my.noveldokusha.features.reader.domain.ReaderState
 import my.noveldokusha.features.reader.domain.indexOfReaderItem
 import my.noveldokusha.features.reader.features.ReaderTextToSpeech
 import my.noveldokusha.features.reader.manga.MangaReaderActivity
+import my.noveldokusha.features.reader.video.VideoPlayerActivity
 import my.noveldokusha.features.reader.manga.viewer.webtoon.accumulatedPixels
 import my.noveldokusha.features.reader.manager.ReaderManager
 import my.noveldokusha.features.reader.services.NarratorMediaControlsService
@@ -293,6 +294,13 @@ class ReaderActivity : BaseActivity() {
             ReaderType.MANGA -> {
                 Timber.d("ReaderStart: redirecting to MangaReaderActivity bookUrl=$bookUrl chapterUrl=$chapterUrl")
                 MangaReaderActivity.start(this, bookUrl, chapterUrl)
+                finish()
+                return
+            }
+
+            ReaderType.VIDEO -> {
+                Timber.d("ReaderStart: redirecting to VideoPlayerActivity bookUrl=$bookUrl chapterUrl=$chapterUrl")
+                VideoPlayerActivity.start(this, bookUrl, chapterUrl)
                 finish()
                 return
             }

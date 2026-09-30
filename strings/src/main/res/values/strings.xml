@@ -83,6 +83,7 @@
     <string name="filter">Filter</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Novel</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">All</string>
     <string name="read">Read</string>
     <string name="type">Type</string>
@@ -626,6 +627,10 @@
     <string name="cleaning_manga_cache">Clearing offline manga…</string>
     <string name="manga_cache_cleaned">Offline manga cleared</string>
     <string name="manga_cache_clean_failed">Failed to clear offline manga</string>
+    <string name="clean_offline_video">Delete offline videos</string>
+    <string name="clean_offline_video_confirmation">This will remove downloaded videos. You will need to download them again for offline viewing.</string>
+    <string name="cleaning_offline_video">Deleting offline videos…</string>
+    <string name="offline_video_clean_failed">Failed to delete offline videos</string>
     <string name="all_sources">All sources</string>
     <string name="reset_filters">Reset</string>
 
@@ -857,4 +862,24 @@
     <string name="report_issue">Report an issue</string>
     <string name="report_issue_description">Create a bug report on GitHub</string>
 
+    <!-- Video player -->
+    <string name="video_loading_sources">Getting sources…</string>
+    <string name="video_open_in_other">Open in another app</string>
+    <string name="video_no_app_to_play">No app available to play this video</string>
+    <string name="video_quality">Quality</string>
+    <string name="video_resolution">Resolution</string>
+    <string name="video_voiceover">Voiceover</string>
+    <string name="video_variant_title">Select variant</string>
+    <string name="video_variant_fallback">Variant %1$d</string>
+    <string name="video_sources_not_found">Sources not found</string>
+    <string name="video_source_not_found">Source not found</string>
+    <string name="video_source_no_video">Source does not support video</string>
+    <string name="video_translate_unavailable">Translation is not available for video</string>
+    <string name="video_settings_title">Settings</string>
+    <string name="video_playback_speed">Speed</string>
+    <string name="video_audio_track">Audio track</string>
+    <string name="video_subtitles">Subtitles</string>
+    <string name="video_subtitles_none">No subtitles</string>
+    <string name="video_subtitles_off">Off</string>
+    <string name="video_keep_screen_on">Keep screen on</string>
 </resources>

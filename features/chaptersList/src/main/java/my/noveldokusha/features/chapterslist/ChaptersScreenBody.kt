@@ -1,12 +1,19 @@
 package my.noveldokusha.features.chapterslist
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -41,11 +48,13 @@ internal fun ChaptersScreenBody(
     translatedTitle: String?,
     translatedDescription: String?,
     isTranslating: Boolean,
+    showTranslateButton: Boolean,
     onTranslateClick: () -> Unit,
     onClearTranslationClick: () -> Unit,
     onChapterClick: (chapter: ChapterWithContext) -> Unit,
     onChapterLongClick: (chapter: ChapterWithContext) -> Unit,
     onChapterDownload: (chapter: ChapterWithContext) -> Unit,
+    onStopDownload: (chapter: ChapterWithContext) -> Unit,
     onPullRefresh: () -> Unit,
     onCoverLongClick: () -> Unit,
     onGlobalSearchClick: (input: String) -> Unit,
@@ -83,10 +92,13 @@ internal fun ChaptersScreenBody(
         lazyListState.animateScrollToItem(index, scrollOffset)
     }
 
-    val lastReadChapterIndex = remember(state.book.value.lastReadChapter, state.chapters.size) {
+    // Список элементов LazyColumn: главы + заголовки групп по volume.
+    // Порядок глав не меняется, заголовки вставляются только на границе групп.
+    val chapterListItems by remember { derivedStateOf { buildChapterListItems(state.chapters) } }
+
+    val lastReadChapterIndex = remember(state.book.value.lastReadChapter, chapterListItems) {
         val url = state.book.value.lastReadChapter ?: return@remember null
-        val idx = state.chapters.indexOfFirst { it.chapter.url == url }
-        if (idx == -1) null else idx + 1
+        lazyIndexForChapterUrl(chapterListItems, url).takeIf { it != -1 }
     }
 
     val readChapters by remember { derivedStateOf { state.chapters.count { it.chapter.read } } }
@@ -108,9 +120,12 @@ internal fun ChaptersScreenBody(
     if (showGoToChapterDialog) {
         GoToChapterDialog(
             chapters = state.chapters,
-            onChapterSelected = { index, url ->
+            // Диалог ищет главу по url; индекс LazyColumn считаем по списку
+            // с заголовками групп (позиция диалога не учитывает их).
+            onChapterSelected = { _, url ->
                 coroutineScope.launch {
-                    smoothScrollToIndex(index)
+                    val index = lazyIndexForChapterUrl(chapterListItems, url)
+                    if (index != -1) smoothScrollToIndex(index)
                     highlightedChapterUrl = url
                     delay(1500)
                     highlightedChapterUrl = null
@@ -153,6 +168,7 @@ internal fun ChaptersScreenBody(
                     translatedTitle = translatedTitle,
                     translatedDescription = translatedDescription,
                     isTranslating = isTranslating,
+                    showTranslateButton = showTranslateButton,
                     onTranslateClick = onTranslateClick,
                     onClearTranslationClick = onClearTranslationClick,
                     onCoverLongClick = onCoverLongClick,
@@ -165,22 +181,32 @@ internal fun ChaptersScreenBody(
                 )
             }
 
-            items(
-                items = state.chapters,
-                key = { "_" + it.chapter.url },
-                contentType = { 1 }
-            ) {
-                ChaptersScreenChapterItem(
-                    chapterWithContext = it,
-                    translatedTitle = state.translatedChapterTitles.value[it.chapter.url],
-                    chapterSize = state.chapterSizes.value[it.chapter.url],
-                    selected = state.selectedChaptersUrl.containsKey(it.chapter.url),
-                    isLocalSource = state.isLocalSource.value,
-                    highlighted = it.chapter.url == highlightedChapterUrl,
-                    onClick = { onChapterClick(it) },
-                    onLongClick = { onChapterLongClick(it) },
-                    onDownload = { onChapterDownload(it) }
-                )
+            chapterListItems.forEach { entry ->
+                when (entry) {
+                    // Заголовок сезона/тома: прилипает к верху при скролле группы.
+                    is ChapterListItem.VolumeHeader -> stickyHeader(key = entry.key) {
+                        ChapterVolumeHeader(volume = entry.volume)
+                    }
+
+                    is ChapterListItem.Chapter -> item(
+                        key = "_" + entry.data.chapter.url,
+                        contentType = { 1 }
+                    ) {
+                        ChaptersScreenChapterItem(
+                            chapterWithContext = entry.data,
+                            translatedTitle = state.translatedChapterTitles.value[entry.data.chapter.url],
+                            chapterSize = state.chapterSizes.value[entry.data.chapter.url],
+                            videoDownloadState = state.videoDownloadStates.value[entry.data.chapter.url],
+                            selected = state.selectedChaptersUrl.containsKey(entry.data.chapter.url),
+                            isLocalSource = state.isLocalSource.value,
+                            highlighted = entry.data.chapter.url == highlightedChapterUrl,
+                            onClick = { onChapterClick(entry.data) },
+                            onLongClick = { onChapterLongClick(entry.data) },
+                            onDownload = { onChapterDownload(entry.data) },
+                            onStopDownload = { onStopDownload(entry.data) }
+                        )
+                    }
+                }
             }
 
             if (state.error.value.isNotBlank()) item(
@@ -189,6 +215,69 @@ internal fun ChaptersScreenBody(
             ) {
                 ErrorView(error = state.error.value)
             }
+        }
+    }
+}
+
+/** Элемент списка глав: глава либо заголовок группы (сезон/том из volume). */
+internal sealed interface ChapterListItem {
+    /** Заголовок группы. Ключ содержит порядковый номер: volume может повторяться. */
+    data class VolumeHeader(val volume: String, val key: String) : ChapterListItem
+
+    data class Chapter(val data: ChapterWithContext) : ChapterListItem
+}
+
+/**
+ * Группировка глав по volume с сохранением порядка входного списка.
+ * Заголовок ставится только на границе группы: у глав с null/пустым volume
+ * заголовка нет, у подряд идущих глав с одинаковым volume — один общий.
+ */
+internal fun buildChapterListItems(chapters: List<ChapterWithContext>): List<ChapterListItem> {
+    val items = ArrayList<ChapterListItem>(chapters.size)
+    val headerOrdinals = HashMap<String, Int>()
+    var previousVolume: String? = null
+    for (chapter in chapters) {
+        val volume = chapter.chapter.volume?.takeIf { it.isNotBlank() }
+        if (volume != null && volume != previousVolume) {
+            val ordinal = (headerOrdinals[volume] ?: 0) + 1
+            headerOrdinals[volume] = ordinal
+            items.add(ChapterListItem.VolumeHeader(volume = volume, key = "vol_${volume}_$ordinal"))
+        }
+        previousVolume = volume
+        items.add(ChapterListItem.Chapter(chapter))
+    }
+    return items
+}
+
+/**
+ * Индекс элемента LazyColumn для главы с данным url
+ * (позиция 0 занимает хедер книги); -1, если глава не найдена.
+ */
+internal fun lazyIndexForChapterUrl(items: List<ChapterListItem>, url: String): Int {
+    val index = items.indexOfFirst { it is ChapterListItem.Chapter && it.data.chapter.url == url }
+    return if (index == -1) -1 else index + 1
+}
+
+/**
+ * Заголовок группы глав. Непрозрачный фон — при sticky главы не просвечивают.
+ * Визуально отделён от списка (капитель + разделитель), чтобы не читался
+ * как обычная неактивная глава. Отступ старта (24.dp) выровнен с названием главы.
+ */
+@Composable
+private fun ChapterVolumeHeader(volume: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = volume.uppercase(),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 24.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)
+            )
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

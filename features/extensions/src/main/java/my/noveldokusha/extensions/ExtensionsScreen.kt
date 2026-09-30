@@ -255,6 +255,7 @@ private fun UnifiedExtensionsScreen(
                             "" to stringResource(StringsR.string.all_categories),
                             "manga" to stringResource(StringsR.string.content_type_manga),
                             "novel" to stringResource(StringsR.string.content_type_novel),
+                            "video" to stringResource(StringsR.string.content_type_video),
                         )
                         contentTypeOptions.forEach { (value, label) ->
                             FilterChip(
@@ -459,6 +460,7 @@ private fun ContentTypeBadge(contentType: String) {
     // ponytail: empty contentType = novel (same convention as library covers)
     val (textRes, color) = when (contentType) {
         "manga" -> StringsR.string.content_type_manga to MaterialTheme.colorScheme.primary
+        "video" -> StringsR.string.content_type_video to MaterialTheme.colorScheme.secondary
         else -> StringsR.string.content_type_novel to MaterialTheme.colorScheme.tertiary
     }
     Text(

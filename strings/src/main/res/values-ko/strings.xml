@@ -79,6 +79,7 @@
     <string name="filter">필터</string>
     <string name="content_type_manga">만화</string>
     <string name="content_type_novel">소설</string>
+    <string name="content_type_video">비디오</string>
     <string name="filter_all">전체</string>
     <string name="read">읽음</string>
     <string name="sort">정렬</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">오프라인 만화 지우는 중…</string>
     <string name="manga_cache_cleaned">오프라인 만화 지워짐</string>
     <string name="manga_cache_clean_failed">오프라인 만화 지우기 실패</string>
+    <string name="clean_offline_video">오프라인 비디오 삭제</string>
+    <string name="clean_offline_video_confirmation">다운로드된 비디오가 제거됩니다. 오프라인으로 보려면 다시 다운로드해야 합니다.</string>
+    <string name="cleaning_offline_video">오프라인 비디오 삭제 중…</string>
+    <string name="offline_video_clean_failed">오프라인 비디오 삭제 실패</string>
     <string name="all_sources">모든 소스</string>
     <string name="reset_filters">초기화</string>
 
@@ -846,4 +851,25 @@
     <string name="github_repository">GitHub 저장소</string>
     <string name="report_issue">문제 보고</string>
     <string name="report_issue_description">GitHub에 버그 리포트 생성</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">소스 가져오는 중…</string>
+    <string name="video_open_in_other">다른 앱에서 열기</string>
+    <string name="video_no_app_to_play">이 비디오를 재생할 앱이 없습니다</string>
+    <string name="video_quality">화질</string>
+    <string name="video_sources_not_found">소스를 찾을 수 없습니다</string>
+    <string name="video_source_not_found">소스를 찾을 수 없습니다</string>
+    <string name="video_source_no_video">소스가 비디오를 지원하지 않습니다</string>
+    <string name="video_translate_unavailable">비디오에서는 번역을 사용할 수 없습니다</string>
+    <string name="video_resolution">해상도</string>
+    <string name="video_voiceover">더빙</string>
+    <string name="video_variant_title">버전 선택</string>
+    <string name="video_variant_fallback">버전 %1$d</string>
+    <string name="video_settings_title">설정</string>
+    <string name="video_playback_speed">재생 속도</string>
+    <string name="video_audio_track">오디오 트랙</string>
+    <string name="video_subtitles">자막</string>
+    <string name="video_subtitles_none">자막 없음</string>
+    <string name="video_subtitles_off">꺼짐</string>
+    <string name="video_keep_screen_on">화면 켜두기</string>
 </resources>

@@ -20,6 +20,7 @@ class AppFileResolver @Inject constructor(
         const val COVER_PATH_RELATIVE_TO_BOOK = "__cover_image"
         private const val MAX_FOLDER_NAME_LENGTH = 200
         private const val HASH_BYTE_COUNT = 16
+        private const val MAX_FS_FOLDER_NAME_LENGTH = 255
     }
 
     val folderBooks = File(context.filesDir, "books")
@@ -127,7 +128,13 @@ class AppFileResolver @Inject constructor(
                     coverFile
                 } else {
                     val legacyFolderName = legacyBookFolderName(bookUrl)
-                    val legacyCoverFile = if (legacyFolderName != folderName) {
+                    // Имя компонента > 255 байт на Android невалидно: canonicalFile
+                    // бросает IOException (File name too long) прямо в композиции.
+                    // Такая легаси-папка не могла быть создана — пропускаем проверку.
+                    val legacyCoverFile = if (
+                        legacyFolderName != folderName &&
+                        legacyFolderName.length <= MAX_FS_FOLDER_NAME_LENGTH
+                    ) {
                         getStorageBookCoverImageFile(legacyFolderName)
                     } else {
                         null

@@ -79,6 +79,7 @@
     <string name="filter">Bộ lọc</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Tiểu thuyết</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">Tất cả</string>
     <string name="read">Đã đọc</string>
     <string name="sort">Sắp xếp</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">Đang xóa manga offline…</string>
     <string name="manga_cache_cleaned">Đã xóa manga offline</string>
     <string name="manga_cache_clean_failed">Xóa manga offline thất bại</string>
+    <string name="clean_offline_video">Xóa video offline</string>
+    <string name="clean_offline_video_confirmation">Thao tác này sẽ xóa các video đã tải. Để xem offline, bạn cần tải lại chúng.</string>
+    <string name="cleaning_offline_video">Đang xóa video offline…</string>
+    <string name="offline_video_clean_failed">Xóa video offline thất bại</string>
     <string name="all_sources">Tất cả nguồn</string>
     <string name="reset_filters">Đặt lại</string>
 
@@ -834,4 +839,25 @@
     <string name="github_repository">Kho GitHub</string>
     <string name="report_issue">Báo lỗi</string>
     <string name="report_issue_description">Tạo báo cáo lỗi trên GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Đang lấy nguồn…</string>
+    <string name="video_open_in_other">Mở trong ứng dụng khác</string>
+    <string name="video_no_app_to_play">Không có ứng dụng nào để phát video này</string>
+    <string name="video_quality">Chất lượng</string>
+    <string name="video_sources_not_found">Không tìm thấy nguồn</string>
+    <string name="video_source_not_found">Không tìm thấy nguồn</string>
+    <string name="video_source_no_video">Nguồn không hỗ trợ video</string>
+    <string name="video_translate_unavailable">Tính năng dịch không khả dụng cho video</string>
+    <string name="video_resolution">Độ phân giải</string>
+    <string name="video_voiceover">Lồng tiếng</string>
+    <string name="video_variant_title">Chọn biến thể</string>
+    <string name="video_variant_fallback">Biến thể %1$d</string>
+    <string name="video_settings_title">Cài đặt</string>
+    <string name="video_playback_speed">Tốc độ</string>
+    <string name="video_audio_track">Âm thanh</string>
+    <string name="video_subtitles">Phụ đề</string>
+    <string name="video_subtitles_none">Không có phụ đề</string>
+    <string name="video_subtitles_off">Tắt</string>
+    <string name="video_keep_screen_on">Giữ màn hình sáng</string>
 </resources>

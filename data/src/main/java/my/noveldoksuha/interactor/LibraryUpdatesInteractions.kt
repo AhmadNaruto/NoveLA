@@ -290,7 +290,7 @@ class LibraryUpdatesInteractions @Inject constructor(
 
         // Добавляем главы первой страницы
         firstPage.chapters.forEachIndexed { idx, ch ->
-            allChapters.add(Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = idx, uploaded = ch.uploaded))
+            allChapters.add(Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = idx, uploaded = ch.uploaded, volume = ch.volume))
         }
 
         // Загружаем оставшиеся страницы 2..totalPages
@@ -306,7 +306,7 @@ class LibraryUpdatesInteractions @Inject constructor(
             val offset = allChapters.size
             pageData.chapters.forEachIndexed { idx, ch ->
                 allChapters.add(
-                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx, uploaded = ch.uploaded)
+                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx, uploaded = ch.uploaded, volume = ch.volume)
                 )
             }
         }
@@ -357,7 +357,7 @@ class LibraryUpdatesInteractions @Inject constructor(
         Timber.d("[parsePage incremental] \"${book.title}\" — new chapters from lastPage=$lastKnownPage: ${newFromLastPage.size}")
         newFromLastPage.forEachIndexed { idx, ch ->
             chaptersToAdd.add(
-                Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = positionOffset + idx, uploaded = ch.uploaded)
+                Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = positionOffset + idx, uploaded = ch.uploaded, volume = ch.volume)
             )
         }
         positionOffset += chaptersToAdd.size
@@ -377,7 +377,7 @@ class LibraryUpdatesInteractions @Inject constructor(
             val offset = positionOffset
             pageData.chapters.forEachIndexed { idx, ch ->
                 chaptersToAdd.add(
-                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx, uploaded = ch.uploaded)
+                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx, uploaded = ch.uploaded, volume = ch.volume)
                 )
             }
             positionOffset += pageData.chapters.size

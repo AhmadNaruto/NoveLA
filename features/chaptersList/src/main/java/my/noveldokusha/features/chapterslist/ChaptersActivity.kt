@@ -17,7 +17,23 @@ import my.noveldokusha.coreui.theme.Theme
 import my.noveldokusha.core.utils.Extra_String
 import my.noveldokusha.navigation.NavigationRoutes
 import my.noveldokusha.feature.local_database.BookMetadata
+import my.noveldokusha.feature.local_database.tables.Chapter
 import javax.inject.Inject
+
+/**
+ * Цель кнопки «Продолжить»: последняя глава, только пока она НЕ дочитана
+ * (read == false) — иначе её повторное открытие навсегда осталось бы у конца
+ * (saveVideoLastReadState пишет lastReadChapter при каждом сохранении);
+ * далее первый непросмотренный эпизод, иначе первая глава по позиции.
+ * Устаревший lastReadUrl (главы нет в списке, например после ре-синка)
+ * считается отсутствующим. Порядок — по position независимо от порядка списка.
+ */
+internal fun pickContinueChapter(lastReadUrl: String?, chapters: List<Chapter>): Chapter? {
+    val sorted = chapters.sortedBy { it.position }
+    val lastRead = sorted.firstOrNull { it.url == lastReadUrl }
+    if (lastRead != null && !lastRead.read) return lastRead
+    return sorted.firstOrNull { !it.read } ?: sorted.firstOrNull()
+}
 
 @AndroidEntryPoint
 class ChaptersActivity : BaseActivity() {
@@ -76,6 +92,7 @@ class ChaptersActivity : BaseActivity() {
                     onSelectionModeChapterClick = viewModel::onSelectionModeChapterClick,
                     onSelectionModeChapterLongClick = viewModel::onSelectionModeChapterLongClick,
                     onChapterDownload = viewModel::onChapterDownload,
+                    onStopDownload = viewModel::onStopVideoDownload,
                     onPullRefresh = viewModel::onPullRefresh,
                     onCoverLongClick = { searchBookInDatabase(input = viewModel.bookTitle) },
                     onChangeCover = onDoAskForImage { viewModel.saveImageAsCover(it) },
@@ -104,6 +121,7 @@ class ChaptersActivity : BaseActivity() {
                     translatedTitle = viewModel.translatedTitle.value,
                     translatedDescription = viewModel.translatedDescription.value,
                     isTranslatingInfo = viewModel.isTranslatingInfo.value,
+                    showTranslateButton = viewModel.showTranslateButton.value,
                     onTranslateBookInfo = viewModel::translateBookInfo,
                     onClearBookInfoTranslation = viewModel::clearBookInfoTranslation,
                     scraper = viewModel.scraper,
@@ -114,10 +132,17 @@ class ChaptersActivity : BaseActivity() {
 
     private fun onOpenLastActiveChapter() {
         lifecycleScope.launch {
-            // Bug1c: без lastRead не открываем главу 1 молча — остаёмся на списке глав.
-            val lastReadChapter = viewModel.getLastReadChapter() ?: return@launch
+            // Цель: последняя глава, пока не дочитана (resume позиции), иначе
+            // первый непросмотренный эпизод (для видео — основной сценарий),
+            // иначе первая глава; если цели нет — Bug1c: выходим молча.
+            val target = pickContinueChapter(
+                lastReadUrl = viewModel.getLastReadChapter(),
+                chapters = viewModel.state.chapters.map { it.chapter },
+            )?.url ?: return@launch
 
-            openBookAtChapter(chapterUrl = lastReadChapter)
+            // Дальше существующий путь: ReaderActivity → resolveGateType →
+            // для video-книг VideoPlayerActivity (позиция восстанавливается Task 9).
+            openBookAtChapter(chapterUrl = target)
         }
     }
 

@@ -79,6 +79,7 @@
     <string name="filter">Salain</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Nobela</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">Lahat</string>
     <string name="read">Basahin</string>
     <string name="sort">Ayusin</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">Nililinis ang offline na manga…</string>
     <string name="manga_cache_cleaned">Na-clear ang offline na manga</string>
     <string name="manga_cache_clean_failed">Nabigo ang pag-clear ng offline na manga</string>
+    <string name="clean_offline_video">I-delete ang mga offline na video</string>
+    <string name="clean_offline_video_confirmation">Aalisin nito ang mga na-download na video. Kailangan mong i-download muli ang mga ito para sa offline na panonood.</string>
+    <string name="cleaning_offline_video">Dine-delete ang mga offline na video…</string>
+    <string name="offline_video_clean_failed">Nabigo ang pag-delete ng mga offline na video</string>
     <string name="all_sources">Lahat ng pinagmulan</string>
     <string name="reset_filters">I-reset</string>
 
@@ -834,4 +839,25 @@
     <string name="github_repository">GitHub repository</string>
     <string name="report_issue">Mag-report ng isyu</string>
     <string name="report_issue_description">Gumawa ng bug report sa GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Kinukuha ang mga source…</string>
+    <string name="video_open_in_other">Buksan sa ibang app</string>
+    <string name="video_no_app_to_play">Walang available na app para i-play ang video na ito</string>
+    <string name="video_quality">Kalidad</string>
+    <string name="video_sources_not_found">Hindi nahanap ang mga source</string>
+    <string name="video_source_not_found">Hindi nahanap ang source</string>
+    <string name="video_source_no_video">Hindi sinusuportahan ng source ang video</string>
+    <string name="video_translate_unavailable">Hindi available ang pagsasalin para sa video</string>
+    <string name="video_resolution">Resolusyon</string>
+    <string name="video_voiceover">Voiceover</string>
+    <string name="video_variant_title">Pumili ng variant</string>
+    <string name="video_variant_fallback">Variant %1$d</string>
+    <string name="video_settings_title">Mga setting</string>
+    <string name="video_playback_speed">Bilis</string>
+    <string name="video_audio_track">Audio track</string>
+    <string name="video_subtitles">Mga subtitle</string>
+    <string name="video_subtitles_none">Walang subtitle</string>
+    <string name="video_subtitles_off">Naka-off</string>
+    <string name="video_keep_screen_on">Panatilihing naka-on ang screen</string>
 </resources>

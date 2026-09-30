@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +40,7 @@ import my.noveldokusha.coreui.theme.PreviewThemes
 import my.noveldokusha.chapterslist.R
 import my.noveldokusha.feature.local_database.ChapterWithContext
 import my.noveldokusha.feature.local_database.tables.Chapter
+import my.noveldokusha.features.reader.video.DownloadState
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)
 @Composable
@@ -46,13 +48,15 @@ internal fun ChaptersScreenChapterItem(
     chapterWithContext: ChapterWithContext,
     translatedTitle: String? = null,
     chapterSize: ChapterSize? = null,
+    videoDownloadState: DownloadState? = null,
     selected: Boolean,
     isLocalSource: Boolean,
     highlighted: Boolean = false,
     modifier: Modifier = Modifier,
     onLongClick: () -> Unit,
     onClick: () -> Unit,
-    onDownload: () -> Unit
+    onDownload: () -> Unit,
+    onStopDownload: () -> Unit = {}
 ) {
     val chapter = chapterWithContext.chapter
 
@@ -72,6 +76,7 @@ internal fun ChaptersScreenChapterItem(
     val stableOnClick = remember(onClick) { onClick }
     val stableOnLongClick = remember(onLongClick) { onLongClick }
     val stableOnDownload = remember(onDownload) { onDownload }
+    val stableOnStopDownload = remember(onStopDownload) { onStopDownload }
 
     val badge: @Composable (() -> Unit)? = remember(chapterWithContext.lastReadChapter, chapter.read) {
         when {
@@ -109,6 +114,16 @@ internal fun ChaptersScreenChapterItem(
         }
     }
 
+    // Бейдж media3-статуса видео-эпизода (Task 14): текст + цветовая семантика.
+    val colors = MaterialTheme.colorScheme
+    val videoStatus = when (videoDownloadState) {
+        DownloadState.QUEUED -> Triple(R.string.download_added_to_queue, colors.surfaceVariant, colors.onSurfaceVariant)
+        DownloadState.RUNNING -> Triple(R.string.loading, colors.surfaceVariant, colors.onSurfaceVariant)
+        DownloadState.COMPLETED -> Triple(R.string.download_completed, colors.secondaryContainer, colors.onSecondaryContainer)
+        DownloadState.FAILED -> Triple(R.string.download_error, colors.errorContainer, colors.onErrorContainer)
+        DownloadState.NONE, null -> null
+    }
+
     Surface(
         shape = RoundedCornerShape(8.dp),
         tonalElevation = 0.5.dp,
@@ -132,9 +147,22 @@ internal fun ChaptersScreenChapterItem(
                         color = if (chapter.read) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                     )
                 },
-                supportingContent = if (badge != null || sizeLabel != null) {
+                supportingContent = if (badge != null || sizeLabel != null || videoStatus != null) {
                     {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            videoStatus?.let { (textRes, containerColor, contentColor) ->
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = containerColor,
+                                ) {
+                                    Text(
+                                        text = stringResource(id = textRes),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = contentColor,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
                             if (badge != null) badge()
                             if (sizeLabel != null) {
                                 Text(
@@ -148,16 +176,27 @@ internal fun ChaptersScreenChapterItem(
                 } else null,
                 trailingContent = if (isLocalSource) null else {
                     {
-                        AnimatedTransition(
-                            targetState = chapterWithContext.downloaded,
-                            transitionSpec = { fadeIn() togetherWith fadeOut() }
-                        ) { downloaded ->
-                            IconButton(onClick = stableOnDownload) {
+                        // Идущая/очередная загрузка: вместо скачивания — кнопка отмены.
+                        if (videoDownloadState == DownloadState.QUEUED || videoDownloadState == DownloadState.RUNNING) {
+                            IconButton(onClick = stableOnStopDownload) {
                                 Icon(
-                                    if (downloaded) Icons.Filled.CloudDownload
-                                    else Icons.Outlined.CloudDownload,
-                                    null
+                                    Icons.Outlined.Close,
+                                    stringResource(id = R.string.cancel)
                                 )
+                            }
+                        } else {
+                            AnimatedTransition(
+                                targetState = chapterWithContext.downloaded ||
+                                    videoDownloadState == DownloadState.COMPLETED,
+                                transitionSpec = { fadeIn() togetherWith fadeOut() }
+                            ) { downloaded ->
+                                IconButton(onClick = stableOnDownload) {
+                                    Icon(
+                                        if (downloaded) Icons.Filled.CloudDownload
+                                        else Icons.Outlined.CloudDownload,
+                                        null
+                                    )
+                                }
                             }
                         }
                     }

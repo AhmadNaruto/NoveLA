@@ -11,6 +11,11 @@
 			android:name="my.noveldokusha.features.reader.manga.MangaReaderActivity"
 			android:exported="false"
 			android:configChanges="orientation|screenSize|keyboardHidden" />
+		<activity
+			android:name="my.noveldokusha.features.reader.video.VideoPlayerActivity"
+			android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+			android:exported="false"
+			android:launchMode="singleTask" />
 
 		<service
 			android:name="my.noveldokusha.features.reader.services.NarratorMediaControlsService"
@@ -31,6 +36,12 @@
 				android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
 				android:value="floating_tts_overlay" />
 		</service>
+
+		<!-- Офлайн-видео (Task 14): тип dataSync — по доке media3. -->
+		<service
+			android:name="my.noveldokusha.features.reader.video.VideoDownloadService"
+			android:exported="false"
+			android:foregroundServiceType="dataSync" />
 
 		<receiver
 			android:name="androidx.media.session.MediaButtonReceiver"

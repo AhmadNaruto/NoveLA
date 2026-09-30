@@ -16,6 +16,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
@@ -30,6 +32,9 @@ import my.noveldokusha.data.DownloadManager
 import my.noveldokusha.data.EnqueueResult
 import my.noveldokusha.data.DownloaderRepository
 import my.noveldokusha.data.LocalBookImporterRepository
+import my.noveldokusha.data.VideoRepository
+import my.noveldokusha.features.reader.video.DownloadState
+import my.noveldokusha.features.reader.video.VideoDownloadManager
 import my.noveldokusha.chapterslist.R
 import my.noveldokusha.strings.R as StringsR
 import my.noveldokusha.core.AppCoroutineScope
@@ -94,6 +99,8 @@ internal class ChaptersViewModel @Inject constructor(
     private val translationManager: TranslationManager,
     private val readingHistoryDao: ReadingHistoryDao,
     private val libraryUpdatesInteractions: LibraryUpdatesInteractions,
+    private val videoDownloadManager: VideoDownloadManager,
+    private val videoRepository: VideoRepository,
     stateHandle: SavedStateHandle,
 ) : ViewModel(), ChapterStateBundle {
 
@@ -148,6 +155,7 @@ internal class ChaptersViewModel @Inject constructor(
         translatedChapterTitles = mutableStateOf(emptyMap()),
         chapterSizes = mutableStateOf(emptyMap()),
         downloadTask = mutableStateOf(null),
+        videoDownloadStates = mutableStateOf(emptyMap()),
     )
 
     // ─── Экспорт книги ───────────────────────────────────────────────────────
@@ -277,6 +285,20 @@ internal class ChaptersViewModel @Inject constructor(
 
     // ─── Перевод названия и описания ──────────────────────────────────────────
 
+    // Кнопка перевода метаданных: скрыта для видео- и манга-книг —
+    // на их страницах переводчик описаний не используется. Тип берётся
+    // как в isVideoBook(): сохранённый contentType книги, иначе у источника.
+    val showTranslateButton = bookUrlFlow.flatMapLatest { url ->
+        appRepository.libraryBooks.getFlow(url)
+    }.map { book ->
+        val contentType = book?.contentType?.takeIf { it.isNotEmpty() }
+            ?: source?.contentType.orEmpty()
+        contentType != "video" && contentType != "manga"
+    }.toState(
+        viewModelScope,
+        source?.contentType.let { it != "video" && it != "manga" }
+    )
+
     val translatedTitle = mutableStateOf<String?>(null)
     val translatedDescription = mutableStateOf<String?>(null)
     val isTranslatingInfo = mutableStateOf(false)
@@ -392,10 +414,18 @@ internal class ChaptersViewModel @Inject constructor(
             if (!appRepository.bookChapters.hasChapters(bookUrl))
                 updateChaptersList()
 
-            if (appRepository.libraryBooks.getByUrl(bookUrl) != null)
-                return@launch
-
-            chaptersRepository.downloadBookMetadata(bookUrl = bookUrl, bookTitle = bookTitle)
+            // Строка книги могла быть создана гонкой в init (вставка глав
+            // обгоняет downloadBookMetadata) либо в сессии, когда источник
+            // был сломан — тогда cover/description остались пустыми навсегда,
+            // повторные открытия их не восстанавливали. Дотягиваем пустые
+            // поля; upsertCanonical не затирает непустые значения.
+            val existingBook = appRepository.libraryBooks.getByUrl(bookUrl)
+            if (existingBook == null ||
+                existingBook.coverImageUrl.isBlank() ||
+                existingBook.description.isBlank()
+            ) {
+                chaptersRepository.downloadBookMetadata(bookUrl = bookUrl, bookTitle = bookTitle)
+            }
         }
 
         // Берём жанры из БД. Если их нет — загружаем с сети.
@@ -470,6 +500,21 @@ internal class ChaptersViewModel @Inject constructor(
                     state.chapterSizes.value = it
                 }
             }
+        }
+
+        // Статусы media3-загрузок видео-эпизодов (Task 14) → бейджи глав.
+        // Статусы резолвятся заново при каждой перезагрузке списка глав;
+        // для не-видео книг подписок не создаётся.
+        viewModelScope.launch {
+            snapshotFlow { state.chapters.map { it.chapter.url } }
+                .flatMapLatest { urls ->
+                    if (urls.isEmpty() || !isVideoBook()) flowOf(emptyMap<String, DownloadState>())
+                    else combine(urls.map { videoDownloadManager.observe(it) }) { statuses ->
+                        urls.zip(statuses).toMap()
+                    }
+                }
+                .distinctUntilChanged()
+                .collect { state.videoDownloadStates.value = it }
         }
 
         // Подписываемся на статус загрузки текущей книги
@@ -819,7 +864,7 @@ internal class ChaptersViewModel @Inject constructor(
         newFromLastPage.forEachIndexed { idx, ch ->
             chaptersToAdd.add(
                 Chapter(
-                    title = ch.title, url = ch.url, bookUrl = bookUrl, position = positionOffset + idx
+                    title = ch.title, url = ch.url, bookUrl = bookUrl, position = positionOffset + idx, volume = ch.volume
                 )
             )
         }
@@ -834,7 +879,7 @@ internal class ChaptersViewModel @Inject constructor(
             pageData.chapters.forEachIndexed { idx, ch ->
                 chaptersToAdd.add(
                     Chapter(
-                        title = ch.title, url = ch.url, bookUrl = bookUrl, position = offset + idx
+                        title = ch.title, url = ch.url, bookUrl = bookUrl, position = offset + idx, volume = ch.volume
                     )
                 )
             }
@@ -941,6 +986,57 @@ internal class ChaptersViewModel @Inject constructor(
         }
     }
 
+    // Видео-книги: HTML-путь скачивания не применим — качаем через media3
+    // (Task 14). Как в resolveGateType читалера: метка из Book.contentType,
+    // при пустой — из contentType источника.
+    private suspend fun isVideoBook(): Boolean {
+        val stored = runCatching { appRepository.libraryBooks.get(bookUrl)?.contentType }
+            .getOrNull()
+        if (!stored.isNullOrEmpty()) return stored == "video"
+        return source?.contentType == "video"
+    }
+
+    // Видео: резолв потока через плагин → media3-очередь. Последовательно,
+    // чтобы не забивать источник сотнями параллельных запросов.
+    private suspend fun enqueueVideoDownloads(chapterUrls: List<String>) {
+        var added = 0
+        var failed = 0
+        var skipped = 0
+        for (url in chapterUrls) {
+            // Уже скачанные пропускаем ДО резолва — без этого каждая глава
+            // гонит лишний сетевой запрос через плагин.
+            if (videoDownloadManager.completedVideo(url) != null) {
+                skipped++
+                continue
+            }
+            when (val result = videoRepository.resolve(url)) {
+                is Response.Success -> {
+                    val video = result.data.firstOrNull()
+                    if (video == null) {
+                        failed++
+                        Timber.e("enqueueVideoDownloads: пустой поток для $url")
+                    } else {
+                        videoDownloadManager.enqueue(url, video)
+                        added++
+                    }
+                }
+                is Response.Error -> {
+                    failed++
+                    Timber.e(
+                        result.exception,
+                        "enqueueVideoDownloads: резолв не удался для $url: ${result.message}"
+                    )
+                }
+            }
+        }
+        Timber.d("enqueueVideoDownloads: added=$added failed=$failed skipped=$skipped")
+        when {
+            // Всё уже скачано (added=0, failed=0) — это не ошибка, молчим
+            added > 0 -> toasty.show(R.string.download_added_to_queue)
+            failed > 0 -> toasty.show(R.string.download_error)
+        }
+    }
+
     fun downloadNext100Chapters() {
         if (state.isLocalSource.value) return
         val allChapters = state.chapters.toList().sortedBy { it.chapter.position }
@@ -952,6 +1048,10 @@ internal class ChaptersViewModel @Inject constructor(
         }
         val chapterUrls = nextChapters.map { it.chapter.url }
         viewModelScope.launch {
+            if (isVideoBook()) {
+                enqueueVideoDownloads(chapterUrls)
+                return@launch
+            }
             when (val result = downloadManager.enqueue(
                 bookTitle = bookTitle,
                 bookUrl = bookUrl,
@@ -971,6 +1071,10 @@ internal class ChaptersViewModel @Inject constructor(
         val allChapters = state.chapters.toList().sortedBy { it.chapter.position }
         val chapterUrls = allChapters.map { it.chapter.url }
         viewModelScope.launch {
+            if (isVideoBook()) {
+                enqueueVideoDownloads(chapterUrls)
+                return@launch
+            }
             when (val result = downloadManager.enqueue(
                 bookTitle = bookTitle,
                 bookUrl = bookUrl,
@@ -995,6 +1099,10 @@ internal class ChaptersViewModel @Inject constructor(
 
         val chapterUrls = sortedChapters.map { it.chapter.url }
         viewModelScope.launch {
+            if (isVideoBook()) {
+                enqueueVideoDownloads(chapterUrls)
+                return@launch
+            }
             when (val result = downloadManager.enqueue(
                 bookTitle = bookTitle,
                 bookUrl = bookUrl,
@@ -1029,6 +1137,12 @@ internal class ChaptersViewModel @Inject constructor(
 
         val chapterUrls = sortedChapters.map { it.chapter.url }
         viewModelScope.launch {
+            // Перевод видео не применяется — guard из Task 12 остаётся,
+            // но с корректным текстом после появления media3-скачивания.
+            if (isVideoBook()) {
+                toasty.show(R.string.video_translate_unavailable)
+                return@launch
+            }
             when (val result = downloadManager.enqueue(
                 bookTitle = bookTitle,
                 bookUrl = bookUrl,
@@ -1048,6 +1162,11 @@ internal class ChaptersViewModel @Inject constructor(
         if (state.isLocalSource.value) return
         val list = state.selectedChaptersUrl.toList()
         appScope.launch {
+            // Видео: снимаем media3-загрузку (индекс + файлы в кэше).
+            if (isVideoBook()) {
+                list.forEach { videoDownloadManager.remove(it.first) }
+                return@launch
+            }
             appRepository.chapterBody.removeRows(list.map { it.first })
         }
     }
@@ -1112,6 +1231,10 @@ internal class ChaptersViewModel @Inject constructor(
     fun onChapterDownload(chapter: ChapterWithContext) {
         if (state.isLocalSource.value) return
         viewModelScope.launch {
+            if (isVideoBook()) {
+                enqueueVideoDownloads(listOf(chapter.chapter.url))
+                return@launch
+            }
             when (downloadManager.enqueue(
                 bookTitle = bookTitle,
                 bookUrl = bookUrl,
@@ -1124,6 +1247,11 @@ internal class ChaptersViewModel @Inject constructor(
                 is EnqueueResult.AllCached -> toasty.show(R.string.download_all_cached)
             }
         }
+    }
+
+    // Остановка идущей/очередной видео-загрузки: отмена и удаление media3-загрузки.
+    fun onStopVideoDownload(chapter: ChapterWithContext) {
+        videoDownloadManager.remove(chapter.chapter.url)
     }
 
     fun unselectAll() {

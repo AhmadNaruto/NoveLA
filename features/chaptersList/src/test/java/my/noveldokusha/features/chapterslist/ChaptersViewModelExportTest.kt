@@ -7,6 +7,7 @@ import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -27,6 +28,8 @@ import my.noveldokusha.data.DownloadManager
 import my.noveldokusha.data.DownloaderRepository
 import my.noveldokusha.data.LibraryBooksRepository
 import my.noveldokusha.data.LocalBookImporterRepository
+import my.noveldokusha.data.VideoRepository
+import my.noveldokusha.features.reader.video.VideoDownloadManager
 import my.noveldokusha.feature.local_database.DAOs.BookTranslationDao
 import my.noveldokusha.feature.local_database.DAOs.ChapterBodyDao
 import my.noveldokusha.feature.local_database.DAOs.ChapterDao
@@ -38,6 +41,7 @@ import my.noveldokusha.feature.local_database.tables.Book
 import my.noveldokusha.feature.local_database.tables.Chapter
 import my.noveldokusha.feature.local_database.tables.ChapterBody
 import my.noveldokusha.feature.local_database.tables.ChapterTranslation
+import my.noveldokusha.interactor.LibraryUpdatesInteractions
 import my.noveldokusha.scraper.Scraper
 import my.noveldokusha.strings.R as StringsR
 import my.noveldokusha.text_translator.domain.TranslationManager
@@ -48,6 +52,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -200,14 +205,24 @@ class ChaptersViewModelExportTest {
             translationSettingsResolver = mock<TranslationSettingsResolver>().also { r ->
                 // Резолвер используется в init-подписках отображения и в export-путях;
                 // без стабов mock возвращает null → NPE на pair.source.
-                whenever(r.translationPairForBook(any())).thenReturn(TranslationLangPair("en", "ru"))
-                whenever(r.translationEnabledForBook(any())).thenReturn(false)
-                whenever(r.translationTargetForBook(any())).thenReturn("")
-                whenever(r.translationScopeForBook(any())).thenReturn("STANDARD")
-                whenever(r.translationProviderForBook(any())).thenReturn(null)
+                // Второй аргумент (sourceId) прод-вызовы передают как null через
+                // default-мост — обычный any() его не матчит, нужен anyOrNull().
+                whenever(r.translationPairForBook(any(), anyOrNull())).thenReturn(TranslationLangPair("en", "ru"))
+                whenever(r.translationEnabledForBook(any(), anyOrNull())).thenReturn(false)
+                whenever(r.translationTargetForBook(any(), anyOrNull())).thenReturn("")
+                whenever(r.translationScopeForBook(any(), anyOrNull())).thenReturn("STANDARD")
+                whenever(r.translationProviderForBook(any(), anyOrNull())).thenReturn(null)
+                // Init-подписки (chapterTitles/bookInfo) собирают этот flow:
+                // без стаба mock возвращает null → NPE в flatMapLatest.
+                whenever(r.settingsChangeSignal(any())).thenReturn(emptyFlow())
             },
             translationManager = mock<TranslationManager>(),
             readingHistoryDao = mock<ReadingHistoryDao>(),
+            libraryUpdatesInteractions = mock<LibraryUpdatesInteractions>(),
+            // Task 14: видео-путь в тестах не используется (книга не видео),
+            // observe() не вызывается — заглушки не нужны.
+            videoDownloadManager = mock<VideoDownloadManager>(),
+            videoRepository = mock<VideoRepository>(),
             stateHandle = stateHandle,
         ).also { vm ->
             // Подменяем реальный IO-хоп resolveExportDirectoryDisplayName

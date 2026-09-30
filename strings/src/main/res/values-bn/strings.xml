@@ -79,6 +79,7 @@
     <string name="filter">ফিল্টার</string>
     <string name="content_type_manga">মাঙ্গা</string>
     <string name="content_type_novel">উপন্যাস</string>
+    <string name="content_type_video">ভিডিও</string>
     <string name="filter_all">সব</string>
     <string name="read">পড়া</string>
     <string name="sort">সাজান</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">অফলাইন মাঙ্গা সাফ করা হচ্ছে…</string>
     <string name="manga_cache_cleaned">অফলাইন মাঙ্গা সাফ করা হয়েছে</string>
     <string name="manga_cache_clean_failed">অফলাইন মাঙ্গা সাফ করতে ব্যর্থ</string>
+    <string name="clean_offline_video">অফলাইন ভিডিও মুছে ফেলুন</string>
+    <string name="clean_offline_video_confirmation">এটি ডাউনলোড করা ভিডিওগুলি মুছে ফেলবে। অফলাইনে দেখার জন্য আবার ডাউনলোড করতে হবে।</string>
+    <string name="cleaning_offline_video">অফলাইন ভিডিও মুছে ফেলা হচ্ছে…</string>
+    <string name="offline_video_clean_failed">অফলাইন ভিডিও মুছে ফেলতে ব্যর্থ</string>
     <string name="all_sources">সব উৎস</string>
     <string name="reset_filters">রিসেট</string>
 
@@ -834,4 +839,25 @@
     <string name="github_repository">GitHub রিপোজিটরি</string>
     <string name="report_issue">সমস্যা জানান</string>
     <string name="report_issue_description">GitHub-এ বাগ রিপোর্ট তৈরি করুন</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">সোর্স আনা হচ্ছে…</string>
+    <string name="video_open_in_other">অন্য অ্যাপে খুলুন</string>
+    <string name="video_no_app_to_play">এই ভিডিও চালানোর জন্য কোনো অ্যাপ নেই</string>
+    <string name="video_quality">মান</string>
+    <string name="video_sources_not_found">উৎস পাওয়া যায়নি</string>
+    <string name="video_source_not_found">উৎসটি পাওয়া যায়নি</string>
+    <string name="video_source_no_video">উৎস ভিডিও সমর্থন করে না</string>
+    <string name="video_translate_unavailable">ভিডিওর জন্য অনুবাদ উপলব্ধ নয়</string>
+    <string name="video_resolution">রেজ্যুলেশন</string>
+    <string name="video_voiceover">ভয়েসওভার</string>
+    <string name="video_variant_title">ভ্যারিয়েন্ট নির্বাচন করুন</string>
+    <string name="video_variant_fallback">ভ্যারিয়েন্ট %1$d</string>
+    <string name="video_settings_title">সেটিংস</string>
+    <string name="video_playback_speed">গতি</string>
+    <string name="video_audio_track">অডিও ট্র্যাক</string>
+    <string name="video_subtitles">সাবটাইটেল</string>
+    <string name="video_subtitles_none">সাবটাইটেল নেই</string>
+    <string name="video_subtitles_off">বন্ধ</string>
+    <string name="video_keep_screen_on">স্ক্রিন চালু রাখুন</string>
 </resources>

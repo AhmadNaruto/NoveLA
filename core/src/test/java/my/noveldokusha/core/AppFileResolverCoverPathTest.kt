@@ -63,4 +63,19 @@ class AppFileResolverCoverPathTest {
 
         assertEquals(coverUrl, result)
     }
+
+    // Регресс: url длиной 190 символов (aniliberty, самый длинный alias) даёт
+    // Base64 = 256 байт > лимита ФС 255 — canonicalFile кидал IOException
+    // прямо в композиции карточки каталога (крэш при скролле).
+    private val tooLongBookUrl = "https://example.com/" + "a".repeat(170)
+
+    @Test
+    fun `url whose base64 exceeds fs limit returns remote url without throwing`() {
+        val encoded = Base64.getEncoder().encodeToString(tooLongBookUrl.encodeToByteArray())
+        assertTrue("base64 must exceed the 255-byte fs limit", encoded.length > 255)
+
+        val result = resolver.resolvedBookImagePath(bookUrl = tooLongBookUrl, imagePath = coverUrl)
+
+        assertEquals(coverUrl, result)
+    }
 }

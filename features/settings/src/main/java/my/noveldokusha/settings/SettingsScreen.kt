@@ -73,6 +73,7 @@ fun SettingsScreen(
                 onRequestCleanImageFolder = viewModel::requestCleanImageFolder,
                 onRequestCleanNovelCache = viewModel::requestCleanNovelCache,
                 onRequestCleanMangaCache = viewModel::requestCleanMangaCache,
+                onRequestCleanOfflineVideo = viewModel::requestCleanOfflineVideo,
                 onConfirmClean = viewModel::confirmCleanAction,
                 onDismissClean = viewModel::dismissCleanAction,
                 onMassAddDelayChange = viewModel::onMassAddDelayChange,

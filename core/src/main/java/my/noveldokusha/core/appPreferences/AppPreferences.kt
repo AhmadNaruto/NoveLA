@@ -1532,6 +1532,33 @@ class AppPreferences @Inject constructor(
         USER_REGEX_CLEANUP_RULES.value +
             (USER_REGEX_CLEANUP_RULES_PER_NOVEL.value[bookUrl] ?: emptyList())
 
+    // ── Video player: выбранный вариант потока (озвучка/качество) per-book ──
+
+    // Map<bookUrl, VideoSource.quality>. Стабильный ключ между главами одной
+    // книги — подпись quality. Отсутствие ключа = выбор не делался,
+    // диалог качества показывается при каждом входе.
+    val VIDEO_VARIANT_BOOK_QUALITY_MAP =
+        object : Preference<Map<String, String>>("VIDEO_VARIANT_BOOK_QUALITY_MAP") {
+            override var value by SharedPreference_Serializable<Map<String, String>>(
+                name = name,
+                sharedPreferences = preferences,
+                defaultValue = emptyMap(),
+                encode = { Json.encodeToString(it) },
+                decode = { Json.decodeFromString(it) }
+            )
+        }
+
+    // Запоминает выбор варианта для книги. Пустая подпись удаляет ключ
+    // (сброс к показу диалога), как у других per-book setter'ов.
+    fun setVideoVariantForBook(bookUrl: String, quality: String) {
+        val current = VIDEO_VARIANT_BOOK_QUALITY_MAP.value.toMutableMap()
+        if (quality.isBlank()) current.remove(bookUrl) else current[bookUrl] = quality
+        VIDEO_VARIANT_BOOK_QUALITY_MAP.value = current
+    }
+
+    fun videoVariantForBook(bookUrl: String): String? =
+        VIDEO_VARIANT_BOOK_QUALITY_MAP.value[bookUrl]
+
     // ── Auto Backup Preferences ─────────────────────────────────────────────
 
     // Включён ли автоматический бекап

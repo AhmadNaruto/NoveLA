@@ -14,6 +14,8 @@ import my.noveldokusha.scraper.configs.SourceMetadata
 import my.noveldokusha.scraper.domain.BookResult
 import my.noveldokusha.scraper.domain.ChapterResult
 import my.noveldokusha.scraper.domain.PluginShowErrorException
+import my.noveldokusha.scraper.domain.VideoSource
+import my.noveldokusha.scraper.domain.VideoSubtitle
 import org.luaj.vm2.LuaValue
 import org.luaj.vm2.LuaTable
 import org.jsoup.nodes.Document
@@ -179,7 +181,7 @@ open class LuaSourceAdapter(
     // "" = не указано/новелла; валидация на границе чтения.
     private fun readContentType(): String {
         val raw = try { luaScript.get("content_type").optjstring("") } catch (_: Exception) { "" }
-        return raw.lowercase().takeIf { it == "manga" || it == "novel" } ?: ""
+        return raw.lowercase().takeIf { it == "manga" || it == "novel" || it == "video" } ?: ""
     }
 
     internal fun extractMetadata(): SourceMetadata {
@@ -200,17 +202,19 @@ open class LuaSourceAdapter(
         )
     }
 
-    private fun validateLuaScript() {
+    internal fun requiredLuaFunctions(contentType: String): List<String> {
         val required = mutableListOf(
             "getCatalogList", "getCatalogSearch", "getBookTitle",
             "getBookCoverImageUrl", "getBookDescription",
-            "getChapterText"
+            if (contentType == "video") "getVideoList" else "getChapterText"
         )
-        // parsePage может заменять getChapterList
-        if (luaScript.get("parsePage").isnil()) {
-            required.add("getChapterList")
-        }
-        required.forEach { fn ->
+        // parsePage может заменять getChapterList (для video — тоже про эпизоды)
+        if (luaScript.get("parsePage").isnil()) required.add("getChapterList")
+        return required
+    }
+
+    private fun validateLuaScript() {
+        requiredLuaFunctions(metadata.contentType).forEach { fn ->
             if (luaScript.get(fn).isnil())
                 Timber.w("LuaSourceAdapter [${metadata.id}]: missing '$fn'")
         }
@@ -550,6 +554,26 @@ open class LuaSourceAdapter(
             }
         }
 
+    override suspend fun getVideoList(episodeUrl: String): Response<List<VideoSource>>? =
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                withSourceContext {
+                    luaEngine.resetShowError()
+                    val fn = luaScript.get("getVideoList")
+                    if (fn.isnil()) return@withSourceContext null
+                    try {
+                        val result = fn.call(LuaValue.valueOf(episodeUrl))
+                        checkShowError() ?: convertLuaVideoList(result)
+                    } catch (e: Exception) {
+                        checkShowError() ?: run {
+                            Timber.e(e, "Lua getVideoList [${metadata.id}]")
+                            Response.Error(e.message ?: "Unknown Lua error", e)
+                        }
+                    }
+                }
+            }
+        }
+
     override suspend fun getChapterListHash(bookUrl: String): Response<String?> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
@@ -612,6 +636,52 @@ open class LuaSourceAdapter(
         volume = table.get("volume").optjstring(null),
         uploaded = table.get("uploaded").takeIf { it.isnumber() }?.tolong()
     )
+
+    // Три-состояния контракта (спека §3.3): nil → Success(empty) — плагин объявил
+    // метод, но источники не найдены; не-таблица → Error;
+    // пустая таблица → Success(empty) — «Источники не найдены».
+    internal fun convertLuaVideoList(luaResult: LuaValue): Response<List<VideoSource>> {
+        if (luaResult.isnil()) return Response.Success(emptyList())
+        if (!luaResult.istable()) return Response.Error(
+            "getVideoList returned non-table", IllegalStateException("non-table result")
+        )
+        val table = luaResult.checktable()
+        val videos = mutableListOf<VideoSource>()
+        for (i in 1..table.length()) {
+            val item = table.get(LuaValue.valueOf(i))
+            if (!item.istable()) continue
+            val t = item.checktable()
+            val url = t.get("url").optjstring("")
+            if (url.isBlank()) { Timber.w("getVideoList [$id]: item $i without url, skipped"); continue }
+            val headers = mutableMapOf<String, String>()
+            t.get("headers").opttable(null)?.let { ht ->
+                for (k in ht.keys()) headers[k.tojstring()] = ht.get(k).tojstring()
+            }
+            val subtitles = mutableListOf<VideoSubtitle>()
+            t.get("subtitles").opttable(null)?.let { st ->
+                for (j in 1..st.length()) {
+                    val s = st.get(LuaValue.valueOf(j)).opttable(null) ?: continue
+                    val sUrl = s.get("url").optjstring("")
+                    if (sUrl.isNotBlank()) subtitles.add(
+                        VideoSubtitle(
+                            url = sUrl,
+                            label = s.get("label").optjstring(""),
+                            lang = s.get("lang").optjstring("")
+                        )
+                    )
+                }
+            }
+            videos.add(
+                VideoSource(
+                    url = url,
+                    quality = t.get("quality").optjstring(""),
+                    headers = headers,
+                    subtitles = subtitles
+                )
+            )
+        }
+        return Response.Success(videos)
+    }
 }
 
 // ── Подклассы ─────────────────────────────────────────────────────────────────

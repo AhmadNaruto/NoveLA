@@ -79,6 +79,7 @@
     <string name="filter">فلتر</string>
     <string name="content_type_manga">مانجا</string>
     <string name="content_type_novel">رواية</string>
+    <string name="content_type_video">فيديو</string>
     <string name="filter_all">الكل</string>
     <string name="read">قراءة</string>
     <string name="sort">ترتيب</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">جاري مسح المانجا المحفوظة…</string>
     <string name="manga_cache_cleaned">تم مسح المانجا المحفوظة</string>
     <string name="manga_cache_clean_failed">فشل مسح المانجا المحفوظة</string>
+    <string name="clean_offline_video">حذف الفيديو بدون إنترنت</string>
+    <string name="clean_offline_video_confirmation">سيؤدي هذا إلى إزالة الفيديوهات المحمّلة. ستحتاج إلى تنزيلها مجددًا لمشاهدتها بدون إنترنت.</string>
+    <string name="cleaning_offline_video">جاري حذف الفيديو بدون إنترنت…</string>
+    <string name="offline_video_clean_failed">فشل حذف الفيديو بدون إنترنت</string>
     <string name="all_sources">جميع المصادر</string>
     <string name="reset_filters">إعادة تعيين</string>
 
@@ -834,4 +839,25 @@
     <string name="github_repository">مستودع GitHub</string>
     <string name="report_issue">الإبلاغ عن مشكلة</string>
     <string name="report_issue_description">إنشاء تقرير خطأ على GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">جارٍ جلب المصادر…</string>
+    <string name="video_open_in_other">فتح في تطبيق آخر</string>
+    <string name="video_no_app_to_play">لا يوجد تطبيق متاح لتشغيل هذا الفيديو</string>
+    <string name="video_quality">الجودة</string>
+    <string name="video_sources_not_found">المصادر غير موجودة</string>
+    <string name="video_source_not_found">المصدر غير موجود</string>
+    <string name="video_source_no_video">المصدر لا يدعم الفيديو</string>
+    <string name="video_translate_unavailable">الترجمة غير متاحة للفيديو</string>
+    <string name="video_resolution">الدقة</string>
+    <string name="video_voiceover">تعليق صوتي</string>
+    <string name="video_variant_title">اختيار النسخة</string>
+    <string name="video_variant_fallback">النسخة %1$d</string>
+    <string name="video_settings_title">الإعدادات</string>
+    <string name="video_playback_speed">السرعة</string>
+    <string name="video_audio_track">مسار الصوت</string>
+    <string name="video_subtitles">الترجمة الفرعية</string>
+    <string name="video_subtitles_none">بدون ترجمة فرعية</string>
+    <string name="video_subtitles_off">إيقاف</string>
+    <string name="video_keep_screen_on">إبقاء الشاشة مضاءة</string>
 </resources>

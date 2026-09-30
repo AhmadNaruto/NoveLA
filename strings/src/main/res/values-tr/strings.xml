@@ -79,6 +79,7 @@
     <string name="filter">Filtrele</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Roman</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">Tümü</string>
     <string name="read">Okundu</string>
     <string name="sort">Sırala</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">Çevrimdışı manga temizleniyor…</string>
     <string name="manga_cache_cleaned">Çevrimdışı manga temizlendi</string>
     <string name="manga_cache_clean_failed">Çevrimdışı manga temizlenemedi</string>
+    <string name="clean_offline_video">Çevrimdışı videoları sil</string>
+    <string name="clean_offline_video_confirmation">İndirilmiş videoları silecektir. Çevrimdışı izlemek için tekrar indirmeniz gerekecektir.</string>
+    <string name="cleaning_offline_video">Çevrimdışı videolar siliniyor…</string>
+    <string name="offline_video_clean_failed">Çevrimdışı videolar silinemedi</string>
     <string name="all_sources">Tüm kaynaklar</string>
     <string name="reset_filters">Sıfırla</string>
 
@@ -834,4 +839,25 @@
     <string name="github_repository">GitHub deposu</string>
     <string name="report_issue">Hata bildir</string>
     <string name="report_issue_description">GitHub\'da hata raporu oluştur</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Kaynaklar alınıyor…</string>
+    <string name="video_open_in_other">Diğer uygulamada aç</string>
+    <string name="video_no_app_to_play">Bu videoyu oynatmak için uygulama yok</string>
+    <string name="video_quality">Kalite</string>
+    <string name="video_sources_not_found">Kaynaklar bulunamadı</string>
+    <string name="video_source_not_found">Kaynak bulunamadı</string>
+    <string name="video_source_no_video">Kaynak videoyu desteklemiyor</string>
+    <string name="video_translate_unavailable">Video için çeviri kullanılamıyor</string>
+    <string name="video_resolution">Çözünürlük</string>
+    <string name="video_voiceover">Seslendirme</string>
+    <string name="video_variant_title">Varyant seç</string>
+    <string name="video_variant_fallback">Varyant %1$d</string>
+    <string name="video_settings_title">Ayarlar</string>
+    <string name="video_playback_speed">Hız</string>
+    <string name="video_audio_track">Ses parçası</string>
+    <string name="video_subtitles">Altyazılar</string>
+    <string name="video_subtitles_none">Altyazı yok</string>
+    <string name="video_subtitles_off">Kapalı</string>
+    <string name="video_keep_screen_on">Ekranı açık tut</string>
 </resources>

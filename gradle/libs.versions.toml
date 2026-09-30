@@ -34,6 +34,8 @@ androidx-startup = "1.2.0"
 androidx-constraintLayout = "2.2.2"
 androidx-appcompat = "1.8.0"
 
+media3 = "1.11.1"
+
 androidx-testing-core = "1.6.1"
 androidx-testing-runner = "1.6.2"
 androidx-testing-rules = "1.7.0"
@@ -148,6 +150,14 @@ androidx-media = { module = "androidx.media:media", version.ref = "androidx-medi
 androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "androidx-navigation-ui-ktx" }
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "androidx-navigation-fragment-ktx" }
 androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "androidx-preference-ktx" }
+
+# Media3
+media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
+media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "media3" }
+media3-exoplayer-dash = { module = "androidx.media3:media3-exoplayer-dash", version.ref = "media3" }
+media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
+media3-datasource-okhttp = { module = "androidx.media3:media3-datasource-okhttp", version.ref = "media3" }
+media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
 
 material = { module = "com.google.android.material:material", version.ref = "androidx-material" }
 

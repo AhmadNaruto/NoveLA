@@ -79,6 +79,7 @@
     <string name="filter">Filtrer</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Roman</string>
+    <string name="content_type_video">Vidéo</string>
     <string name="filter_all">Tout</string>
     <string name="read">Lu</string>
     <string name="sort">Trier</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">Vidage du manga hors ligne…</string>
     <string name="manga_cache_cleaned">Manga hors ligne vidé</string>
     <string name="manga_cache_clean_failed">Échec du vidage du manga hors ligne</string>
+    <string name="clean_offline_video">Supprimer les vidéos hors ligne</string>
+    <string name="clean_offline_video_confirmation">Cela supprimera les vidéos téléchargées. Pour la lecture hors ligne, il faudra les re-télécharger.</string>
+    <string name="cleaning_offline_video">Suppression des vidéos hors ligne…</string>
+    <string name="offline_video_clean_failed">Échec de la suppression des vidéos hors ligne</string>
     <string name="all_sources">Toutes les sources</string>
     <string name="reset_filters">Réinitialiser</string>
 
@@ -844,4 +849,25 @@
     <string name="github_repository">Dépôt GitHub</string>
     <string name="report_issue">Signaler un problème</string>
     <string name="report_issue_description">Créer un rapport de bug sur GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Récupération des sources…</string>
+    <string name="video_open_in_other">Ouvrir dans une autre application</string>
+    <string name="video_no_app_to_play">Aucune application disponible pour lire cette vidéo</string>
+    <string name="video_quality">Qualité</string>
+    <string name="video_sources_not_found">Sources introuvables</string>
+    <string name="video_source_not_found">Source introuvable</string>
+    <string name="video_source_no_video">La source ne prend pas en charge la vidéo</string>
+    <string name="video_translate_unavailable">La traduction n\'est pas disponible pour la vidéo</string>
+    <string name="video_resolution">Résolution</string>
+    <string name="video_voiceover">Voix off</string>
+    <string name="video_variant_title">Sélectionner une variante</string>
+    <string name="video_variant_fallback">Variante %1$d</string>
+    <string name="video_settings_title">Paramètres</string>
+    <string name="video_playback_speed">Vitesse</string>
+    <string name="video_audio_track">Piste audio</string>
+    <string name="video_subtitles">Sous-titres</string>
+    <string name="video_subtitles_none">Pas de sous-titres</string>
+    <string name="video_subtitles_off">Désactivés</string>
+    <string name="video_keep_screen_on">Garder l\'écran allumé</string>
 </resources>

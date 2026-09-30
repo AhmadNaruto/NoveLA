@@ -79,6 +79,7 @@
     <string name="filter">ตัวกรอง</string>
     <string name="content_type_manga">มังงะ</string>
     <string name="content_type_novel">นิยาย</string>
+    <string name="content_type_video">วิดีโอ</string>
     <string name="filter_all">ทั้งหมด</string>
     <string name="read">อ่าน</string>
     <string name="sort">เรียงลำดับ</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">กำลังล้างมังงะออฟไลน์…</string>
     <string name="manga_cache_cleaned">ล้างมังงะออฟไลน์แล้ว</string>
     <string name="manga_cache_clean_failed">ล้างมังงะออฟไลน์ล้มเหลว</string>
+    <string name="clean_offline_video">ลบวิดีโอออฟไลน์</string>
+    <string name="clean_offline_video_confirmation">จะลบวิดีโอที่ดาวน์โหลดไว้ ต้องดาวน์โหลดใหม่เพื่อดูออฟไลน์</string>
+    <string name="cleaning_offline_video">กำลังลบวิดีโอออฟไลน์…</string>
+    <string name="offline_video_clean_failed">ลบวิดีโอออฟไลน์ล้มเหลว</string>
     <string name="all_sources">แหล่งที่มาทั้งหมด</string>
     <string name="reset_filters">รีเซ็ต</string>
 
@@ -834,4 +839,25 @@
     <string name="github_repository">คลัง GitHub</string>
     <string name="report_issue">รายงานปัญหา</string>
     <string name="report_issue_description">สร้างรายงานข้อผิดพลาดบน GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">กำลังดึงซอร์ส…</string>
+    <string name="video_open_in_other">เปิดในแอปอื่น</string>
+    <string name="video_no_app_to_play">ไม่มีแอปสำหรับเล่นวิดีโอนี้</string>
+    <string name="video_quality">คุณภาพ</string>
+    <string name="video_sources_not_found">ไม่พบซอร์ส</string>
+    <string name="video_source_not_found">ไม่พบซอร์ส</string>
+    <string name="video_source_no_video">ซอร์สไม่รองรับวิดีโอ</string>
+    <string name="video_translate_unavailable">การแปลไม่พร้อมใช้งานสำหรับวิดีโอ</string>
+    <string name="video_resolution">ความละเอียด</string>
+    <string name="video_voiceover">เสียงบรรยาย</string>
+    <string name="video_variant_title">เลือกเวอร์ชัน</string>
+    <string name="video_variant_fallback">เวอร์ชัน %1$d</string>
+    <string name="video_settings_title">การตั้งค่า</string>
+    <string name="video_playback_speed">ความเร็ว</string>
+    <string name="video_audio_track">แทร็กเสียง</string>
+    <string name="video_subtitles">ซับไตเติล</string>
+    <string name="video_subtitles_none">ไม่มีซับไตเติล</string>
+    <string name="video_subtitles_off">ปิด</string>
+    <string name="video_keep_screen_on">หน้าจอไม่ดับ</string>
 </resources>

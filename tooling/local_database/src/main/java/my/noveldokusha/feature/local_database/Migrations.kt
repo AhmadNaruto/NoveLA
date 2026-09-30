@@ -425,6 +425,16 @@ internal fun databaseMigrations() = arrayOf(
             )
         """)
     },
+    migration(33) {
+        // Прогресс просмотра видео (эпизод): позиция/длительность в миллисекундах.
+        it.addColumnIfNotExists("Chapter", "videoPositionMs", "INTEGER NOT NULL DEFAULT 0")
+        it.addColumnIfNotExists("Chapter", "videoDurationMs", "INTEGER NOT NULL DEFAULT 0")
+    },
+    migration(34) {
+        // Сезон/том главы (поле volume из Lua-плагина). NULL — старая запись
+        // или источник без томов; значение заполняется при обновлении списка глав.
+        it.addColumnIfNotExists("Chapter", "volume", "TEXT")
+    },
 )
 
 internal fun migration(vi: Int, migrate: (SupportSQLiteDatabase) -> Unit) =

@@ -91,6 +91,7 @@ internal fun ChaptersScreenHeader(
     translatedTitle: String?,
     translatedDescription: String?,
     isTranslating: Boolean,
+    showTranslateButton: Boolean,
     onTranslateClick: () -> Unit,
     onClearTranslationClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -187,11 +188,12 @@ internal fun ChaptersScreenHeader(
                         .weight(1f),
                 ) {
                     SelectionContainer {
+                        // Главное название книги: без ограничения строк,
+                        // чтобы длинные названия отображались полностью.
                         Text(
                             text = translatedTitle ?: bookState.title,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 5,
                             modifier = Modifier.clickableNoIndicator {
                                 onGlobalSearchClick(bookState.title)
                             }
@@ -440,35 +442,38 @@ internal fun ChaptersScreenHeader(
                     Spacer(modifier = Modifier.weight(1f))
                 }
 
-                // Кнопка "Перевод"
-                Button(
-                    onClick = {
-                        if (translatedTitle != null || translatedDescription != null) {
-                            onClearTranslationClick()
+                // Кнопка "Перевод" — только для новелл: на страницах
+                // видео- и манга-книг переводчик не используется.
+                if (showTranslateButton) {
+                    Button(
+                        onClick = {
+                            if (translatedTitle != null || translatedDescription != null) {
+                                onClearTranslationClick()
+                            } else {
+                                onTranslateClick()
+                            }
+                        },
+                        shape = my.noveldokusha.coreui.theme.shapes.large,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier,
+                    ) {
+                        if (isTranslating) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         } else {
-                            onTranslateClick()
+                            Icon(
+                                imageVector = if (translatedTitle != null || translatedDescription != null) Icons.Outlined.Close else Icons.Outlined.GTranslate,
+                                contentDescription = if (translatedTitle != null || translatedDescription != null) stringResource(R.string.clear_translation) else stringResource(R.string.translate),
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
-                    },
-                    shape = my.noveldokusha.coreui.theme.shapes.large,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                    modifier = Modifier,
-                ) {
-                    if (isTranslating) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    } else {
-                        Icon(
-                            imageVector = if (translatedTitle != null || translatedDescription != null) Icons.Outlined.Close else Icons.Outlined.GTranslate,
-                            contentDescription = if (translatedTitle != null || translatedDescription != null) stringResource(R.string.clear_translation) else stringResource(R.string.translate),
-                            modifier = Modifier.size(16.dp)
-                        )
                     }
                 }
 

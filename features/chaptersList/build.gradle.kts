@@ -14,6 +14,9 @@ dependencies {
     implementation(projects.data)
     implementation(projects.scraper)
     implementation(projects.navigation)
+    // VideoDownloadManager (Task 14): видео качает media3 в features:reader,
+    // список глав — потребитель статусов и enqueue.
+    implementation(projects.features.reader)
     implementation(projects.tooling.localDatabase)
     implementation(projects.tooling.textTranslator.domain)
     implementation(projects.tooling.applicationWorkers)

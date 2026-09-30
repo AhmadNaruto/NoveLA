@@ -79,6 +79,7 @@
     <string name="filter">Tapis</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Novel</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">Semua</string>
     <string name="read">Baca</string>
     <string name="sort">Susun</string>
@@ -540,6 +541,10 @@
     <string name="cleaning_manga_cache">Mengosongkan manga offline…</string>
     <string name="manga_cache_cleaned">Manga offline dikosongkan</string>
     <string name="manga_cache_clean_failed">Gagal mengosongkan manga offline</string>
+    <string name="clean_offline_video">Padam video offline</string>
+    <string name="clean_offline_video_confirmation">Ini akan memadamkan video yang dimuat turun. Untuk menonton secara offline, video perlu dimuat turun semula.</string>
+    <string name="cleaning_offline_video">Memadamkan video offline…</string>
+    <string name="offline_video_clean_failed">Gagal memadamkan video offline</string>
     <string name="all_sources">Semua sumber</string>
     <string name="reset_filters">Set semula</string>
 
@@ -834,4 +839,25 @@
     <string name="github_repository">Repositori GitHub</string>
     <string name="report_issue">Laporkan masalah</string>
     <string name="report_issue_description">Cipta laporan bug di GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Mendapatkan sumber…</string>
+    <string name="video_open_in_other">Buka dalam aplikasi lain</string>
+    <string name="video_no_app_to_play">Tiada aplikasi untuk memainkan video ini</string>
+    <string name="video_quality">Kualiti</string>
+    <string name="video_sources_not_found">Sumber tidak dijumpai</string>
+    <string name="video_source_not_found">Sumber tidak dijumpai</string>
+    <string name="video_source_no_video">Sumber tidak menyokong video</string>
+    <string name="video_translate_unavailable">Terjemahan tidak tersedia untuk video</string>
+    <string name="video_resolution">Resolusi</string>
+    <string name="video_voiceover">Suara latar</string>
+    <string name="video_variant_title">Pilih varian</string>
+    <string name="video_variant_fallback">Varian %1$d</string>
+    <string name="video_settings_title">Tetapan</string>
+    <string name="video_playback_speed">Kelajuan</string>
+    <string name="video_audio_track">Trek audio</string>
+    <string name="video_subtitles">Sarikata</string>
+    <string name="video_subtitles_none">Tiada sarikata</string>
+    <string name="video_subtitles_off">Mati</string>
+    <string name="video_keep_screen_on">Kekalkan skrin menyala</string>
 </resources>

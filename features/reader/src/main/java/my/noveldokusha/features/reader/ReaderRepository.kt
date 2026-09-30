@@ -82,6 +82,32 @@ internal class ReaderRepository @Inject constructor(
         }
     }
 
+    /**
+     * Video playback progress. Separate from saveBookLastReadPositionState:
+     * that one writes lastReadPosition/lastReadOffset (text/pages), which must
+     * stay 0 for video (spec §4.2).
+     */
+    fun saveVideoLastReadState(
+        bookUrl: String,
+        chapterUrl: String,
+        positionMs: Long,
+        durationMs: Long,
+        markRead: Boolean,
+    ) {
+        scope.launch(Dispatchers.IO) {
+            database.transaction {
+                libraryBooksRepository.updateLastReadChapter(
+                    bookUrl = bookUrl,
+                    lastReadChapterUrl = chapterUrl
+                )
+                bookChaptersRepository.updateVideoPosition(chapterUrl, positionMs, durationMs)
+                // read = true: markRead means "watched to the end" (chapter-list badge).
+                if (markRead) bookChaptersRepository.setAsRead(chapterUrl, read = true)
+                upsertReadingHistory(bookUrl, chapterUrl)
+            }
+        }
+    }
+
     internal suspend fun upsertReadingHistory(bookUrl: String, chapterUrl: String) {
         val book = libraryBooksRepository.get(bookUrl)
         val chapter = bookChaptersRepository.get(chapterUrl)

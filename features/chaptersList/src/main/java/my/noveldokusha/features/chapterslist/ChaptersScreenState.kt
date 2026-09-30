@@ -9,6 +9,7 @@ import my.noveldokusha.core.appPreferences.TernaryState
 import my.noveldokusha.data.DownloadTaskState
 import my.noveldokusha.feature.local_database.ChapterWithContext
 import my.noveldokusha.feature.local_database.tables.Book
+import my.noveldokusha.features.reader.video.DownloadState
 
 internal data class ChaptersScreenState(
     val book: State<BookState>,
@@ -27,6 +28,8 @@ internal data class ChaptersScreenState(
     val translatedChapterTitles: MutableState<Map<String, String>>,
     val chapterSizes: MutableState<Map<String, ChapterSize>>,
     val downloadTask: MutableState<DownloadTaskState?>,
+    // Статусы media3-загрузок видео-эпизодов: chapterUrl → бейдж (Task 14).
+    val videoDownloadStates: MutableState<Map<String, DownloadState>>,
 ) {
 
     val isInSelectionMode = derivedStateOf { selectedChaptersUrl.size != 0 }

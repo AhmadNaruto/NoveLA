@@ -382,7 +382,7 @@ class DownloaderRepository @Inject constructor(
             val allChapters = mutableListOf<Chapter>()
 
             firstPage.chapters.forEachIndexed { idx, ch ->
-                allChapters.add(Chapter(title = ch.title, url = ch.url, bookUrl = bookUrl, position = idx))
+                allChapters.add(Chapter(title = ch.title, url = ch.url, bookUrl = bookUrl, position = idx, volume = ch.volume))
             }
 
             for (page in 2..firstPage.totalPages) {
@@ -394,7 +394,7 @@ class DownloaderRepository @Inject constructor(
                 }
                 val offset = allChapters.size
                 pageData.chapters.forEachIndexed { idx, ch ->
-                    allChapters.add(Chapter(title = ch.title, url = ch.url, bookUrl = bookUrl, position = offset + idx))
+                    allChapters.add(Chapter(title = ch.title, url = ch.url, bookUrl = bookUrl, position = offset + idx, volume = ch.volume))
                 }
                 Timber.d("bookChaptersList: page $page loaded, cumulative count=${allChapters.size}")
             }
@@ -415,7 +415,8 @@ class DownloaderRepository @Inject constructor(
                         title = it.title,
                         url = it.url,
                         bookUrl = bookUrl,
-                        position = index
+                        position = index,
+                        volume = it.volume
                     )
                 }
             }

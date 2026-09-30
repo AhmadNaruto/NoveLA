@@ -156,6 +156,7 @@
 
     <string name="content_type_manga">Манга</string>
     <string name="content_type_novel">Новелла</string>
+    <string name="content_type_video">Видео</string>
     <string name="filter_all">Все</string>
 
     <string name="read">Прочитано</string>
@@ -947,6 +948,10 @@
     <string name="cleaning_manga_cache">Очистка оффлайн-манги…</string>
     <string name="manga_cache_cleaned">Оффлайн-манга очищена</string>
     <string name="manga_cache_clean_failed">Не удалось очистить оффлайн-мангу</string>
+    <string name="clean_offline_video">Удалить офлайн-видео</string>
+    <string name="clean_offline_video_confirmation">Это удалит скачанные видео. Для оффлайн-просмотра их нужно будет скачать заново.</string>
+    <string name="cleaning_offline_video">Удаление оффлайн-видео…</string>
+    <string name="offline_video_clean_failed">Не удалось удалить оффлайн-видео</string>
 
     <string name="reset_filters">Сбросить</string>
 
@@ -1300,5 +1305,25 @@
     <string name="github_repository">Репозиторий на GitHub</string>
     <string name="report_issue">Сообщить об ошибке</string>
     <string name="report_issue_description">Создать отчёт об ошибке на GitHub</string>
+    <!-- Video player -->
+    <string name="video_loading_sources">Получение источников…</string>
+    <string name="video_open_in_other">Открыть в другом</string>
+    <string name="video_no_app_to_play">Нет приложения для воспроизведения</string>
+    <string name="video_quality">Качество</string>
+    <string name="video_resolution">Разрешение</string>
+    <string name="video_voiceover">Озвучка</string>
+    <string name="video_variant_title">Выбор варианта</string>
+    <string name="video_variant_fallback">Вариант %1$d</string>
+    <string name="video_sources_not_found">Источники не найдены</string>
+    <string name="video_source_not_found">Источник не найден</string>
+    <string name="video_source_no_video">Источник не поддерживает видео</string>
+    <string name="video_translate_unavailable">Перевод для видео недоступен</string>
+    <string name="video_settings_title">Настройки</string>
+    <string name="video_playback_speed">Скорость</string>
+    <string name="video_audio_track">Аудио</string>
+    <string name="video_subtitles">Субтитры</string>
+    <string name="video_subtitles_none">Нет субтитров</string>
+    <string name="video_subtitles_off">Выкл</string>
+    <string name="video_keep_screen_on">Не выключать экран</string>
 </resources>
 

@@ -336,8 +336,11 @@ private fun SourceStrip(
 }
 
 /** Иконка типа контента */
-fun String?.toContentTypeBadgeIcon(): Int =
-    if (this == "manga") R.drawable.ic_content_type_manga else R.drawable.ic_content_type_novel
+fun String?.toContentTypeBadgeIcon(): Int = when (this) {
+    "manga" -> R.drawable.ic_content_type_manga
+    "video" -> R.drawable.ic_content_type_video
+    else -> R.drawable.ic_content_type_novel
+}
 
 @PreviewThemes
 @Composable
