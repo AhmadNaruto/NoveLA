@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import my.noveldokusha.core.Response
+import my.noveldokusha.core.chapterContentIssue
 import my.noveldokusha.core.map
 import my.noveldokusha.network.NetworkClient
 import my.noveldokusha.network.getRequest
@@ -259,7 +260,7 @@ class DownloaderRepository @Inject constructor(
                         return@tryFlatConnect Response.Success(data)
                     }
 
-                    val doc = networkClient.call(
+                    val mainResponse = networkClient.call(
                         getRequest(realUrl).apply {
                             cacheControl(CacheControl.FORCE_NETWORK)
                             matchingSource?.let { src ->
@@ -267,17 +268,36 @@ class DownloaderRepository @Inject constructor(
                                 buildChapterHeaders(realUrl).forEach { (k, v) -> header(k, v) }
                             }
                         }
-                    ).use { it.toDocument() }
+                    )
+                    // OkHttp не прошёл редирект (битый Location) — парсить нечего
+                    if (mainResponse.code in 300..399) {
+                        val location = mainResponse.header("Location")
+                        mainResponse.close()
+                        return@tryFlatConnect Response.Error(
+                            "Redirect not followed: HTTP ${mainResponse.code} -> $location\n\nFor: $chapterUrl",
+                            Exception("OkHttp returned unfollowed 3xx response")
+                        )
+                    }
+                    val doc = mainResponse.use { it.toDocument() }
 
                     val redirectUrl = my.noveldokusha.network.JsRedirectResolver.resolveRedirectUrl(doc)
                     if (redirectUrl != null) {
                         Timber.d("JS redirect resolved: $redirectUrl")
                         val redirectedDoc = networkClient.call(
-                            getRequest(redirectUrl).cacheControl(CacheControl.FORCE_NETWORK)
+                            getRequest(redirectUrl)
+                                // Ручной JS-хоп: Referer на него OkHttp не ставит,
+                                // антиботы его проверяют.
+                                .header("Referer", realUrl)
+                                .cacheControl(CacheControl.FORCE_NETWORK)
                         ).use { it.toDocument() }
                         val chapter = heuristicChapterExtraction(redirectUrl, redirectedDoc)
+                        // Редирект может указывать на login-страницу (requireSignIn внутри
+                        // функции, а не автонавигация) — тогда исходная страница главы
+                        // содержит реальный контент, и бросать её в пользу login нельзя.
                         if (chapter != null) {
-                            return@tryFlatConnect Response.Success(chapter)
+                            val issue = chapterContentIssue(chapter.body)
+                            if (issue == null) return@tryFlatConnect Response.Success(chapter)
+                            Timber.w("bookChapter: JS redirect target rejected issue=$issue url=$redirectUrl")
                         }
                     }
 

@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import my.noveldokusha.core.Response
-import my.noveldokusha.core.isValidChapterContent
+import my.noveldokusha.core.chapterContentIssue
 import my.noveldokusha.features.reader.ReaderRepository
 import my.noveldokusha.features.reader.domain.ChapterLoaded
 import my.noveldokusha.features.reader.domain.ChapterState
@@ -587,11 +587,12 @@ internal class ReaderChaptersLoader(
         when (val res = readerRepository.downloadChapter(chapter.url)) {
             is Response.Success -> {
                 Timber.d("ReaderLoad: chapter body OK idx=$chapterIndex len=${res.data.length}")
-                if (!isValidChapterContent(res.data)) {
+                val contentIssue = chapterContentIssue(res.data)
+                if (contentIssue != null) {
                     failedChapterIndex = chapterIndex
                     withContext(Dispatchers.Main.immediate) {
                         hasLoadingError = true
-                        Timber.w("Chapter content invalid (possibly Cloudflare or Login), stopping auto-loading. Preview: ${res.data.take(160)}")
+                        Timber.w("Chapter content invalid issue=$contentIssue, stopping auto-loading. Preview: ${res.data.take(160)}")
                     }
                     readerRepository.deleteChapterBody(chapter.url)
                     maintainPosition {

@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import my.noveldokusha.core.Response
 import my.noveldokusha.core.isLocalUri
 import my.noveldokusha.core.isValidChapterContent
+import my.noveldokusha.core.chapterContentIssue
 import my.noveldokusha.core.map
 import my.noveldokusha.core.utils.decodePages
 import my.noveldokusha.core.utils.encodePages
@@ -93,6 +94,7 @@ class ChapterBodyRepository @Inject constructor(
                         )
                         Response.Success(download.body)
                     } else {
+                        Timber.w("fetchChapterForDownload: rejected body url=$urlChapter issue=${chapterContentIssue(download.body)}")
                         Response.Error("Empty content for $urlChapter", Exception())
                     }
                 }
@@ -140,9 +142,10 @@ class ChapterBodyRepository @Inject constructor(
             // Возвращаем тело как есть, даже короткое.
             if (urlChapter.isLocalUri) return@fetchBody Response.Success(it.body)
             // Возвращаем из кэша только валидный контент
-            if (it.body.isNotBlank() && isValidChapterContent(it.body)) return@fetchBody Response.Success(it.body)
+            val cachedIssue = chapterContentIssue(it.body)
+            if (cachedIssue == null) return@fetchBody Response.Success(it.body)
             // Удаляем невалидную запись чтобы не мешала следующим попыткам
-            Timber.w("FetchBody: removed invalid cached body url=$urlChapter bodyLen=${it.body.length}")
+            Timber.w("FetchBody: removed invalid cached body url=$urlChapter issue=$cachedIssue bodyLen=${it.body.length}")
             chapterBodyDao.removeChapterRows(listOf(urlChapter))
         }
 
@@ -165,6 +168,9 @@ class ChapterBodyRepository @Inject constructor(
             downloaderRepository.bookChapter(urlChapter)
         }.onSuccess {
             Timber.d("FetchBody: network url=$urlChapter bodyLen=${it.body.length} valid=${it.body.isNotBlank() && isValidChapterContent(it.body)}")
+            chapterContentIssue(it.body)?.let { issue ->
+                Timber.w("FetchBody: rejected network body url=$urlChapter issue=$issue")
+            }
         }.onError {
             Timber.w("FetchBody: network ERROR url=$urlChapter error=${it.message}")
         }.map {
