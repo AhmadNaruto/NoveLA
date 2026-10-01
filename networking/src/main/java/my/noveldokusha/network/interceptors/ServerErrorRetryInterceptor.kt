@@ -42,14 +42,16 @@ class ServerErrorRetryInterceptor(
                 return response
             }
 
-            // Close failed response before retry
-            lastResponse?.close()
-            lastResponse = response
-
             if (attempt < maxRetries) {
+                // Закрываем ДО sleep и ДО следующего chain.proceed: okhttp бросает
+                // IllegalStateException ("previous response is still open"), пока тело
+                // предыдущего ответа не закрыто. Сон с открытым коннектом держит пул.
+                response?.close()
                 val backoff = initialBackoffMs * (1 shl attempt) // exponential: 500, 1000, 2000
                 Timber.d("ServerErrorRetry: ${response?.code ?: "exception"} on ${request.url.host}, retry ${attempt + 1}/$maxRetries in ${backoff}ms")
                 Thread.sleep(backoff)
+            } else {
+                lastResponse = response // финальная попытка — отдаём вызывающему
             }
         }
 
