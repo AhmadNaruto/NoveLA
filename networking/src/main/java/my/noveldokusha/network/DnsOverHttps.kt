@@ -1,5 +1,6 @@
 package my.noveldokusha.network
 
+import my.noveldokusha.core.AppCacheConfig
 import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -102,9 +103,9 @@ class DnsOverHttps : Dns {
     companion object {
         private const val TAG = "DnsOverHttps"
         private const val MEDIA_TYPE = "application/dns-json"
-        private const val CACHE_TTL_MS = 300_000L
-        private const val NEGATIVE_TTL_MS = 60_000L
-        private const val NEGATIVE_MAX_SIZE = 512
+        private const val CACHE_TTL_MS = AppCacheConfig.DNS_CACHE_TTL_MS
+        private const val NEGATIVE_TTL_MS = AppCacheConfig.DNS_NEGATIVE_TTL_MS
+        private const val NEGATIVE_MAX_SIZE = AppCacheConfig.DNS_NEGATIVE_MAX_SIZE
     }
 
     override fun lookup(hostname: String): List<InetAddress> {

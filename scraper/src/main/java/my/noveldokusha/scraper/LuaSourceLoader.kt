@@ -12,6 +12,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import my.noveldokusha.core.AppCacheConfig
 import my.noveldokusha.core.ExtensionManager
 import my.noveldokusha.network.NetworkClient
 import my.noveldokusha.network.postRequest
@@ -100,7 +101,7 @@ class LuaEngine @Inject constructor(
     private val httpGetCache = ConcurrentHashMap<String, HttpGetCacheEntry>()
 
     // Тестовый seam: 2 секунд покрывают все геттеры одной страницы, не задерживая повторные заходы.
-    internal var httpGetCacheTtlMs: Long = 2_000
+    internal var httpGetCacheTtlMs: Long = AppCacheConfig.LUA_HTTP_GET_CACHE_TTL_MS
 
     private data class HttpGetCacheEntry(
         val body: String,
@@ -118,7 +119,9 @@ class LuaEngine @Inject constructor(
         val now = System.currentTimeMillis()
         httpGetCache.entries.removeAll { now - it.value.storedAt >= httpGetCacheTtlMs }
         httpGetCache[key] = entry
-        if (httpGetCache.size > 100 || httpGetCache.values.sumOf { it.body.length } > 4_000_000) {
+        if (httpGetCache.size > AppCacheConfig.LUA_HTTP_GET_CACHE_MAX_ENTRIES ||
+            httpGetCache.values.sumOf { it.body.length } > AppCacheConfig.LUA_HTTP_GET_CACHE_MAX_BODY_BYTES
+        ) {
             httpGetCache.clear()
         }
     }
@@ -312,10 +315,12 @@ class LuaEngine @Inject constructor(
 
     /**
      * http_get(url [, config])
-     * config = { headers = {}, charset = "UTF-8", binary = false }
+     * config = { headers = {}, charset = "UTF-8", binary = false, followRedirects = true }
      * returns { success, body, code }
      * body — string по умолчанию; при binary=true — таблица байтов {0x00, 0x3F, ...}.
      * Binary-ответы не кэшируются.
+     * followRedirects=false — не переходить по 3xx: r.code=3xx, r.headers.location
+     * содержит цель. Нужно, когда цель редиректа — сам ответ (хостер-гейты).
      */
     private inner class HttpGetFunction : TwoArgFunction() {
         override fun call(a1: LuaValue, a2: LuaValue): LuaValue = runBlocking {
@@ -324,14 +329,18 @@ class LuaEngine @Inject constructor(
             val pluginHeaders = convertHeaders(config.get("headers").opttable(LuaTable()))
             val charset       = config.get("charset").optjstring("UTF-8")
             val binary        = config.get("binary").optboolean(false)
+            val followRedirects = config.get("followRedirects").optboolean(true)
             val headers       = defaultHeaders(url) + pluginHeaders
             // sourceId читается на вызывающем потоке: ThreadLocal не переживает переключение диспетчера.
             val sourceId      = currentSourceId.get()
             // Force-network flag is captured here for the same reason, before withContext(IO).
             val forceNetwork  = forceNetworkFlag.get()
-            // Binary-ответы не кэшируются: они обычно Большие и одноразовые.
-            // Force-network (catalog) also skips the memory cache: the catalog must be fresh.
-            if (!binary && !forceNetwork) {
+            // Бинарь и forceNetwork кэш пропускают — флаги в AppCacheConfig.
+            // Бинарь обычно большой и одноразовый; forceNetwork (каталог) обязан
+            // быть свежим. Правила читаются отдельно от самого if.
+            val cacheReadable = (!binary || AppCacheConfig.LUA_CACHE_BINARY) &&
+                (!forceNetwork || !AppCacheConfig.LUA_FORCE_NETWORK_BYPASS)
+            if (cacheReadable) {
                 val cacheKey = "$url|$charset|${sourceId ?: "default"}|${headers.toString().hashCode()}"
                 httpGetCache[cacheKey]?.let { entry ->
                     if (System.currentTimeMillis() - entry.storedAt < httpGetCacheTtlMs) {
@@ -349,13 +358,13 @@ class LuaEngine @Inject constructor(
                     // Cache-Control set by the plugin (getRequest default: max-age=600).
                     if (forceNetwork) builder.header("Cache-Control", "no-cache")
                     sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
-                    networkClient.call(builder).use { r ->
+                    networkClient.call(builder, followRedirects = followRedirects).use { r ->
                         val bytes = r.body.bytes()
                         if (binary) {
                             responseTableBinary(bytes, r.code, r.headers.toMultimap())
                         } else {
                             val body = String(bytes, java.nio.charset.Charset.forName(charset))
-                            if (r.isSuccessful) {
+                            if (AppCacheConfig.isCacheableStatus(r.code)) {
                                 val cacheKey = "$url|$charset|${sourceId ?: "default"}|${headers.toString().hashCode()}"
                                 putHttpGetCache(cacheKey, HttpGetCacheEntry(body, true, r.code, r.headers.toMultimap(), System.currentTimeMillis()))
                             }
@@ -1330,7 +1339,7 @@ class LuaSourceLoader @Inject constructor(
     companion object {
         // Increased from 15 to 30 to avoid thrashing and unnecessary re-compilation
         // when more than 15 extensions are active.
-        private const val MAX_CACHED_SOURCES = 30
+        private const val MAX_CACHED_SOURCES = AppCacheConfig.LUA_MAX_CACHED_SOURCES
     }
 }
 

@@ -3,6 +3,7 @@ package my.noveldokusha.network
 import android.content.Context
 import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
+import my.noveldokusha.core.AppCacheConfig
 import my.noveldokusha.core.AppInternalState
 import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.network.interceptors.CloudFareVerificationInterceptor
@@ -29,7 +30,7 @@ import javax.inject.Singleton
 
 interface NetworkClient {
     val cookieJar: okhttp3.CookieJar
-    suspend fun call(request: Request.Builder, followRedirects: Boolean = false): Response
+    suspend fun call(request: Request.Builder, followRedirects: Boolean = true): Response
     suspend fun get(url: String): Response
     suspend fun getWithHeaders(url: String, headers: Map<String, String>): Response
     suspend fun get(url: Uri.Builder): Response
@@ -42,8 +43,8 @@ class ScraperNetworkClient @Inject constructor(
     private val appPreferences: AppPreferences
 ) : NetworkClient {
 
-    private val cacheDir = File(appContext.cacheDir, "network_cache")
-    private val cacheSize = 50L * 1024 * 1024
+    private val cacheDir = File(appContext.cacheDir, AppCacheConfig.NETWORK_CACHE_DIR)
+    private val cacheSize = AppCacheConfig.NETWORK_CACHE_BYTES
 
     override val cookieJar = ScraperCookieJar()
 
@@ -132,9 +133,20 @@ class ScraperNetworkClient @Inject constructor(
             .build()
     }
 
+    // Без follow-redirects: вызывающий обязан увидеть raw 3xx и его Location
+    // (Lua-плагины, резолвящие хостеров по редиректу). client/clientWithRedirects
+    // не трогаем — их поведение зависит от внешних потребителей (переводчики).
+    val clientNoRedirects: OkHttpClient by lazy {
+        baseBuilder()
+            .connectionPool(cfConnectionPool)
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .build()
+    }
+
     override suspend fun call(request: Request.Builder, followRedirects: Boolean): Response {
         val built = request.build()
-        val baseClient = if (followRedirects) clientWithRedirects else this.client
+        val baseClient = if (followRedirects) clientWithRedirects else clientNoRedirects
         // Тело отдаём сырым вызывающему — буферизация здесь удваивала бы память
         // на горячем пути загрузки картинок (caller читает body повторно). Ретрай
         // ловит сетевые/таймаут-сбои уровня соединения; сбой дочитки тела

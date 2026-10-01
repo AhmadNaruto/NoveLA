@@ -4,6 +4,7 @@ import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import my.noveldokusha.core.AppCacheConfig
 import my.noveldokusha.core.utils.decodePages
 import my.noveldokusha.core.utils.encodePages
 import my.noveldokusha.core.utils.refererFor
@@ -54,7 +55,7 @@ class DownloadedPageChaptersStore @Inject constructor(
      * остаются в локальном хранилище.
      */
     private val pageImagesDir: File
-        get() = File(context.cacheDir, "page_images")
+        get() = File(context.cacheDir, AppCacheConfig.PAGE_IMAGES_CACHE_DIR)
 
     private fun pageImageFileFor(pageUrl: String): File =
         File(pageImagesDir, sha256(pageUrl) + ".img")

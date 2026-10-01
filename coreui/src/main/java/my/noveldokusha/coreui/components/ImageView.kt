@@ -39,6 +39,7 @@ import coil3.size.Precision
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import my.noveldokusha.core.AppCacheConfig
 import my.noveldokusha.core.utils.refererFor
 import my.noveldokusha.coreui.R
 
@@ -130,20 +131,22 @@ fun ImageView(
                     colorFilter = colorFilter,
                     placeholder = placeholderPainter,
                     error = painterResource(error),
-                    onSuccess = { isError = false },
+                    onSuccess = {
+                        isError = false
+                    },
                     onError = {
                         isError = true
-                        if (retryCount.intValue < 2) {
+                        if (retryCount.intValue < AppCacheConfig.IMAGE_RETRY_ATTEMPTS) {
                             retryJob?.cancel()
                             retryJob = scope.launch {
-                                delay(1000)
+                                delay(AppCacheConfig.IMAGE_RETRY_DELAY_MS)
                                 retryCount.intValue++
                             }
                         }
                     }
                 )
             }
-            if (isError && retryCount.intValue >= 2 && shouldShowRetry(model)) {
+            if (isError && retryCount.intValue >= AppCacheConfig.IMAGE_RETRY_ATTEMPTS && shouldShowRetry(model)) {
                 FilledIconButton(
                     onClick = {
                         isError = false
