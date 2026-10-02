@@ -1,6 +1,7 @@
 package my.noveldokusha.scraper
 
 import my.noveldokusha.core.appPreferences.AppPreferences
+import my.noveldokusha.core.utils.refererFor
 import my.noveldokusha.network.NetworkClient
 import my.noveldokusha.scraper.databases.BakaUpdates
 import my.noveldokusha.scraper.databases.NovelUpdates
@@ -76,6 +77,13 @@ class Scraper @Inject constructor(
 
     fun getCompatibleSource(url: String): SourceInterface? =
         loadedSourcesList.find { url.isCompatibleWithBaseUrl(it.baseUrl) }
+
+    /** Referer для картинок книги/каталога: глобал плагина, иначе хост страницы. */
+    fun coverReferer(pageUrl: String): String {
+        val custom = getCompatibleSource(pageUrl)?.referer?.trim().orEmpty()
+        if (custom.isNotEmpty()) return custom
+        return refererFor(pageUrl)
+    }
 
     fun getCompatibleSourceCatalog(url: String): SourceInterface.Catalog? =
         loadedSourcesList.filterIsInstance<SourceInterface.Catalog>()

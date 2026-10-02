@@ -102,6 +102,7 @@ internal fun ChaptersScreenHeader(
     bookCategory: String,
     categories: () -> List<String>,
     onCategoryClick: () -> Unit,
+    coverReferer: String? = null,
 ) {
     val coverImageModel = bookState.coverImageUrl?.let {
         rememberResolvedBookImagePath(
@@ -114,6 +115,7 @@ internal fun ChaptersScreenHeader(
         Box(Modifier.matchParentSize()) {
             ImageView(
                 imageModel = coverImageModel,
+                referer = coverReferer,
                 contentScale = ContentScale.FillWidth,
                 modifier = Modifier
                     .alpha(0.2f)
@@ -143,6 +145,7 @@ internal fun ChaptersScreenHeader(
                 BookImageButtonView(
                     title = "",
                     coverImageModel = coverImageModel,
+                    referer = coverReferer,
                     onClick = { showImageFullScreen = true },
                     onLongClick = onCoverLongClick,
                     sourceStripPosition = SourceStripPosition.BelowCover,
@@ -167,6 +170,7 @@ internal fun ChaptersScreenHeader(
                     ) {
                         ImageView(
                             imageModel = coverImageModel,
+                            referer = coverReferer,
                             // Как у коверов в каталоге: скругление ImageBorderShape + отступы
                             modifier = Modifier
                                 .padding(16.dp)

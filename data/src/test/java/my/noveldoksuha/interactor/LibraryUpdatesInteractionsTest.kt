@@ -11,6 +11,7 @@ import my.noveldokusha.data.CoverRepository
 import my.noveldokusha.data.DownloaderRepository
 import my.noveldokusha.feature.local_database.DAOs.LibraryDao
 import my.noveldokusha.feature.local_database.tables.Book
+import my.noveldokusha.scraper.Scraper
 import org.junit.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -28,6 +29,7 @@ class LibraryUpdatesInteractionsTest {
     private val libraryDao = mock<LibraryDao>()
     private val coverRepository = mock<CoverRepository>()
     private val appFileResolver = mock<AppFileResolver>()
+    private val scraper = mock<Scraper>()
     private val context = mock<Context>()
 
     private val interactions = LibraryUpdatesInteractions(
@@ -36,6 +38,7 @@ class LibraryUpdatesInteractionsTest {
         libraryDao = libraryDao,
         coverRepository = coverRepository,
         appFileResolver = appFileResolver,
+        scraper = scraper,
         context = context,
     )
 

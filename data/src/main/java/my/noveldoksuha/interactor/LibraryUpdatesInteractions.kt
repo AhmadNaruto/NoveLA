@@ -37,6 +37,7 @@ import my.noveldokusha.feature.local_database.DAOs.LibraryDao
 import my.noveldokusha.feature.local_database.tables.Book
 import my.noveldokusha.feature.local_database.tables.Chapter
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import my.noveldokusha.scraper.Scraper
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -47,6 +48,7 @@ class LibraryUpdatesInteractions @Inject constructor(
     private val libraryDao: LibraryDao,
     private val coverRepository: CoverRepository,
     private val appFileResolver: AppFileResolver,
+    private val scraper: Scraper,
     @ApplicationContext private val context: Context,
 ) {
     companion object {
@@ -521,7 +523,7 @@ class LibraryUpdatesInteractions @Inject constructor(
 
     suspend fun syncCover(bookUrl: String, remoteCoverUrl: String) {
         val coverFile = appFileResolver.getStorageBookCoverImageFile(appFileResolver.getLocalBookFolderName(bookUrl))
-        if (!coverRepository.ensureCover(coverFile, remoteCoverUrl)) {
+        if (!coverRepository.ensureCover(coverFile, remoteCoverUrl, referer = scraper.coverReferer(bookUrl))) {
             Timber.w("Failed to download cover for $bookUrl")
         }
     }
@@ -535,7 +537,7 @@ class LibraryUpdatesInteractions @Inject constructor(
         if (!isBackfilling.compareAndSet(false, true)) return@withContext
         try {
             if (!isNetworkAvailable()) return@withContext
-            backfillCovers(appRepository.libraryBooks.getAllInLibrary(), appFileResolver, coverRepository)
+            backfillCovers(appRepository.libraryBooks.getAllInLibrary(), appFileResolver, coverRepository, scraper)
         } finally {
             isBackfilling.set(false)
         }

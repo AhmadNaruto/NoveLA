@@ -151,6 +151,8 @@ internal fun ChaptersScreenBody(
             ) {
                 ChaptersScreenHeader(
                     bookState = state.book.value,
+                    // Referer обложки: у Body нет доступа к ChaptersViewModel — считаем через scraper.
+                    coverReferer = scraper.coverReferer(state.book.value.url),
                     genres = state.genres.value,
                     rating = state.rating.value,
                     status = state.status.value,

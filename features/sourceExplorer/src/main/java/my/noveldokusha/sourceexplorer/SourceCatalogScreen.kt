@@ -187,6 +187,7 @@ internal fun SourceCatalogScreen(
                     innerPadding = innerPadding,
                     translatedTitles = state.translatedTitles,
                     coverOverrides = viewModel.covers,
+                    referer = viewModel.coverReferer,
                     topLeftBadge = { bookMeta ->
                         val badge = getLibraryBadge(bookMeta.url, bookMeta.title)
                         if (badge != null) {

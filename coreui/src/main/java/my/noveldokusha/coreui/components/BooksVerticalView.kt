@@ -51,6 +51,8 @@ fun BooksVerticalView(
     // Позиция полосы источника: кромка обложки / плашка под обложкой / InfoPanel
     sourceStripPosition: SourceStripPosition = SourceStripPosition.BelowCover,
     innerPadding: PaddingValues = PaddingValues(),
+    // Готовый заголовок Referer для загрузки обложек; null → из хоста картинки.
+    referer: String? = null,
 
     // Переводы названий книг (url -> translatedTitle). Читается внутри каждого
     // item'а: SnapshotStateMap гарантированно триггерит recomposition конкретного
@@ -113,6 +115,7 @@ fun BooksVerticalView(
                     topRightBadge = { BookRatingBadge(rating = it.rating) },
                     topLeftBadge = topLeftBadge?.let { badge -> { badge(it) } },
                     sourceStripPosition = sourceStripPosition,
+                    referer = referer,
                 )
             }
         }

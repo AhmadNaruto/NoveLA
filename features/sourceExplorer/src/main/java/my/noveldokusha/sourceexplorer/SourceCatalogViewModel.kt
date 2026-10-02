@@ -66,6 +66,7 @@ internal class SourceCatalogViewModel @Inject constructor(
 
     override var sourceBaseUrl by StateExtra_String(stateHandle)
     private val source = scraper.getCompatibleSourceCatalog(sourceBaseUrl)!!
+    val coverReferer: String = scraper.coverReferer(source.catalogUrl)
     private val filterableSource = source as? SourceInterface.FilterableCatalog
     private var lastBookmarkClickMs = 0L
 

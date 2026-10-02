@@ -94,6 +94,10 @@ open class LuaSourceAdapter(
     override val charset: String = metadata.charset ?: "UTF-8"
     override val contentType: String get() = metadata.contentType
 
+    // Готовый Referer для картинок (коверов) — глобал referer из скрипта.
+    // "" = не указано → авто-рефер от URL картинки.
+    override val referer: String = readReferer()
+
     override val language: LanguageCode? = when (metadata.language.lowercase().trim()) {
         "mtl", "multi" -> LanguageCode.MTL
         else -> LanguageCode.values().find { it.iso639_1.equals(metadata.language, ignoreCase = true) }
@@ -182,6 +186,13 @@ open class LuaSourceAdapter(
     private fun readContentType(): String {
         val raw = try { luaScript.get("content_type").optjstring("") } catch (_: Exception) { "" }
         return raw.lowercase().takeIf { it == "manga" || it == "novel" || it == "video" } ?: ""
+    }
+
+    // Чтение глобального Referer для картинок (коверов) из Lua-скрипта плагина.
+    // "" = не указано; валидация на границе чтения.
+    private fun readReferer(): String {
+        val raw = try { luaScript.get("referer").optjstring("") } catch (_: Exception) { "" }
+        return raw.trim()
     }
 
     internal fun extractMetadata(): SourceMetadata {

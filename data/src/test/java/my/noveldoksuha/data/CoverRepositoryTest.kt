@@ -131,6 +131,34 @@ class CoverRepositoryTest {
     }
 
     @Test
+    fun `ensureCover sends passed referer instead of same-origin one`() = runBlocking {
+        val client = FakeNetworkClient().apply { nextBytes = png() }
+        val repo = CoverRepository(client)
+        val cover = File(tempDir.root, "cover.png")
+
+        val result = repo.ensureCover(
+            cover,
+            "https://example.com/c.png",
+            referer = "https://other.example.org/book/1"
+        )
+
+        assertEquals(true, result)
+        assertEquals("https://other.example.org/book/1", client.lastHeaders["Referer"])
+    }
+
+    @Test
+    fun `ensureCover falls back to same-origin when passed referer is blank`() = runBlocking {
+        val client = FakeNetworkClient().apply { nextBytes = png() }
+        val repo = CoverRepository(client)
+        val cover = File(tempDir.root, "cover.png")
+
+        val result = repo.ensureCover(cover, "https://example.com/c.png", referer = "   ")
+
+        assertEquals(true, result)
+        assertEquals("https://example.com/", client.lastHeaders["Referer"])
+    }
+
+    @Test
     fun `ensureCover rejects non-https and blank urls`() = runBlocking {
         val repo = repo()
         val cover = File(tempDir.root, "cover.png")

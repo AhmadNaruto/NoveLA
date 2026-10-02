@@ -35,6 +35,13 @@ sealed interface SourceInterface {
      */
     val contentType: String get() = ""
 
+    /**
+     * Готовое значение заголовка Referer для картинок (коверов) этого источника.
+     * Для Lua-плагинов — глобальная переменная referer в корне скрипта,
+     * например "https://site.com/". "" = не указано → авто-рефер от URL картинки.
+     */
+    val referer: String get() = ""
+
     fun resolveName(context: android.content.Context): String =
         name ?: if (nameStrId != 0) context.getString(nameStrId) else "Unknown"
     suspend fun transformChapterUrl(url: String): String = url

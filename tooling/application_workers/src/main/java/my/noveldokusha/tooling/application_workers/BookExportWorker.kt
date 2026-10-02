@@ -22,6 +22,7 @@ import kotlin.math.max
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import my.noveldokusha.core.AppFileResolver
 import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.core.isCoverValid
@@ -34,6 +35,7 @@ import my.noveldokusha.epub_tooling.exportStreaming
 import my.noveldokusha.feature.local_database.AppDatabase
 import my.noveldokusha.feature.local_database.tables.Book
 import my.noveldokusha.feature.local_database.tables.Chapter
+import my.noveldokusha.scraper.Scraper
 import my.noveldokusha.strings.R as StringsR
 import org.json.JSONArray
 import timber.log.Timber
@@ -66,6 +68,7 @@ class BookExportWorker(
         fun appFileResolver(): AppFileResolver
         fun coverRepository(): CoverRepository
         fun networkClient(): NetworkClient
+        fun scraper(): Scraper
     }
 
     companion object {
@@ -143,6 +146,7 @@ class BookExportWorker(
         val appFileResolver = entryPoint.appFileResolver()
         val coverRepository = entryPoint.coverRepository()
         val networkClient = entryPoint.networkClient()
+        val scraper = entryPoint.scraper()
 
         val bookUrl = inputData.getString(KEY_BOOK_URL) ?: return Result.failure()
         val bookTitle = inputData.getString(KEY_BOOK_TITLE) ?: return Result.failure()
@@ -256,7 +260,16 @@ class BookExportWorker(
         // если кэша нет, но есть remote-URL). Автора локально не храним.
         val book = appDatabase.libraryDao().get(bookUrl)
         val description = book?.description?.takeIf { it.isNotBlank() }
-        val coverBytes = loadCoverBytes(book, appFileResolver, coverRepository)
+        // Ждём загрузки Lua-плагинов перед первым обращением к scraper:
+        // при холодном старте (WorkManager) loadedSourcesFlow ещё пуст и
+        // coverReferer/getCompatibleSource не найдут глобал рефера плагина.
+        // Таймаут не фейлит задачу: обложка/экспорт важнее идеального рефера.
+        try {
+            withTimeout(30_000L) { scraper.awaitLoaded() }
+        } catch (e: Exception) {
+            Timber.w(e, "BookExport: timed out waiting for Lua sources, referer falls back")
+        }
+        val coverBytes = loadCoverBytes(book, appFileResolver, coverRepository, scraper)
 
         try {
             // openOutputStream — блокирующий SAF-вызов, выполняем на Dispatchers.IO.
@@ -304,9 +317,13 @@ class BookExportWorker(
                             localFile?.readBytes() ?: if (src.isHttpsUrl) {
                                 // Сетевые книги: src — абсолютный URL, байтов локально
                                 // нет, скачиваем при экспорте (EPUB должен быть автономным).
+                                // Рефер: глобал плагина referer приоритетнее,
+                                // иначе — прежнее поведение (URL страницы книги).
+                                val referer = scraper.getCompatibleSource(bookUrl)?.referer
+                                    ?.takeIf { it.isNotBlank() } ?: bookUrl
                                 networkClient.getWithHeaders(
                                     src,
-                                    mapOf("Referer" to bookUrl)
+                                    mapOf("Referer" to referer)
                                 ).use { response ->
                                     if (!response.isSuccessful) null else {
                                         val bytes = response.body?.bytes()
@@ -428,6 +445,7 @@ class BookExportWorker(
         book: Book?,
         appFileResolver: AppFileResolver,
         coverRepository: CoverRepository,
+        scraper: Scraper,
     ): ByteArray? = book?.let { b ->
         val coverFile = appFileResolver.getStorageBookCoverImageFile(
             appFileResolver.getLocalBookFolderName(b.url)
@@ -436,7 +454,11 @@ class BookExportWorker(
             if (isCoverValid(coverFile)) {
                 coverFile.readBytes()
             } else {
-                coverRepository.ensureCover(coverFile, b.coverImageUrl.takeIf { it.isHttpsUrl })
+                coverRepository.ensureCover(
+                    coverFile,
+                    b.coverImageUrl.takeIf { it.isHttpsUrl },
+                    referer = scraper.coverReferer(b.url),
+                )
                 if (isCoverValid(coverFile)) coverFile.readBytes() else null
             }
         }

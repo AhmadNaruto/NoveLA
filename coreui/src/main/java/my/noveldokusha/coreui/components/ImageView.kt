@@ -57,6 +57,8 @@ fun ImageView(
     @DrawableRes placeholder: Int? = null,
     colorFilter: ColorFilter? = null,
     forceCache: Boolean = false,
+    // Готовый заголовок Referer от вызывающего; null → выводится из хоста самой картинки.
+    referer: String? = null,
 ) {
     val model by remember(imageModel, error) {
         derivedStateOf {
@@ -88,18 +90,20 @@ fun ImageView(
 
         // ponytail: crossfade, allowHardware, allowRgb565 — задаются глобально в App.kt.
         val placeholderPainter = placeholder?.let { painterResource(it) }
-        val imageRequest by remember(model, forceCache, retryCount.intValue) {
+        val imageRequest by remember(model, forceCache, retryCount.intValue, referer) {
             derivedStateOf {
-                val referer = (model as? String)?.takeIf { it.startsWith("http://") || it.startsWith("https://") }?.let(::refererFor)
+                // Приоритет — referer вызывающего, иначе выводим из хоста картинки.
+                val effectiveReferer = referer?.takeIf { it.isNotBlank() }
+                    ?: (model as? String)?.takeIf { it.startsWith("http://") || it.startsWith("https://") }?.let(::refererFor)
                 ImageRequest
                     .Builder(context)
                     .data(model)
                     .precision(Precision.INEXACT)
                     .apply {
-                        if (!referer.isNullOrEmpty()) {
+                        if (!effectiveReferer.isNullOrEmpty()) {
                             httpHeaders(
                                 NetworkHeaders.Builder()
-                                    .set("Referer", referer)
+                                    .set("Referer", effectiveReferer)
                                     .build()
                             )
                         }

@@ -21,12 +21,14 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import my.noveldokusha.core.AppFileResolver
 import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.data.AppRepository
 import my.noveldokusha.data.CoverRepository
 import my.noveldokusha.data.backfillCovers
 import my.noveldokusha.feature.local_database.AppDatabase
+import my.noveldokusha.scraper.Scraper
 import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
@@ -49,6 +51,7 @@ class AutoBackupWorker(
         fun appPreferences(): AppPreferences
         fun appFileResolver(): AppFileResolver
         fun coverRepository(): CoverRepository
+        fun scraper(): Scraper
     }
 
     companion object {
@@ -223,6 +226,7 @@ class AutoBackupWorker(
         val appPreferences = entryPoint.appPreferences()
         val appFileResolver = entryPoint.appFileResolver()
         val coverRepository = entryPoint.coverRepository()
+        val scraper = entryPoint.scraper()
         Timber.d( "performAutoBackup: got dependencies via EntryPoint")
 
         val pattern = "yyyyMMdd_HHmmss"
@@ -431,9 +435,18 @@ class AutoBackupWorker(
                 // Best-effort: make sure local covers exist before we back them up,
                 // so the archive contains up-to-date artwork (idempotent, skips valid covers).
                 // Isolated so a single book's cover-sync failure cannot abort the whole backup.
+                // Ждём загрузки Lua-плагинов перед первым обращением к scraper:
+                // при холодном старте (WorkManager) loadedSourcesFlow ещё пуст и
+                // coverReferer не найдёт глобал рефера плагина. Таймаут не фейлит
+                // задачу: продолжаем с фолбэком.
+                try {
+                    withTimeout(30_000L) { scraper.awaitLoaded() }
+                } catch (e: Exception) {
+                    Timber.w(e, "performAutoBackup: timed out waiting for Lua sources, referer falls back")
+                }
                 try {
                     val books = appRepository.libraryBooks.getAllInLibrary()
-                    backfillCovers(books, appFileResolver, coverRepository)
+                    backfillCovers(books, appFileResolver, coverRepository, scraper)
                 } catch (e: Exception) {
                     Timber.e(e, "performAutoBackup: cover backfill failed, continuing backup")
                 }
