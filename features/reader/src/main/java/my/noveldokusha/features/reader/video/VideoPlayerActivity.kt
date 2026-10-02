@@ -1038,6 +1038,10 @@ private fun PlayerSurface(
                 }
                 val mediaItem = MediaItem.Builder()
                     .setUri(video.url)
+                    // Подсказка mime от плагина: без неё меди3 гадает по URL и
+                    // адрес вида /?token=… (без .m3u8) уходит в прогрессивный
+                    // источник → UnrecognizedInputFormatException.
+                    .also { video.mime?.let(it::setMimeType) }
                     .setSubtitleConfigurations(subtitleConfigs)
                     .build()
                 exoPlayer.setMediaItem(mediaItem)

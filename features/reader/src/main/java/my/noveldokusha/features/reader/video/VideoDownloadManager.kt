@@ -79,9 +79,11 @@ class VideoDownloadManager @Inject constructor(
         val existing = runCatching { downloadManager.downloadIndex.getDownload(chapterUrl) }.getOrNull()
         if (existing != null && existing.state == Download.STATE_COMPLETED) return@withContext
         val builder = DownloadRequest.Builder(chapterUrl, Uri.parse(video.url))
-        // Тип по расширению: HLS качает HlsDownloader (плейлист+сегменты),
-        // иначе — один файл ProgressiveDownloader-ом.
-        if (video.url.contains(".m3u8")) builder.setMimeType(MimeTypes.APPLICATION_M3U8)
+        // Тип: mime от плагина, иначе — как раньше, по расширению. HLS качает
+        // HlsDownloader (плейлист+сегменты), иначе — один файл Progressive-ом;
+        // заявка несёт mime дальше — он возвращается в completedVideo().
+        val mime = video.mime ?: MimeTypes.APPLICATION_M3U8.takeIf { video.url.contains(".m3u8") }
+        if (mime != null) builder.setMimeType(mime)
         if (video.headers.isNotEmpty()) builder.setData(encodeHeaders(video.headers))
         DownloadService.sendAddDownload(
             context, VideoDownloadService::class.java, builder.build(), true
@@ -135,7 +137,9 @@ class VideoDownloadManager @Inject constructor(
         val download = runCatching { downloadManager.downloadIndex.getDownload(chapterUrl) }
             .getOrNull() ?: return@withContext null
         if (download.state != Download.STATE_COMPLETED) return@withContext null
-        VideoSource(url = download.request.uri.toString())
+        // mime заявки несём обратно: без него плеер по расширению uri (у HLS
+        // его часто нет) снова выберет прогрессивный источник.
+        VideoSource(url = download.request.uri.toString(), mime = download.request.mimeType)
     }
 
     /**

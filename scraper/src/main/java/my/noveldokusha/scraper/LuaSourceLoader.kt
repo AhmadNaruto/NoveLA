@@ -315,12 +315,18 @@ class LuaEngine @Inject constructor(
 
     /**
      * http_get(url [, config])
-     * config = { headers = {}, charset = "UTF-8", binary = false, followRedirects = true }
+     * config = { headers = {}, charset = "UTF-8", binary = false, followRedirects = true,
+     *            timeout = 0, method = "GET" }
      * returns { success, body, code }
      * body — string по умолчанию; при binary=true — таблица байтов {0x00, 0x3F, ...}.
      * Binary-ответы не кэшируются.
      * followRedirects=false — не переходить по 3xx: r.code=3xx, r.headers.location
      * содержит цель. Нужно, когда цель редиректа — сам ответ (хостер-гейты).
+     * timeout — бюджет запроса в мс (нативные таймауты OkHttp, одна попытка без
+     * ретраев); не задан или <= 0 — прежнее поведение клиента (3+3+3+3+15с).
+     * method — "GET" | "HEAD" (регистр не важен): HEAD ходит тем же клиентом и с теми
+     * же заголовками, тело ответа пустое, кэш http_get не читается и не пишется —
+     * дешёвая проба живости ссылки. Иное значение → IllegalArgumentException.
      */
     private inner class HttpGetFunction : TwoArgFunction() {
         override fun call(a1: LuaValue, a2: LuaValue): LuaValue = runBlocking {
@@ -330,6 +336,13 @@ class LuaEngine @Inject constructor(
             val charset       = config.get("charset").optjstring("UTF-8")
             val binary        = config.get("binary").optboolean(false)
             val followRedirects = config.get("followRedirects").optboolean(true)
+            val methodRaw     = config.get("method").optjstring("GET")
+            val method        = methodRaw.uppercase(Locale.ROOT)
+            if (method != "GET" && method != "HEAD") {
+                throw IllegalArgumentException("http_get: unsupported method \"$methodRaw\", allowed: GET, HEAD")
+            }
+            val isHead        = method == "HEAD"
+            val timeoutMs     = config.get("timeout").optlong(0L).takeIf { it > 0 }
             val headers       = defaultHeaders(url) + pluginHeaders
             // sourceId читается на вызывающем потоке: ThreadLocal не переживает переключение диспетчера.
             val sourceId      = currentSourceId.get()
@@ -338,7 +351,10 @@ class LuaEngine @Inject constructor(
             // Бинарь и forceNetwork кэш пропускают — флаги в AppCacheConfig.
             // Бинарь обычно большой и одноразовый; forceNetwork (каталог) обязан
             // быть свежим. Правила читаются отдельно от самого if.
-            val cacheReadable = (!binary || AppCacheConfig.LUA_CACHE_BINARY) &&
+            // HEAD кэш пропускает всегда: тело у него пустое, и запись под тем же
+            // ключом отравила бы последующий GET внутри TTL.
+            val cacheReadable = !isHead &&
+                (!binary || AppCacheConfig.LUA_CACHE_BINARY) &&
                 (!forceNetwork || !AppCacheConfig.LUA_FORCE_NETWORK_BYPASS)
             if (cacheReadable) {
                 val cacheKey = "$url|$charset|${sourceId ?: "default"}|${headers.toString().hashCode()}"
@@ -354,17 +370,33 @@ class LuaEngine @Inject constructor(
                 withContext(Dispatchers.IO) {
                     val builder = getRequest(url)
                     headers.forEach { (k, v) -> builder.header(k, v) }
+                    // head() меняет только метод/тело запроса, заголовки те же.
+                    // no-cache обязателен для пробы живости: без него OkHttp может
+                    // ответить свежим закэшированным 200 и не проверить ссылку.
+                    if (isHead) {
+                        builder.head()
+                        builder.header("Cache-Control", "no-cache")
+                    }
                     // Applied after plugin headers: catalog freshness overrides any
                     // Cache-Control set by the plugin (getRequest default: max-age=600).
                     if (forceNetwork) builder.header("Cache-Control", "no-cache")
                     sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
-                    networkClient.call(builder, followRedirects = followRedirects).use { r ->
-                        val bytes = r.body.bytes()
+                    // timeoutMs задан → запрос с бюджетом (одна попытка, без ретраев);
+                    // иначе — обычный путь клиента, как и раньше.
+                    val response = if (timeoutMs != null) {
+                        networkClient.callWithTimeout(builder, timeoutMs, followRedirects = followRedirects)
+                    } else {
+                        networkClient.call(builder, followRedirects = followRedirects)
+                    }
+                    response.use { r ->
+                        // OkHttp и так не отдаёт тело у HEAD, но читать его не нужно
+                        // и здесь: проба живости возвращает пустой body по определению.
+                        val bytes = if (isHead) ByteArray(0) else r.body.bytes()
                         if (binary) {
                             responseTableBinary(bytes, r.code, r.headers.toMultimap())
                         } else {
                             val body = String(bytes, java.nio.charset.Charset.forName(charset))
-                            if (AppCacheConfig.isCacheableStatus(r.code)) {
+                            if (!isHead && AppCacheConfig.isCacheableStatus(r.code)) {
                                 val cacheKey = "$url|$charset|${sourceId ?: "default"}|${headers.toString().hashCode()}"
                                 putHttpGetCache(cacheKey, HttpGetCacheEntry(body, true, r.code, r.headers.toMultimap(), System.currentTimeMillis()))
                             }
@@ -544,13 +576,17 @@ class LuaEngine @Inject constructor(
     /**
      * http_get_batch(urlsTable [, config])
      * Fetches multiple URLs in parallel.
-     * config: { binary = false } — when true, body is a byte table instead of a string.
+     * config: { binary = false, headers = {} } — binary: body is a byte table instead of a string;
+     * headers: table of strings applied to EVERY request of the batch (override defaultHeaders,
+     * e.g. a fixed Referer for Referer-guarded hosts). Per-URL headers are not supported.
      */
     private inner class HttpGetBatchFunction : TwoArgFunction() {
         override fun call(arg1: LuaValue, arg2: LuaValue): LuaValue {
             val urlTable = arg1.checktable()
             val urls = (1..urlTable.length()).map { urlTable.get(it).checkjstring() }
-            val binary = arg2.opttable(LuaTable()).get("binary").optboolean(false)
+            val config = arg2.opttable(LuaTable())
+            val binary = config.get("binary").optboolean(false)
+            val batchHeaders = convertHeaders(config.get("headers").opttable(LuaTable()))
             val sourceId = currentSourceId.get()
             // Force-network flag: captured before async(Dispatchers.IO) hops threads.
             val forceNetwork = forceNetworkFlag.get()
@@ -562,7 +598,7 @@ class LuaEngine @Inject constructor(
                             try {
                                 if (!isSsrfSafe(url)) return@async Triple(ByteArray(0), 0, emptyMap<String, List<String>>())
                                 val builder = getRequest(url)
-                                val headers = defaultHeaders(url)
+                                val headers = defaultHeaders(url) + batchHeaders
                                 headers.forEach { (k, v) -> builder.header(k, v) }
                                 if (forceNetwork) builder.header("Cache-Control", "no-cache")
                                 sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
@@ -590,7 +626,7 @@ class LuaEngine @Inject constructor(
                             try {
                                 if (!isSsrfSafe(url)) return@async Triple("", 0, emptyMap<String, List<String>>())
                                 val builder = getRequest(url)
-                                val headers = defaultHeaders(url)
+                                val headers = defaultHeaders(url) + batchHeaders
                                 headers.forEach { (k, v) -> builder.header(k, v) }
                                 if (forceNetwork) builder.header("Cache-Control", "no-cache")
                                 sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }

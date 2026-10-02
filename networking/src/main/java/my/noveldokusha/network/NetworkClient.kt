@@ -31,6 +31,18 @@ import javax.inject.Singleton
 interface NetworkClient {
     val cookieJar: okhttp3.CookieJar
     suspend fun call(request: Request.Builder, followRedirects: Boolean = true): Response
+
+    /**
+     * Запрос с явным бюджетом в миллисекундах: ровно одна попытка (без цикла
+     * ретраев, который умножил бы бюджет на своё число), нативные таймауты
+     * OkHttp на фазы connect/read/write + общий callTimeout = timeoutMs.
+     * Отдельный метод, а не параметр call(): сигнатура call() не меняется
+     * для существующих вызывающих.
+     * Дефолтная реализация игнорирует бюджет и делегирует в call() —
+     * бюджет поддерживает ScraperNetworkClient.
+     */
+    suspend fun callWithTimeout(request: Request.Builder, timeoutMs: Long, followRedirects: Boolean): Response =
+        call(request, followRedirects)
     suspend fun get(url: String): Response
     suspend fun getWithHeaders(url: String, headers: Map<String, String>): Response
     suspend fun get(url: Uri.Builder): Response
@@ -196,6 +208,23 @@ class ScraperNetworkClient @Inject constructor(
             }
         }
         return result ?: throw lastException ?: IllegalStateException("Unreachable retry loop")
+    }
+
+    override suspend fun callWithTimeout(request: Request.Builder, timeoutMs: Long, followRedirects: Boolean): Response {
+        // Бюджет задан: одна попытка и нативные таймауты OkHttp = timeoutMs.
+        // Без ретраев — их серия (3+3+3+3+15с) умножила бы бюджет и провалила
+        // быструю пробу живости ссылки. callTimeout режет весь вызов целиком
+        // (DNS+connect+редиректы+чтение тела), а не только отдельные фазы.
+        if (timeoutMs <= 0) return call(request, followRedirects)
+        val built = request.build()
+        val baseClient = if (followRedirects) clientWithRedirects else clientNoRedirects
+        val budgetClient = baseClient.newBuilder()
+            .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .callTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .build()
+        return budgetClient.call(built.newBuilder())
     }
 
     private fun isRetryable(e: Throwable): Boolean {

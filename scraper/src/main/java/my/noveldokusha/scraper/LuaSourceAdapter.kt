@@ -637,6 +637,52 @@ open class LuaSourceAdapter(
         uploaded = table.get("uploaded").takeIf { it.isnumber() }?.tolong()
     )
 
+    /**
+     * Необязательный хинт `mime` таблицы потока → каноничный mime для меди3
+     * либо null.
+     *
+     * Util.inferContentTypeForUriAndMimeType сравнивает строки точно, поэтому
+     * HLS обязан прийти как `application/x-mpegURL`; распространённый алиас
+     * `application/vnd.apple.mpegurl` меди3 не знает и ушёл бы в прогрессивный
+     * источник.
+     *
+     * Неизвестные значения → null: непустой mime, который меди3 не распознаёт,
+     * отправляет поток в прогрессивный источник БЕЗ возврата к определению по
+     * расширению URL (например `application/octet-stream` сломал бы `.m3u8`),
+     * а null даёт штатный URI-фоллбэк. Пропускаются только строки, понятные
+     * меди3: `video/…` (прогрессив) и точный application-набор из
+     * inferContentTypeForUriAndMimeType. Не-строковые значения игнорируются
+     * (debug-лог, без ошибки) — плагины без поля работают как раньше.
+     */
+    private fun normalizeVideoMime(value: LuaValue, itemIndex: Int): String? {
+        if (value.isnil()) return null
+        if (!value.isstring()) {
+            Timber.d("getVideoList [$id]: item $itemIndex mime не строка, пропущено")
+            return null
+        }
+        val raw = value.tojstring().trim()
+        if (raw.isEmpty()) return null
+        val mime = raw.lowercase()
+        val canonical = when (mime) {
+            "hls", "m3u8",
+            "application/x-mpegurl",
+            "application/vnd.apple.mpegurl" -> "application/x-mpegURL"
+            "mp4", "video/mp4" -> "video/mp4"
+            "mpd", "application/dash+xml" -> "application/dash+xml"
+            // Белый список: video/* (прогрессив) + точный application/*-set меди3
+            // (dash/x-mpegURL уже нормализованы выше). Прочное — null → URL-фоллбэк.
+            else -> mime.takeIf {
+                it.startsWith("video/") ||
+                    it == "application/vnd.ms-sstr+xml" ||
+                    it == "application/x-rtsp"
+            }
+        }
+        if (canonical == null) {
+            Timber.d("getVideoList [$id]: item $itemIndex неизвестный mime '$raw', пропущено")
+        }
+        return canonical
+    }
+
     // Три-состояния контракта (спека §3.3): nil → Success(empty) — плагин объявил
     // метод, но источники не найдены; не-таблица → Error;
     // пустая таблица → Success(empty) — «Источники не найдены».
@@ -676,7 +722,8 @@ open class LuaSourceAdapter(
                     url = url,
                     quality = t.get("quality").optjstring(""),
                     headers = headers,
-                    subtitles = subtitles
+                    subtitles = subtitles,
+                    mime = normalizeVideoMime(t.get("mime"), i)
                 )
             )
         }
