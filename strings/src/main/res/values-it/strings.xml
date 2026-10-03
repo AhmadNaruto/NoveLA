@@ -870,4 +870,23 @@
     <string name="video_subtitles_none">Nessun sottotitolo</string>
     <string name="video_subtitles_off">Disattivati</string>
     <string name="video_keep_screen_on">Mantieni lo schermo acceso</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Riproduzione</string>
+    <string name="video_section_video">Video</string>
+    <string name="video_section_gestures">Gesti</string>
+    <string name="video_section_audio">Audio</string>
+    <string name="video_section_subtitles">Sottotitoli</string>
+    <string name="video_section_screen">Schermo</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Passo di salto</string>
+    <string name="video_seconds_value">%1$d s</string>
+    <string name="video_controller_auto_hide">Nascondi automaticamente i controlli</string>
+    <string name="video_auto_hide_never">Mai</string>
+    <string name="video_variant">Variante</string>
+    <string name="video_gesture_double_tap">Doppio tocco per saltare</string>
+    <string name="video_gesture_vertical_swipe">Scorrimento verticale: volume e luminosità</string>
+    <string name="video_gesture_long_press">Premi a lungo per velocità 2×</string>
+    <string name="video_gesture_swap_sides">Scambia le metà dello schermo</string>
+    <string name="video_gesture_sensitivity">Sensibilità dello scorrimento</string>
+    <string name="video_subtitle_track">Traccia dei sottotitoli</string>
 </resources>

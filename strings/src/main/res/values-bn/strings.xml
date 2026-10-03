@@ -860,4 +860,23 @@
     <string name="video_subtitles_none">সাবটাইটেল নেই</string>
     <string name="video_subtitles_off">বন্ধ</string>
     <string name="video_keep_screen_on">স্ক্রিন চালু রাখুন</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">প্লেব্যাক</string>
+    <string name="video_section_video">ভিডিও</string>
+    <string name="video_section_gestures">জেস্চার</string>
+    <string name="video_section_audio">অডিও</string>
+    <string name="video_section_subtitles">সাবটাইটেল</string>
+    <string name="video_section_screen">স্ক্রিন</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">স্কিপ ধাপ</string>
+    <string name="video_seconds_value">%1$d সেকেন্ড</string>
+    <string name="video_controller_auto_hide">কন্ট্রোল স্বয়ংক্রিয়ভাবে লুকান</string>
+    <string name="video_auto_hide_never">কখনো নয়</string>
+    <string name="video_variant">ভ্যারিয়েন্ট</string>
+    <string name="video_gesture_double_tap">দুইবার ট্যাপ করে স্কিপ করুন</string>
+    <string name="video_gesture_vertical_swipe">উল্লম্ব সোয়াইপ: ভলিউম ও উজ্জ্বলতা</string>
+    <string name="video_gesture_long_press">2× গতির জন্য দীর্ঘ চাপ দিন</string>
+    <string name="video_gesture_swap_sides">স্ক্রিনের দুই অর্ধেক বদলান</string>
+    <string name="video_gesture_sensitivity">সোয়াইপের সংবেদনশীলতা</string>
+    <string name="video_subtitle_track">সাবটাইটেল ট্র্যাক</string>
 </resources>

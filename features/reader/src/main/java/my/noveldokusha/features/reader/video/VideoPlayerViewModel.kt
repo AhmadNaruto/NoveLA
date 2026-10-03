@@ -153,4 +153,56 @@ internal class VideoPlayerViewModel @Inject constructor(
     fun saveVideoVariantQuality(quality: String) {
         appPreferences.setVideoVariantForBook(bookUrl, quality)
     }
+
+    /**
+     * Снимок глобальных настроек жестов и поведения панели: одно чтение →
+     * один объект в Compose-состояние Activity (иначе семь отдельных pref'ов
+     * пришлось бы читать по одному на каждый рекомпоз).
+     */
+    data class GestureSettings(
+        val seekStepMs: Int,
+        val controllerAutoHideMs: Int,
+        val swappedSides: Boolean,
+        val doubleTapEnabled: Boolean,
+        val verticalSwipeEnabled: Boolean,
+        val longPressSpeedEnabled: Boolean,
+        /** Порог начала горизонтального drag'а, доля от ширины экрана. */
+        val dragThreshold: Float,
+    )
+
+    fun gestureSettings(): GestureSettings = GestureSettings(
+        seekStepMs = appPreferences.VIDEO_SEEK_STEP_MS.value,
+        controllerAutoHideMs = appPreferences.VIDEO_CONTROLLER_AUTO_HIDE_MS.value,
+        swappedSides = appPreferences.VIDEO_GESTURE_SWAPPED_SIDES.value,
+        doubleTapEnabled = appPreferences.VIDEO_GESTURE_DOUBLE_TAP.value,
+        verticalSwipeEnabled = appPreferences.VIDEO_GESTURE_VERTICAL_SWIPE.value,
+        longPressSpeedEnabled = appPreferences.VIDEO_GESTURE_LONG_PRESS_SPEED.value,
+        dragThreshold = appPreferences.VIDEO_GESTURE_DRAG_THRESHOLD.value,
+    )
+
+    fun saveGestureSettings(s: GestureSettings) {
+        appPreferences.VIDEO_SEEK_STEP_MS.value = s.seekStepMs
+        appPreferences.VIDEO_CONTROLLER_AUTO_HIDE_MS.value = s.controllerAutoHideMs
+        appPreferences.VIDEO_GESTURE_SWAPPED_SIDES.value = s.swappedSides
+        appPreferences.VIDEO_GESTURE_DOUBLE_TAP.value = s.doubleTapEnabled
+        appPreferences.VIDEO_GESTURE_VERTICAL_SWIPE.value = s.verticalSwipeEnabled
+        appPreferences.VIDEO_GESTURE_LONG_PRESS_SPEED.value = s.longPressSpeedEnabled
+        appPreferences.VIDEO_GESTURE_DRAG_THRESHOLD.value = s.dragThreshold
+    }
+
+    /**
+     * Конфигурация жестов для [PlayerGestureDispatcher]: порог хранится долей,
+     * в пиксели его превращает вызывающий — там известна ширина вью.
+     */
+    fun gestureConfigForWidth(widthPx: Float): GestureConfig {
+        val s = gestureSettings()
+        return GestureConfig(
+            seekStepMs = s.seekStepMs,
+            dragThresholdPx = s.dragThreshold * widthPx,
+            swappedSides = s.swappedSides,
+            doubleTapEnabled = s.doubleTapEnabled,
+            verticalSwipeEnabled = s.verticalSwipeEnabled,
+            longPressSpeedEnabled = s.longPressSpeedEnabled,
+        )
+    }
 }

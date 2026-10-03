@@ -872,4 +872,23 @@
     <string name="video_subtitles_none">자막 없음</string>
     <string name="video_subtitles_off">꺼짐</string>
     <string name="video_keep_screen_on">화면 켜두기</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">재생</string>
+    <string name="video_section_video">비디오</string>
+    <string name="video_section_gestures">제스처</string>
+    <string name="video_section_audio">오디오</string>
+    <string name="video_section_subtitles">자막</string>
+    <string name="video_section_screen">화면</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">탐색 단계</string>
+    <string name="video_seconds_value">%1$d초</string>
+    <string name="video_controller_auto_hide">컨트롤 자동 숨기기</string>
+    <string name="video_auto_hide_never">안 함</string>
+    <string name="video_variant">버전</string>
+    <string name="video_gesture_double_tap">두 번 탭하여 탐색</string>
+    <string name="video_gesture_vertical_swipe">세로 스와이프: 볼륨 및 밝기</string>
+    <string name="video_gesture_long_press">길게 눌러 2배 속도</string>
+    <string name="video_gesture_swap_sides">화면 좌우 바꾸기</string>
+    <string name="video_gesture_sensitivity">스와이프 감도</string>
+    <string name="video_subtitle_track">자막 트랙</string>
 </resources>

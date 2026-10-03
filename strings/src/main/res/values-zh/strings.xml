@@ -872,4 +872,23 @@
     <string name="video_subtitles_none">无字幕</string>
     <string name="video_subtitles_off">关闭</string>
     <string name="video_keep_screen_on">保持屏幕常亮</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">播放</string>
+    <string name="video_section_video">视频</string>
+    <string name="video_section_gestures">手势</string>
+    <string name="video_section_audio">音频</string>
+    <string name="video_section_subtitles">字幕</string>
+    <string name="video_section_screen">屏幕</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">拖动步长</string>
+    <string name="video_seconds_value">%1$d 秒</string>
+    <string name="video_controller_auto_hide">自动隐藏控制栏</string>
+    <string name="video_auto_hide_never">从不</string>
+    <string name="video_variant">版本</string>
+    <string name="video_gesture_double_tap">双击快进</string>
+    <string name="video_gesture_vertical_swipe">上下滑动：音量和亮度</string>
+    <string name="video_gesture_long_press">长按 2 倍速</string>
+    <string name="video_gesture_swap_sides">交换屏幕左右两半</string>
+    <string name="video_gesture_sensitivity">滑动灵敏度</string>
+    <string name="video_subtitle_track">字幕轨道</string>
 </resources>

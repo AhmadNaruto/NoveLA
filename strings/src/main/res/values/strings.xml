@@ -883,4 +883,23 @@
     <string name="video_subtitles_none">No subtitles</string>
     <string name="video_subtitles_off">Off</string>
     <string name="video_keep_screen_on">Keep screen on</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Playback</string>
+    <string name="video_section_video">Video</string>
+    <string name="video_section_gestures">Gestures</string>
+    <string name="video_section_audio">Audio</string>
+    <string name="video_section_subtitles">Subtitles</string>
+    <string name="video_section_screen">Screen</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Seek step</string>
+    <string name="video_seconds_value">%1$d s</string>
+    <string name="video_controller_auto_hide">Auto-hide controls</string>
+    <string name="video_auto_hide_never">Never</string>
+    <string name="video_variant">Variant</string>
+    <string name="video_gesture_double_tap">Double-tap to seek</string>
+    <string name="video_gesture_vertical_swipe">Vertical swipe: volume and brightness</string>
+    <string name="video_gesture_long_press">Long press for 2× speed</string>
+    <string name="video_gesture_swap_sides">Swap screen halves</string>
+    <string name="video_gesture_sensitivity">Swipe sensitivity</string>
+    <string name="video_subtitle_track">Subtitle track</string>
 </resources>

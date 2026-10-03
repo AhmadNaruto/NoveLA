@@ -1,5 +1,6 @@
 package my.noveldokusha.features.reader.video
 
+import android.app.Activity
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -33,20 +34,27 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.Brightness6
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State as ComposeState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +69,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.IntentCompat
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.AudioAttributes
@@ -82,6 +91,7 @@ import androidx.media3.ui.PlayerView
 import androidx.media3.ui.TrackSelectionDialogBuilder
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import my.noveldokusha.core.utils.formatDuration
 import my.noveldokusha.coreui.AppThemeProvider
 import my.noveldokusha.coreui.theme.Theme
 import my.noveldokusha.features.reader.video.VideoPlayerViewModel.State
@@ -91,11 +101,13 @@ import my.noveldokusha.scraper.domain.VideoSource
 import okhttp3.OkHttpClient
 import javax.inject.Inject
 
-// Панель меди3 не самоуводится (0 — по доку media3 контроллы видны
-// бессрочно): показ всегда, скрытие — тапом (setControllerHideOnTouch).
-// Top-level: константой пользуется PlayerSurface (top-level-функция),
-// а не только сама activity.
-private const val CONTROLLER_AUTO_HIDE_MS = 0
+// Таймаут автоскрытия панели берётся из настроек (VIDEO_CONTROLLER_AUTO_HIDE_MS,
+// дефолт 5с); 0 — никогда, панель гаснет только тапом (setControllerHideOnTouch).
+
+// Высота градиентной шапки (название серии + строка действий) в dp: она
+// рисуется Compose-слоем поверх видео и тачи не потребляет, поэтому зону
+// исключения жестов расширяем на неё явно.
+private const val HEADER_HEIGHT_DP = 72
 
 /**
  * Эмулятор (goldfish/ranchu/generic): декодер `c2.goldfish.h264.decoder`
@@ -131,8 +143,82 @@ private fun createRenderersFactory(context: Context): DefaultRenderersFactory =
         }
     }
 
-/** Скорости диалога «Скорость» — те же, что в popup скоростей меди3. */
-private val PLAYBACK_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
+/**
+ * HUD жеста: иконка + значение по центру экрана поверх видео.
+ * Живёт только пока диспетчер шлёт [GestureHud]; null — гасит оверлей.
+ */
+@Composable
+private fun GestureHudOverlay(state: ComposeState<GestureHud?>) {
+    val hud = state.value
+    // Последнее значение для плавного exit: когда диспетчер шлёт null,
+    // HUD гаснет, но содержимое должно остаться до конца fade-анимации.
+    var lastHud by remember { mutableStateOf<GestureHud?>(null) }
+    if (hud != null) lastHud = hud
+    AnimatedVisibility(
+        visible = hud != null,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        val shown = lastHud
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color.Black.copy(alpha = 0.72f),
+                contentColor = Color.White,
+                modifier = Modifier.padding(24.dp),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    when (shown) {
+                        // Позиция/длительность, а не дельта: во время drag-а
+                        // дельта прыгала бы относительно движущейся базы.
+                        is GestureHud.Seek -> {
+                            Icon(Icons.Rounded.AccessTime, contentDescription = null)
+                            Text(
+                                text = formatDuration((shown.positionMs / 1000).coerceAtLeast(0).toInt()) + "/" +
+                                    formatDuration((shown.durationMs / 1000).coerceAtLeast(0).toInt()),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
+                        is GestureHud.Brightness -> {
+                            Icon(Icons.Rounded.Brightness6, contentDescription = null)
+                            Text(
+                                text = "${(shown.fraction * 100).toInt()}%",
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
+                        is GestureHud.Volume -> {
+                            Icon(Icons.Rounded.VolumeUp, contentDescription = null)
+                            Text(
+                                text = "${(shown.fraction * 100).toInt()}%",
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
+                        is GestureHud.Speed -> {
+                            Icon(Icons.Rounded.Speed, contentDescription = null)
+                            Text(
+                                // Целая скорость — без дробной части, как в панели
+                                // («2x»), иначе «1.5x».
+                                text = if (shown.factor % 1f == 0f) {
+                                    "${shown.factor.toInt()}x"
+                                } else "${shown.factor}x",
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
+                        null -> Unit
+                    }
+                }
+            }
+        }
+    }
+}
 
 @AndroidEntryPoint
 class VideoPlayerActivity : ComponentActivity() {
@@ -283,7 +369,20 @@ class VideoPlayerActivity : ComponentActivity() {
                         // Меню шестерёнки: подменяет popup меди3 (там только
                         // «Скорость» и «Аудио», позиции 0/1) — см. PlayerSurface.
                         var showPlayerMenu by remember(video.url) { mutableStateOf(false) }
-                        var showSpeedDialog by remember(video.url) { mutableStateOf(false) }
+                        // Снимок настроек жестов: читается один раз при входе
+                        // в Ready, пишется через viewModel.saveGestureSettings.
+                        var gestureSettings by remember { mutableStateOf(viewModel.gestureSettings()) }
+                        // HUD жеста: обновляется из PlayerGestureDispatcher,
+                        // null — оверлей погашен. State-объект (не delegate):
+                        // значение читает только оверлей, Ready от HUD не
+                        // перекомпозуется (обновления идут на каждом кадре drag'а).
+                        val gestureHud = remember(video.url) { mutableStateOf<GestureHud?>(null) }
+                        // Скорость вне gestureSettings: панель читает её при
+                        // открытии (плеер — не Compose-состояние) и пишет по чипу.
+                        var playbackSpeed by remember(video.url) { mutableStateOf(1f) }
+                        LaunchedEffect(showPlayerMenu) {
+                            if (showPlayerMenu) playbackSpeed = player?.playbackParameters?.speed ?: 1f
+                        }
                         if (showVariantDialog) {
                             VariantDialog(
                                 videos = s.videos,
@@ -301,87 +400,6 @@ class VideoPlayerActivity : ComponentActivity() {
                                 // Закрытие окна выбор не меняет и не сохраняет —
                                 // при отсутствии сохранённого спросим в следующий раз.
                                 onDismissRequest = { showVariantDialog = false },
-                            )
-                        }
-                        if (showSpeedDialog) SpeedDialog(
-                            currentSpeed = player?.playbackParameters?.speed ?: 1f,
-                            onSelect = { speed ->
-                                player?.let { it.playbackParameters = PlaybackParameters(speed) }
-                                showSpeedDialog = false
-                            },
-                            onDismissRequest = { showSpeedDialog = false },
-                        )
-                        if (showPlayerMenu) {
-                            // Дорожки читаем в момент открытия меню: плеер —
-                            // обычное поле Activity, Compose его не наблюдает,
-                            // но перерисовка по showPlayerMenu читает актуальное.
-                            val textGroups = player?.currentTracks?.groups
-                                .orEmpty()
-                                .filter { it.type == C.TRACK_TYPE_TEXT }
-                            val selectedSubtitle = textGroups.firstNotNullOfOrNull { group ->
-                                (0 until group.length)
-                                    .firstOrNull { group.isTrackSelected(it) }
-                                    ?.let { group.getTrackFormat(it) }
-                            }
-                            AlertDialog(
-                                onDismissRequest = { showPlayerMenu = false },
-                                title = { Text(stringResource(R.string.video_settings_title)) },
-                                text = {
-                                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                                        SettingsOptionRow(
-                                            label = stringResource(R.string.video_playback_speed),
-                                            value = "${player?.playbackParameters?.speed ?: 1f}x",
-                                            onClick = {
-                                                showPlayerMenu = false
-                                                showSpeedDialog = true
-                                            },
-                                        )
-                                        SettingsOptionRow(
-                                            label = stringResource(R.string.video_audio_track),
-                                            onClick = {
-                                                showPlayerMenu = false
-                                                showAudioTrackDialog()
-                                            },
-                                        )
-                                        // Сабы идут из VideoSource.subtitles →
-                                        // MediaItem.SubtitleConfiguration (PlayerSurface);
-                                        // плагин без дорожек → пункт с явной пометкой.
-                                        SettingsOptionRow(
-                                            label = stringResource(R.string.video_subtitles),
-                                            value = when {
-                                                textGroups.isEmpty() -> stringResource(R.string.video_subtitles_none)
-                                                selectedSubtitle == null -> stringResource(R.string.video_subtitles_off)
-                                                else -> DefaultTrackNameProvider(this@VideoPlayerActivity.resources)
-                                                    .getTrackName(selectedSubtitle)
-                                            },
-                                            enabled = textGroups.isNotEmpty(),
-                                            onClick = {
-                                                showPlayerMenu = false
-                                                showSubtitlesDialog()
-                                            },
-                                        )
-                                        if (videoFormatCount > 1) SettingsOptionRow(
-                                            label = stringResource(R.string.video_resolution),
-                                            onClick = {
-                                                showPlayerMenu = false
-                                                showStreamQualityDialog()
-                                            },
-                                        )
-                                        SettingsOptionRow(
-                                            label = stringResource(R.string.video_keep_screen_on),
-                                            checked = keepScreenOnLocked,
-                                            onClick = {
-                                                keepScreenOnLocked = !keepScreenOnLocked
-                                                updateKeepScreenOn()
-                                            },
-                                        )
-                                    }
-                                },
-                                confirmButton = {
-                                    TextButton(onClick = { showPlayerMenu = false }) {
-                                        Text(stringResource(R.string.close))
-                                    }
-                                },
                             )
                         }
                         // Подпись текущего варианта для тулбара: пустой quality
@@ -406,6 +424,12 @@ class VideoPlayerActivity : ComponentActivity() {
                                     previousChapterUrl = viewModel.prevChapterUrl(),
                                     nextChapterUrl = viewModel.nextChapterUrl(),
                                     isPortrait = portrait,
+                                    // Снимок настроек жестов: читается один раз
+                                    // на рекомпоз, пишется через viewModel.
+                                    gestureSettings = gestureSettings,
+                                    activity = this@VideoPlayerActivity,
+                                    gestureConfigProvider = { viewModel.gestureConfigForWidth(it) },
+                                    onGestureHud = { gestureHud.value = it },
                                     onFullscreenButtonClick = ::onFullscreenButtonClick,
                                     // Шестерёнка → общее меню настроек (см. ниже).
                                     onSettingsClick = { showPlayerMenu = true },
@@ -584,7 +608,124 @@ class VideoPlayerActivity : ComponentActivity() {
                                     }
                                 }
                             }
+                            // HUD жеста (перемотка/яркость/громкость/скорость):
+                            // поверх видео, читает только свой state — Ready
+                            // от кадровых обновлений не перекомпозуется.
+                            GestureHudOverlay(gestureHud)
                         }
+                        // Панель настроек: композируется безусловно — скрытие и
+                        // exit-анимация идут через visible (см. VideoSettingsPanel).
+                        // Дорожки читаем здесь: перерисовка по showPlayerMenu
+                        // берёт у плеера актуальные (плеер — поле Activity).
+                        val textGroups = player?.currentTracks?.groups
+                            .orEmpty()
+                            .filter { it.type == C.TRACK_TYPE_TEXT }
+                        val selectedSubtitle = textGroups.firstNotNullOfOrNull { group ->
+                            (0 until group.length)
+                                .firstOrNull { group.isTrackSelected(it) }
+                                ?.let { group.getTrackFormat(it) }
+                        }
+                        val audioGroups = player?.currentTracks?.groups
+                            .orEmpty()
+                            .filter { it.type == C.TRACK_TYPE_AUDIO }
+                        val selectedAudio = audioGroups.firstNotNullOfOrNull { group ->
+                            (0 until group.length)
+                                .firstOrNull { group.isTrackSelected(it) }
+                                ?.let { group.getTrackFormat(it) }
+                        }
+                        val videoGroups = player?.currentTracks?.groups
+                            .orEmpty()
+                            .filter { it.type == C.TRACK_TYPE_VIDEO }
+                        val selectedVideoFormat = videoGroups.firstNotNullOfOrNull { group ->
+                            (0 until group.length)
+                                .firstOrNull { group.isTrackSelected(it) }
+                                ?.let { group.getTrackFormat(it) }
+                        }
+                        val trackNameProvider = DefaultTrackNameProvider(this@VideoPlayerActivity.resources)
+                        // Запись настроек: state + AppPreferences одной операцией.
+                        fun updateGesture(
+                            transform: (VideoPlayerViewModel.GestureSettings) -> VideoPlayerViewModel.GestureSettings,
+                        ) {
+                            gestureSettings = transform(gestureSettings)
+                            viewModel.saveGestureSettings(gestureSettings)
+                        }
+                        VideoSettingsPanel(
+                            visible = showPlayerMenu,
+                            state = VideoSettingsPanelState(
+                                playbackSpeed = playbackSpeed,
+                                seekStepMs = gestureSettings.seekStepMs,
+                                controllerAutoHideMs = gestureSettings.controllerAutoHideMs,
+                                variantLabel = activeLabel,
+                                // Одно разрешение выбирать не из чего — строка
+                                // прячется (null), а не гасится.
+                                resolutionLabel = if (videoFormatCount > 1) {
+                                    selectedVideoFormat?.let(trackNameProvider::getTrackName)
+                                } else null,
+                                doubleTapSeek = gestureSettings.doubleTapEnabled,
+                                verticalSwipe = gestureSettings.verticalSwipeEnabled,
+                                longPressSpeed = gestureSettings.longPressSpeedEnabled,
+                                swapScreenHalves = gestureSettings.swappedSides,
+                                dragThreshold = gestureSettings.dragThreshold,
+                                audioTrackLabel = selectedAudio?.let(trackNameProvider::getTrackName) ?: "",
+                                subtitlesLabel = when {
+                                    textGroups.isEmpty() -> stringResource(R.string.video_subtitles_none)
+                                    selectedSubtitle == null -> stringResource(R.string.video_subtitles_off)
+                                    else -> trackNameProvider.getTrackName(selectedSubtitle)
+                                },
+                                subtitlesEnabled = textGroups.isNotEmpty(),
+                                keepScreenOn = keepScreenOnLocked,
+                            ),
+                            actions = VideoSettingsPanelActions(
+                                onPlaybackSpeedChange = { speed ->
+                                    playbackSpeed = speed
+                                    player?.let { it.playbackParameters = PlaybackParameters(speed) }
+                                },
+                                onSeekStepChange = { ms ->
+                                    updateGesture { it.copy(seekStepMs = ms) }
+                                },
+                                onControllerAutoHideChange = { ms ->
+                                    updateGesture { it.copy(controllerAutoHideMs = ms) }
+                                },
+                                // Субдиалоги — отдельные окна: панель закрываем,
+                                // иначе после их закрытия поверх останется скрим.
+                                onVariantClick = {
+                                    showPlayerMenu = false
+                                    showVariantDialog = true
+                                },
+                                onResolutionClick = {
+                                    showPlayerMenu = false
+                                    showStreamQualityDialog()
+                                },
+                                onDoubleTapSeekChange = { on ->
+                                    updateGesture { it.copy(doubleTapEnabled = on) }
+                                },
+                                onVerticalSwipeChange = { on ->
+                                    updateGesture { it.copy(verticalSwipeEnabled = on) }
+                                },
+                                onLongPressSpeedChange = { on ->
+                                    updateGesture { it.copy(longPressSpeedEnabled = on) }
+                                },
+                                onSwapScreenHalvesChange = { on ->
+                                    updateGesture { it.copy(swappedSides = on) }
+                                },
+                                onDragThresholdChange = { value ->
+                                    updateGesture { it.copy(dragThreshold = value) }
+                                },
+                                onAudioTrackClick = {
+                                    showPlayerMenu = false
+                                    showAudioTrackDialog()
+                                },
+                                onSubtitlesClick = {
+                                    showPlayerMenu = false
+                                    showSubtitlesDialog()
+                                },
+                                onKeepScreenOnChange = { on ->
+                                    keepScreenOnLocked = on
+                                    updateKeepScreenOn()
+                                },
+                                onClose = { showPlayerMenu = false },
+                            ),
+                        )
                     }
                 }
             }
@@ -750,77 +891,6 @@ private fun VariantOptionRow(
     }
 }
 
-/**
- * Строка меню шестерёнки: подпись + текущее значение и/или отметка включения.
- * Недоступный пункт (дорожек нет) гасится и не реагирует на тап — причина
- * видна в значении («Нет субтитров»), а не узнаёшь по пустому списку.
- */
-@Composable
-private fun SettingsOptionRow(
-    label: String,
-    value: String? = null,
-    checked: Boolean? = null,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(vertical = 10.dp, horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            color = if (enabled) MaterialTheme.colorScheme.onSurface
-            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-        )
-        if (value != null) Text(
-            text = value,
-            modifier = Modifier.padding(end = 8.dp),
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-        )
-        if (checked == true) Icon(
-            Icons.Rounded.Check,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-        )
-    }
-}
-
-/**
- * Выбор скорости: те же значения, что в popup скоростей меди3 — он закрыт
- * вместе с его шестерёнкой (media3 отдаёт меню только «Скорость»/«Аудио»).
- */
-@Composable
-private fun SpeedDialog(
-    currentSpeed: Float,
-    onSelect: (Float) -> Unit,
-    onDismissRequest: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text(stringResource(R.string.video_playback_speed)) },
-        text = {
-            Column {
-                PLAYBACK_SPEEDS.forEach { speed ->
-                    SettingsOptionRow(
-                        label = "${speed}x",
-                        checked = speed == currentSpeed,
-                        onClick = { onSelect(speed) },
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(stringResource(R.string.close))
-            }
-        },
-    )
-}
-
 /** Секция окна выбора: заголовок («Качество»/«Озвучка») + её варианты. */
 @Composable
 private fun VariantSection(
@@ -942,6 +1012,10 @@ private fun PlayerSurface(
     previousChapterUrl: String?,
     nextChapterUrl: String?,
     isPortrait: Boolean,
+    gestureSettings: VideoPlayerViewModel.GestureSettings,
+    activity: Activity,
+    gestureConfigProvider: (Float) -> GestureConfig,
+    onGestureHud: (GestureHud?) -> Unit,
     onFullscreenButtonClick: (Boolean) -> Unit,
     onSettingsClick: () -> Unit,
     onControlsVisibilityChanged: (Boolean) -> Unit,
@@ -974,7 +1048,7 @@ private fun PlayerSurface(
                 viewTreeObserver.addOnGlobalLayoutListener {
                     onControlsVisibilityChanged(isControllerShown())
                 }
-                setControllerShowTimeoutMs(CONTROLLER_AUTO_HIDE_MS)
+                setControllerShowTimeoutMs(gestureSettings.controllerAutoHideMs)
                 setControllerHideOnTouch(true)
                 // Стрелочка полного экрана из коробки меди3: при установленном
                 // listener кнопка показывается в нижней панели; клик по ней
@@ -1048,6 +1122,44 @@ private fun PlayerSurface(
                 exoPlayer.seekTo(startPositionMs)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true
+                // Жесты живут внутри View: слой Modifier.pointerInput поверх
+                // AndroidView гасил бы события самого PlayerView (и наоборот) —
+                // см. док PlayerGestureDispatcher.
+                setOnTouchListener(
+                    PlayerGestureDispatcher(
+                        activity = activity,
+                        player = exoPlayer,
+                        configProvider = { widthPx -> gestureConfigProvider(widthPx) },
+                        // Статус-бар (портрет) и градиентная шапка сверху,
+                        // контролы меди3 снизу — тачи там не наши.
+                        exclusionTopPx = {
+                            val inset = ViewCompat.getRootWindowInsets(this)
+                                ?.getInsets(WindowInsetsCompat.Type.systemBars())
+                                ?.top
+                                ?: 0
+                            // Шапка рисуется Compose-слоем поверх и тачи не
+                            // потребляет — без этой надбавки свайп с её места
+                            // начинал бы жест яркости под строкой названия.
+                            // Ориентацию читаем из view, а не из параметра
+                            // isPortrait: configChanges не пересоздаёт ни view,
+                            // ни этот listener — захваченное значение протухло
+                            // бы после поворота.
+                            val portrait =
+                                resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+                            if (portrait) {
+                                inset + (HEADER_HEIGHT_DP * resources.displayMetrics.density).toInt()
+                            } else inset
+                        },
+                        exclusionBottomPx = {
+                            findViewById<View>(androidx.media3.ui.R.id.exo_controller)
+                                ?.takeIf { it.visibility == View.VISIBLE }
+                                ?.height
+                                ?: 0
+                        },
+                        onToggleControls = { toggleController() },
+                        onHud = onGestureHud,
+                    )
+                )
                 exoPlayer.addListener(object : Player.Listener {
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         if (playbackState == Player.STATE_ENDED) onPlayerEnded()
@@ -1072,6 +1184,9 @@ private fun PlayerSurface(
             // setFullscreenButtonState шлёт его же — иначе поворот запирал
             // бы ориентацию (см. onFullscreenButtonClick).
             view.setFullscreenButtonState(!isPortrait)
+            // Смена автоскрытия в панели применяется живьём: factory
+            // выполняется один раз, только update видит новый gestureSettings.
+            view.setControllerShowTimeoutMs(gestureSettings.controllerAutoHideMs)
         },
         onRelease = { view ->
             // view.player — обёртка ChapterSwitchingPlayer; освобождаем сырой
@@ -1089,6 +1204,7 @@ private fun PlayerSurface(
  * Фактическая видимость панели меди3 — сам [android.view.View], а не
  * uxState: [androidx.media3.ui.PlayerView.isControllerFullyVisible] врёт во
  * время анимации и после рассинхрона (см. PlayerControlViewLayoutManager.show).
+ * internal: то же имя читает PlayerGestureDispatcher (другой файл пакета).
  */
-private fun PlayerView.isControllerShown(): Boolean =
+internal fun PlayerView.isControllerShown(): Boolean =
     findViewById<View>(androidx.media3.ui.R.id.exo_controller)?.visibility == View.VISIBLE

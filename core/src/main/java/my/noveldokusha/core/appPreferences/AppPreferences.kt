@@ -1559,6 +1559,47 @@ class AppPreferences @Inject constructor(
     fun videoVariantForBook(bookUrl: String): String? =
         VIDEO_VARIANT_BOOK_QUALITY_MAP.value[bookUrl]
 
+    // ── Video player: жесты и поведение панели (глобально, не per-book) ─────
+
+    // Шаг перемотки двойным тапом/свайпом, мс. Дефолт 10с — как у VLC/MX.
+    val VIDEO_SEEK_STEP_MS = object : Preference<Int>("VIDEO_SEEK_STEP_MS") {
+        override var value by SharedPreference_Int(name, preferences, 10_000)
+    }
+
+    // Порог начала горизонтального drag-а, доля от ширины экрана. Больше —
+    // жест срабатывает позже и не конфликтует с тапом по центру.
+    val VIDEO_GESTURE_DRAG_THRESHOLD = object : Preference<Float>("VIDEO_GESTURE_DRAG_THRESHOLD") {
+        override var value by SharedPreference_Float(name, preferences, 0.06f)
+    }
+
+    // Зеркало половин экрана: false — лево=яркость/право=громкость (как MX),
+    // true — наоборот. Пользовательский выбор, а не жёсткая константа.
+    val VIDEO_GESTURE_SWAPPED_SIDES = object : Preference<Boolean>("VIDEO_GESTURE_SWAPPED_SIDES") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
+
+    // Тумблеры жестов. Выключенный жест не перехватывает движение, но слой
+    // жестов всё равно берёт DOWN на себя и по тапу сам зовёт показ/скрытие
+    // панели. В штатный контрол меди3 тач уходит только из зон исключения
+    // (верх/низ): там DOWN возвращается false и событие обрабатывает PlayerView.
+    val VIDEO_GESTURE_DOUBLE_TAP = object : Preference<Boolean>("VIDEO_GESTURE_DOUBLE_TAP") {
+        override var value by SharedPreference_Boolean(name, preferences, true)
+    }
+
+    val VIDEO_GESTURE_VERTICAL_SWIPE = object : Preference<Boolean>("VIDEO_GESTURE_VERTICAL_SWIPE") {
+        override var value by SharedPreference_Boolean(name, preferences, true)
+    }
+
+    val VIDEO_GESTURE_LONG_PRESS_SPEED = object : Preference<Boolean>("VIDEO_GESTURE_LONG_PRESS_SPEED") {
+        override var value by SharedPreference_Boolean(name, preferences, true)
+    }
+
+    // Автоскрытие панели управления, мс. 0 — никогда (только тапом), как было
+    // раньше; дефолт 5с согласован с пользователем.
+    val VIDEO_CONTROLLER_AUTO_HIDE_MS = object : Preference<Int>("VIDEO_CONTROLLER_AUTO_HIDE_MS") {
+        override var value by SharedPreference_Int(name, preferences, 5_000)
+    }
+
     // ── Auto Backup Preferences ─────────────────────────────────────────────
 
     // Включён ли автоматический бекап

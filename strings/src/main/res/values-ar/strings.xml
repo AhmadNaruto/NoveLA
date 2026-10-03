@@ -860,4 +860,23 @@
     <string name="video_subtitles_none">بدون ترجمة فرعية</string>
     <string name="video_subtitles_off">إيقاف</string>
     <string name="video_keep_screen_on">إبقاء الشاشة مضاءة</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">التشغيل</string>
+    <string name="video_section_video">الفيديو</string>
+    <string name="video_section_gestures">الإيماءات</string>
+    <string name="video_section_audio">الصوت</string>
+    <string name="video_section_subtitles">الترجمة الفرعية</string>
+    <string name="video_section_screen">الشاشة</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">خطوة التقدّم</string>
+    <string name="video_seconds_value">%1$d ث</string>
+    <string name="video_controller_auto_hide">إخفاء عناصر التحكم تلقائيًا</string>
+    <string name="video_auto_hide_never">أبدًا</string>
+    <string name="video_variant">النسخة</string>
+    <string name="video_gesture_double_tap">النقر المزدوج للتقديم</string>
+    <string name="video_gesture_vertical_swipe">السحب العمودي: الصوت والسطوع</string>
+    <string name="video_gesture_long_press">الضغط المطوّل لسرعة 2×</string>
+    <string name="video_gesture_swap_sides">تبديل نصفي الشاشة</string>
+    <string name="video_gesture_sensitivity">حساسية السحب</string>
+    <string name="video_subtitle_track">مسار الترجمة الفرعية</string>
 </resources>

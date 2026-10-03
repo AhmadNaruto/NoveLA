@@ -860,4 +860,23 @@
     <string name="video_subtitles_none">Tanpa subtitle</string>
     <string name="video_subtitles_off">Mati</string>
     <string name="video_keep_screen_on">Biarkan layar tetap menyala</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Pemutaran</string>
+    <string name="video_section_video">Video</string>
+    <string name="video_section_gestures">Gestur</string>
+    <string name="video_section_audio">Audio</string>
+    <string name="video_section_subtitles">Subtitle</string>
+    <string name="video_section_screen">Layar</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Langkah lompat</string>
+    <string name="video_seconds_value">%1$d detik</string>
+    <string name="video_controller_auto_hide">Sembunyikan kontrol secara otomatis</string>
+    <string name="video_auto_hide_never">Tidak pernah</string>
+    <string name="video_variant">Varian</string>
+    <string name="video_gesture_double_tap">Ketuk dua kali untuk melompat</string>
+    <string name="video_gesture_vertical_swipe">Geser vertikal: volume dan kecerahan</string>
+    <string name="video_gesture_long_press">Tahan lama untuk kecepatan 2×</string>
+    <string name="video_gesture_swap_sides">Tukar bagian layar</string>
+    <string name="video_gesture_sensitivity">Sensitivitas geser</string>
+    <string name="video_subtitle_track">Trek subtitle</string>
 </resources>

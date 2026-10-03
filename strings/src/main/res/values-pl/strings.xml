@@ -870,4 +870,23 @@
     <string name="video_subtitles_none">Bez napisów</string>
     <string name="video_subtitles_off">Wyłączone</string>
     <string name="video_keep_screen_on">Nie wygaszaj ekranu</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Odtwarzanie</string>
+    <string name="video_section_video">Wideo</string>
+    <string name="video_section_gestures">Gesty</string>
+    <string name="video_section_audio">Audio</string>
+    <string name="video_section_subtitles">Napisy</string>
+    <string name="video_section_screen">Ekran</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Krok przewijania</string>
+    <string name="video_seconds_value">%1$d s</string>
+    <string name="video_controller_auto_hide">Automatycznie ukrywaj sterowanie</string>
+    <string name="video_auto_hide_never">Nigdy</string>
+    <string name="video_variant">Wariant</string>
+    <string name="video_gesture_double_tap">Dotknij dwukrotnie, aby przewinąć</string>
+    <string name="video_gesture_vertical_swipe">Przesunięcie w pionie: głośność i jasność</string>
+    <string name="video_gesture_long_press">Przytrzymaj, aby ustawić 2×</string>
+    <string name="video_gesture_swap_sides">Zamień połowy ekranu</string>
+    <string name="video_gesture_sensitivity">Czułość przesuwania</string>
+    <string name="video_subtitle_track">Ścieżka napisów</string>
 </resources>

@@ -870,4 +870,23 @@
     <string name="video_subtitles_none">Sem legendas</string>
     <string name="video_subtitles_off">Desativadas</string>
     <string name="video_keep_screen_on">Manter a tela ligada</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Reprodução</string>
+    <string name="video_section_video">Vídeo</string>
+    <string name="video_section_gestures">Gestos</string>
+    <string name="video_section_audio">Áudio</string>
+    <string name="video_section_subtitles">Legendas</string>
+    <string name="video_section_screen">Tela</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Passo de salto</string>
+    <string name="video_seconds_value">%1$d s</string>
+    <string name="video_controller_auto_hide">Ocultar controles automaticamente</string>
+    <string name="video_auto_hide_never">Nunca</string>
+    <string name="video_variant">Variante</string>
+    <string name="video_gesture_double_tap">Toque duas vezes para pular</string>
+    <string name="video_gesture_vertical_swipe">Deslize vertical: volume e brilho</string>
+    <string name="video_gesture_long_press">Pressione longo para velocidade 2×</string>
+    <string name="video_gesture_swap_sides">Trocar metades da tela</string>
+    <string name="video_gesture_sensitivity">Sensibilidade do deslize</string>
+    <string name="video_subtitle_track">Faixa de legendas</string>
 </resources>

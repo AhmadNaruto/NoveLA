@@ -860,4 +860,23 @@
     <string name="video_subtitles_none">Altyazı yok</string>
     <string name="video_subtitles_off">Kapalı</string>
     <string name="video_keep_screen_on">Ekranı açık tut</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Oynatma</string>
+    <string name="video_section_video">Video</string>
+    <string name="video_section_gestures">Hareketler</string>
+    <string name="video_section_audio">Ses</string>
+    <string name="video_section_subtitles">Altyazılar</string>
+    <string name="video_section_screen">Ekran</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Atlama adımı</string>
+    <string name="video_seconds_value">%1$d sn</string>
+    <string name="video_controller_auto_hide">Kontrolleri otomatik gizle</string>
+    <string name="video_auto_hide_never">Asla</string>
+    <string name="video_variant">Varyant</string>
+    <string name="video_gesture_double_tap">Atlamak için çift dokun</string>
+    <string name="video_gesture_vertical_swipe">Dikey kaydırma: ses ve parlaklık</string>
+    <string name="video_gesture_long_press">2× hız için uzun bas</string>
+    <string name="video_gesture_swap_sides">Ekran yarısını değiştir</string>
+    <string name="video_gesture_sensitivity">Kaydırma hassasiyeti</string>
+    <string name="video_subtitle_track">Altyazı parçası</string>
 </resources>

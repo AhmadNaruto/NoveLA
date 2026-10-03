@@ -1326,5 +1326,24 @@
     <string name="video_subtitles_none">Нет субтитров</string>
     <string name="video_subtitles_off">Выкл</string>
     <string name="video_keep_screen_on">Не выключать экран</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Воспроизведение</string>
+    <string name="video_section_video">Видео</string>
+    <string name="video_section_gestures">Жесты</string>
+    <string name="video_section_audio">Звук</string>
+    <string name="video_section_subtitles">Субтитры</string>
+    <string name="video_section_screen">Экран</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Шаг перемотки</string>
+    <string name="video_seconds_value">%1$d с</string>
+    <string name="video_controller_auto_hide">Автоскрытие панели</string>
+    <string name="video_auto_hide_never">Никогда</string>
+    <string name="video_variant">Вариант</string>
+    <string name="video_gesture_double_tap">Двойной тап — перемотка</string>
+    <string name="video_gesture_vertical_swipe">Вертикальный свайп: громкость и яркость</string>
+    <string name="video_gesture_long_press">Долгое нажатие — 2×</string>
+    <string name="video_gesture_swap_sides">Поменять половинами экрана</string>
+    <string name="video_gesture_sensitivity">Чувствительность свайпа</string>
+    <string name="video_subtitle_track">Дорожка субтитров</string>
 </resources>
 

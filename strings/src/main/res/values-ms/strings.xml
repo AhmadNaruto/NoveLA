@@ -860,4 +860,23 @@
     <string name="video_subtitles_none">Tiada sarikata</string>
     <string name="video_subtitles_off">Mati</string>
     <string name="video_keep_screen_on">Kekalkan skrin menyala</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Pemutaran</string>
+    <string name="video_section_video">Video</string>
+    <string name="video_section_gestures">Gerakan</string>
+    <string name="video_section_audio">Audio</string>
+    <string name="video_section_subtitles">Sarikata</string>
+    <string name="video_section_screen">Skrin</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Langkah lompat</string>
+    <string name="video_seconds_value">%1$d saat</string>
+    <string name="video_controller_auto_hide">Sembunyi kawalan secara automatik</string>
+    <string name="video_auto_hide_never">Tidak pernah</string>
+    <string name="video_variant">Varian</string>
+    <string name="video_gesture_double_tap">Ketik dua kali untuk melangkah</string>
+    <string name="video_gesture_vertical_swipe">Geser menegak: volume dan kecerahan</string>
+    <string name="video_gesture_long_press">Tekan lama untuk kelajuan 2×</string>
+    <string name="video_gesture_swap_sides">Tukar bahagian skrin</string>
+    <string name="video_gesture_sensitivity">Sensitiviti geser</string>
+    <string name="video_subtitle_track">Trek sarikata</string>
 </resources>

@@ -860,4 +860,23 @@
     <string name="video_subtitles_none">कोई सबटाइटल नहीं</string>
     <string name="video_subtitles_off">बंद</string>
     <string name="video_keep_screen_on">स्क्रीन चालू रखें</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">प्लेबैक</string>
+    <string name="video_section_video">वीडियो</string>
+    <string name="video_section_gestures">जेस्चर</string>
+    <string name="video_section_audio">ऑडियो</string>
+    <string name="video_section_subtitles">सबटाइटल</string>
+    <string name="video_section_screen">स्क्रीन</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">स्किप चरण</string>
+    <string name="video_seconds_value">%1$d सेकंड</string>
+    <string name="video_controller_auto_hide">नियंत्रण स्वचालित रूप से छिपाएँ</string>
+    <string name="video_auto_hide_never">कभी नहीं</string>
+    <string name="video_variant">वेरिएंट</string>
+    <string name="video_gesture_double_tap">दो बार टैप करके स्किप करें</string>
+    <string name="video_gesture_vertical_swipe">ऊर्ध्वाधर स्वाइप: वॉल्यूम और चमक</string>
+    <string name="video_gesture_long_press">2× गति के लिए लंबा दबाएँ</string>
+    <string name="video_gesture_swap_sides">स्क्रीन के आधे हिस्से बदलें</string>
+    <string name="video_gesture_sensitivity">स्वाइप की संवेदनशीलता</string>
+    <string name="video_subtitle_track">सबटाइटल ट्रैक</string>
 </resources>

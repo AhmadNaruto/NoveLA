@@ -860,4 +860,23 @@
     <string name="video_subtitles_none">ไม่มีซับไตเติล</string>
     <string name="video_subtitles_off">ปิด</string>
     <string name="video_keep_screen_on">หน้าจอไม่ดับ</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">การเล่น</string>
+    <string name="video_section_video">วิดีโอ</string>
+    <string name="video_section_gestures">เจสเจอร์</string>
+    <string name="video_section_audio">เสียง</string>
+    <string name="video_section_subtitles">ซับไตเติล</string>
+    <string name="video_section_screen">หน้าจอ</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">ขั้นการข้าม</string>
+    <string name="video_seconds_value">%1$d วิ</string>
+    <string name="video_controller_auto_hide">ซ่อนแถบควบคุมอัตโนมัติ</string>
+    <string name="video_auto_hide_never">ไม่เคย</string>
+    <string name="video_variant">เวอร์ชัน</string>
+    <string name="video_gesture_double_tap">แตะสองครั้งเพื่อข้าม</string>
+    <string name="video_gesture_vertical_swipe">ปัดแนวตั้ง: เสียงและความสว่าง</string>
+    <string name="video_gesture_long_press">กดค้างเพื่อความเร็ว 2×</string>
+    <string name="video_gesture_swap_sides">สลับครึ่งหน้าจอ</string>
+    <string name="video_gesture_sensitivity">ความไวของการปัด</string>
+    <string name="video_subtitle_track">แทร็กซับไตเติล</string>
 </resources>

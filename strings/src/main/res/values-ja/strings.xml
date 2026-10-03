@@ -872,4 +872,23 @@
     <string name="video_subtitles_none">字幕なし</string>
     <string name="video_subtitles_off">オフ</string>
     <string name="video_keep_screen_on">画面をオンのままにする</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">再生</string>
+    <string name="video_section_video">映像</string>
+    <string name="video_section_gestures">ジェスチャー</string>
+    <string name="video_section_audio">音声</string>
+    <string name="video_section_subtitles">字幕</string>
+    <string name="video_section_screen">画面</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">シーク間隔</string>
+    <string name="video_seconds_value">%1$d 秒</string>
+    <string name="video_controller_auto_hide">コントロールを自動的に隠す</string>
+    <string name="video_auto_hide_never">しない</string>
+    <string name="video_variant">バージョン</string>
+    <string name="video_gesture_double_tap">ダブルタップでシーク</string>
+    <string name="video_gesture_vertical_swipe">縦スワイプ: 音量と明るさ</string>
+    <string name="video_gesture_long_press">長押しで2倍速</string>
+    <string name="video_gesture_swap_sides">画面の左右を入れ替え</string>
+    <string name="video_gesture_sensitivity">スワイプ感度</string>
+    <string name="video_subtitle_track">字幕トラック</string>
 </resources>
