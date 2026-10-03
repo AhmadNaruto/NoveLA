@@ -113,8 +113,14 @@ class WebViewActivity : ComponentActivity() {
                 ): Boolean {
                     val url = request?.url?.toString() ?: return false
                     val scheme = request.url.scheme?.lowercase()
-                    return when (scheme) {
-                        "http", "https" -> false
+                    return when {
+                        scheme == "http" || scheme == "https" -> false
+                        // Cloudflare Turnstile рендерит свой iframe как about:blank /
+                        // about:srcdoc — эти URL обязательны для мобильного обхода.
+                        scheme == "about" && (
+                            url.startsWith("about:blank", ignoreCase = true) ||
+                                url.startsWith("about:srcdoc", ignoreCase = true)
+                            ) -> false
                         else -> {
                             Timber.d("Ignoring unsupported scheme: $url")
                             true
@@ -147,7 +153,8 @@ class WebViewActivity : ComponentActivity() {
                     errorResponse: WebResourceResponse?
                 ) {
                     super.onReceivedHttpError(view, request, errorResponse)
-                    Timber.w("HTTP error ${errorResponse?.statusCode} for ${request?.url}")
+                    // isForMainFrame различает навигацию от subresource/fetch.
+                    Timber.w("HTTP error ${errorResponse?.statusCode} for ${request?.url} isForMainFrame=${request?.isForMainFrame}")
                     abortBypassIfFatal(
                         url = request?.url?.toString(),
                         isMainFrame = request?.isForMainFrame == true,
