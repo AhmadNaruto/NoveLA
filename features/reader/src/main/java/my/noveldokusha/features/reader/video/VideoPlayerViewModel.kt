@@ -18,6 +18,7 @@ import my.noveldokusha.data.VideoSourceNotFoundException
 import my.noveldokusha.features.reader.ReaderRepository
 import my.noveldokusha.reader.R
 import my.noveldokusha.scraper.domain.VideoSource
+import timber.log.Timber
 import javax.inject.Inject
 
 /**
@@ -91,14 +92,22 @@ internal class VideoPlayerViewModel @Inject constructor(
                 _state.value = State.Ready(listOf(local))
                 return@launch
             }
-            when (val r = videoRepository.resolve(chapterUrl)) {
-                is Response.Success ->
+            val resolveStartMs = System.currentTimeMillis()
+            val r = videoRepository.resolve(chapterUrl)
+            val resolveMs = System.currentTimeMillis() - resolveStartMs
+            when (r) {
+                is Response.Success -> {
+                    Timber.d("Video resolve took ${resolveMs}ms, sources=${r.data.size}")
                     _state.value = if (r.data.isEmpty()) State.Error.Localized(R.string.video_sources_not_found)
                                    else State.Ready(r.data)
-                is Response.Error -> _state.value = when (r.exception) {
-                    is VideoSourceNotFoundException -> State.Error.Localized(R.string.video_source_not_found)
-                    is VideoListNotDeclaredException -> State.Error.Localized(R.string.video_source_no_video)
-                    else -> State.Error.Message(r.message)
+                }
+                is Response.Error -> {
+                    Timber.d("Video resolve took ${resolveMs}ms, error")
+                    _state.value = when (r.exception) {
+                        is VideoSourceNotFoundException -> State.Error.Localized(R.string.video_source_not_found)
+                        is VideoListNotDeclaredException -> State.Error.Localized(R.string.video_source_no_video)
+                        else -> State.Error.Message(r.message)
+                    }
                 }
             }
         }

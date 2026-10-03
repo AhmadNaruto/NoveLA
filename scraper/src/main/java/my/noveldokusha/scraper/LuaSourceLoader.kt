@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
@@ -313,6 +314,99 @@ class LuaEngine @Inject constructor(
 
     // ── HTTP ──────────────────────────────────────────────────────────────────
 
+    /** Parameters of a single GET request — shared input of http_get and http_get_batch. */
+    private data class HttpGetParams(
+        val url: String,
+        /** Config headers, merged over defaultHeaders(url). */
+        val pluginHeaders: Map<String, String>,
+        val charset: String,
+        val binary: Boolean,
+        val followRedirects: Boolean,
+        /** "GET" or "HEAD", already normalized by checkHttpMethod. */
+        val method: String,
+        /** Explicit request budget in ms; null — plain client path. */
+        val timeoutMs: Long?,
+        /** Prefix of Timber messages: "http_get" or "http_get_batch". */
+        val logTag: String,
+    )
+
+    /** GET or HEAD only; anything else is a plugin bug and must fail before any network call. */
+    private fun checkHttpMethod(fnName: String, rawMethod: String): String {
+        val method = rawMethod.uppercase(Locale.ROOT)
+        if (method != "GET" && method != "HEAD") {
+            throw IllegalArgumentException("$fnName: unsupported method \"$rawMethod\", allowed: GET, HEAD")
+        }
+        return method
+    }
+
+    /**
+     * Shared executor behind http_get and http_get_batch: header merge (defaultHeaders +
+     * config headers), SSRF gate, `source:$sourceId` tag, force-network Cache-Control,
+     * method/HEAD (empty body, cache never written), timeout → callWithTimeout, TTL cache
+     * read/write with the same rules, body decoded by charset (binary stays bytes).
+     * Throws on network failure — each caller maps the failure to a Lua table itself.
+     * [sourceId] and [forceNetwork] are ThreadLocal-backed: the caller must read them on
+     * the lua thread, before any dispatcher hop.
+     */
+    private suspend fun executeHttpGet(params: HttpGetParams, sourceId: String?, forceNetwork: Boolean): LuaValue {
+        val isHead  = params.method == "HEAD"
+        val headers = defaultHeaders(params.url) + params.pluginHeaders
+        // Бинарь и forceNetwork кэш пропускают — флаги в AppCacheConfig.
+        // Бинарь обычно большой и одноразовый; forceNetwork (каталог) обязан
+        // быть свежим. Правила читаются отдельно от самого if.
+        // HEAD кэш пропускает всегда: тело у него пустое, и запись под тем же
+        // ключом отравила бы последующий GET внутри TTL.
+        val cacheReadable = !isHead &&
+            (!params.binary || AppCacheConfig.LUA_CACHE_BINARY) &&
+            (!forceNetwork || !AppCacheConfig.LUA_FORCE_NETWORK_BYPASS)
+        val cacheKey = "${params.url}|${params.charset}|${sourceId ?: "default"}|${headers.toString().hashCode()}"
+        if (cacheReadable) {
+            httpGetCache[cacheKey]?.let { entry ->
+                if (System.currentTimeMillis() - entry.storedAt < httpGetCacheTtlMs) {
+                    Timber.d("${params.logTag} cache hit: ${params.url}")
+                    return responseTable(entry.success, entry.body, entry.code, entry.headers)
+                }
+            }
+        }
+        if (!isSsrfSafe(params.url)) return ssrfErrorTable(params.url)
+        return withContext(Dispatchers.IO) {
+            val builder = getRequest(params.url)
+            headers.forEach { (k, v) -> builder.header(k, v) }
+            // head() меняет только метод/тело запроса, заголовки те же.
+            // no-cache обязателен для пробы живости: без него OkHttp может
+            // ответить свежим закэшированным 200 и не проверить ссылку.
+            if (isHead) {
+                builder.head()
+                builder.header("Cache-Control", "no-cache")
+            }
+            // Applied after plugin headers: catalog freshness overrides any
+            // Cache-Control set by the plugin (getRequest default: max-age=600).
+            if (forceNetwork) builder.header("Cache-Control", "no-cache")
+            sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
+            // timeoutMs задан → запрос с бюджетом (одна попытка, без ретраев);
+            // иначе — обычный путь клиента, как и раньше.
+            val response = if (params.timeoutMs != null) {
+                networkClient.callWithTimeout(builder, params.timeoutMs, followRedirects = params.followRedirects)
+            } else {
+                networkClient.call(builder, followRedirects = params.followRedirects)
+            }
+            response.use { r ->
+                // OkHttp и так не отдаёт тело у HEAD, но читать его не нужно
+                // и здесь: проба живости возвращает пустой body по определению.
+                val bytes = if (isHead) ByteArray(0) else r.body.bytes()
+                if (params.binary) {
+                    responseTableBinary(bytes, r.code, r.headers.toMultimap())
+                } else {
+                    val body = String(bytes, java.nio.charset.Charset.forName(params.charset))
+                    if (!isHead && AppCacheConfig.isCacheableStatus(r.code)) {
+                        putHttpGetCache(cacheKey, HttpGetCacheEntry(body, true, r.code, r.headers.toMultimap(), System.currentTimeMillis()))
+                    }
+                    responseTable(r.isSuccessful, body, r.code, r.headers.toMultimap())
+                }
+            }
+        }
+    }
+
     /**
      * http_get(url [, config])
      * config = { headers = {}, charset = "UTF-8", binary = false, followRedirects = true,
@@ -336,74 +430,24 @@ class LuaEngine @Inject constructor(
             val charset       = config.get("charset").optjstring("UTF-8")
             val binary        = config.get("binary").optboolean(false)
             val followRedirects = config.get("followRedirects").optboolean(true)
-            val methodRaw     = config.get("method").optjstring("GET")
-            val method        = methodRaw.uppercase(Locale.ROOT)
-            if (method != "GET" && method != "HEAD") {
-                throw IllegalArgumentException("http_get: unsupported method \"$methodRaw\", allowed: GET, HEAD")
-            }
-            val isHead        = method == "HEAD"
+            val method        = checkHttpMethod("http_get", config.get("method").optjstring("GET"))
             val timeoutMs     = config.get("timeout").optlong(0L).takeIf { it > 0 }
-            val headers       = defaultHeaders(url) + pluginHeaders
             // sourceId читается на вызывающем потоке: ThreadLocal не переживает переключение диспетчера.
             val sourceId      = currentSourceId.get()
             // Force-network flag is captured here for the same reason, before withContext(IO).
             val forceNetwork  = forceNetworkFlag.get()
-            // Бинарь и forceNetwork кэш пропускают — флаги в AppCacheConfig.
-            // Бинарь обычно большой и одноразовый; forceNetwork (каталог) обязан
-            // быть свежим. Правила читаются отдельно от самого if.
-            // HEAD кэш пропускает всегда: тело у него пустое, и запись под тем же
-            // ключом отравила бы последующий GET внутри TTL.
-            val cacheReadable = !isHead &&
-                (!binary || AppCacheConfig.LUA_CACHE_BINARY) &&
-                (!forceNetwork || !AppCacheConfig.LUA_FORCE_NETWORK_BYPASS)
-            if (cacheReadable) {
-                val cacheKey = "$url|$charset|${sourceId ?: "default"}|${headers.toString().hashCode()}"
-                httpGetCache[cacheKey]?.let { entry ->
-                    if (System.currentTimeMillis() - entry.storedAt < httpGetCacheTtlMs) {
-                        Timber.d("http_get cache hit: $url")
-                        return@runBlocking responseTable(entry.success, entry.body, entry.code, entry.headers)
-                    }
-                }
-            }
-            if (!isSsrfSafe(url)) return@runBlocking ssrfErrorTable(url)
+            val params = HttpGetParams(
+                url = url,
+                pluginHeaders = pluginHeaders,
+                charset = charset,
+                binary = binary,
+                followRedirects = followRedirects,
+                method = method,
+                timeoutMs = timeoutMs,
+                logTag = "http_get",
+            )
             try {
-                withContext(Dispatchers.IO) {
-                    val builder = getRequest(url)
-                    headers.forEach { (k, v) -> builder.header(k, v) }
-                    // head() меняет только метод/тело запроса, заголовки те же.
-                    // no-cache обязателен для пробы живости: без него OkHttp может
-                    // ответить свежим закэшированным 200 и не проверить ссылку.
-                    if (isHead) {
-                        builder.head()
-                        builder.header("Cache-Control", "no-cache")
-                    }
-                    // Applied after plugin headers: catalog freshness overrides any
-                    // Cache-Control set by the plugin (getRequest default: max-age=600).
-                    if (forceNetwork) builder.header("Cache-Control", "no-cache")
-                    sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
-                    // timeoutMs задан → запрос с бюджетом (одна попытка, без ретраев);
-                    // иначе — обычный путь клиента, как и раньше.
-                    val response = if (timeoutMs != null) {
-                        networkClient.callWithTimeout(builder, timeoutMs, followRedirects = followRedirects)
-                    } else {
-                        networkClient.call(builder, followRedirects = followRedirects)
-                    }
-                    response.use { r ->
-                        // OkHttp и так не отдаёт тело у HEAD, но читать его не нужно
-                        // и здесь: проба живости возвращает пустой body по определению.
-                        val bytes = if (isHead) ByteArray(0) else r.body.bytes()
-                        if (binary) {
-                            responseTableBinary(bytes, r.code, r.headers.toMultimap())
-                        } else {
-                            val body = String(bytes, java.nio.charset.Charset.forName(charset))
-                            if (!isHead && AppCacheConfig.isCacheableStatus(r.code)) {
-                                val cacheKey = "$url|$charset|${sourceId ?: "default"}|${headers.toString().hashCode()}"
-                                putHttpGetCache(cacheKey, HttpGetCacheEntry(body, true, r.code, r.headers.toMultimap(), System.currentTimeMillis()))
-                            }
-                            responseTable(r.isSuccessful, body, r.code, r.headers.toMultimap())
-                        }
-                    }
-                }
+                executeHttpGet(params, sourceId, forceNetwork)
             } catch (e: CancellationException) {
                 Timber.e(e, "http_get cancelled: $url")
                 throw e
@@ -572,83 +616,144 @@ class LuaEngine @Inject constructor(
         return map
     }
 
-    // http_get_batch(urls_table [, config]) → массив { success, body, code } в том же порядке
     /**
-     * http_get_batch(urlsTable [, config])
-     * Fetches multiple URLs in parallel.
-     * config: { binary = false, headers = {} } — binary: body is a byte table instead of a string;
-     * headers: table of strings applied to EVERY request of the batch (override defaultHeaders,
-     * e.g. a fixed Referer for Referer-guarded hosts). Per-URL headers are not supported.
+     * http_get_batch(items [, config]) → array of { success, body, code, headers },
+     * same length and order as items.
+     *
+     * items: array where each element is a URL string, or a table
+     * { url = "...", headers = {}, charset = "UTF-8", binary = false,
+     *   followRedirects = true, timeout = 0, method = "GET" }.
+     *
+     * config holds the batch-wide defaults { headers, binary, charset, timeout,
+     * followRedirects, method }; per-URL keys override them one by one, and per-URL
+     * headers are merged OVER the global ones (so a fixed Referer for the whole batch
+     * can still be replaced per hoster). defaultHeaders(url) always comes first.
+     *
+     * Requests run in parallel (Dispatchers.IO), every element keeps http_get semantics:
+     * same TTL cache rules (HEAD/binary/forceNetwork bypass it), method = "HEAD" returns an
+     * empty body and writes no cache, timeout goes to callWithTimeout, followRedirects to
+     * the second call() argument.
+     *
+     * success is honest: text → r.isSuccessful, binary → code in 200..299. A failure of one
+     * URL (network error, expired timeout, SSRF block) yields { success = false, code = -1,
+     * body = message, headers = {} } for that element only — the rest of the batch still
+     * succeeds.
+     *
+     * Malformed items (non-string/non-table element, missing url, unsupported method) throw
+     * IllegalArgumentException before any request is sent.
      */
     private inner class HttpGetBatchFunction : TwoArgFunction() {
         override fun call(arg1: LuaValue, arg2: LuaValue): LuaValue {
-            val urlTable = arg1.checktable()
-            val urls = (1..urlTable.length()).map { urlTable.get(it).checkjstring() }
+            val itemsTable = arg1.checktable()
             val config = arg2.opttable(LuaTable())
-            val binary = config.get("binary").optboolean(false)
-            val batchHeaders = convertHeaders(config.get("headers").opttable(LuaTable()))
+            // Batch-wide defaults: every per-URL key below overrides its own one.
+            val globalHeaders = convertHeaders(config.get("headers").opttable(LuaTable()))
+            val globalBinary = config.get("binary").optboolean(false)
+            val globalCharset = config.get("charset").optjstring("UTF-8")
+            val globalTimeoutMs = config.get("timeout").optlong(0L).takeIf { it > 0 }
+            val globalFollowRedirects = config.get("followRedirects").optboolean(true)
+            val globalMethod = checkHttpMethod("http_get_batch", config.get("method").optjstring("GET"))
+
+            // Validation runs up-front: a broken item fails loudly instead of being skipped.
+            val items = (1..itemsTable.length()).map { index ->
+                parseBatchItem(
+                    value = itemsTable.get(index),
+                    index = index,
+                    globalHeaders = globalHeaders,
+                    globalBinary = globalBinary,
+                    globalCharset = globalCharset,
+                    globalTimeoutMs = globalTimeoutMs,
+                    globalFollowRedirects = globalFollowRedirects,
+                    globalMethod = globalMethod,
+                )
+            }
+
             val sourceId = currentSourceId.get()
             // Force-network flag: captured before async(Dispatchers.IO) hops threads.
             val forceNetwork = forceNetworkFlag.get()
 
-            if (binary) {
-                val results = runBlocking {
-                    urls.map { url ->
-                        async(Dispatchers.IO) {
-                            try {
-                                if (!isSsrfSafe(url)) return@async Triple(ByteArray(0), 0, emptyMap<String, List<String>>())
-                                val builder = getRequest(url)
-                                val headers = defaultHeaders(url) + batchHeaders
-                                headers.forEach { (k, v) -> builder.header(k, v) }
-                                if (forceNetwork) builder.header("Cache-Control", "no-cache")
-                                sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
-                                networkClient.call(builder).use { r ->
-                                    Triple(r.body.bytes(), r.code, r.headers.toMultimap())
-                                }
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (e: Exception) {
-                                Timber.e(e, "http_get_batch failed: $url")
-                                Triple(ByteArray(0), 0, emptyMap<String, List<String>>())
-                            }
+            val results = runBlocking {
+                items.map { params ->
+                    async(Dispatchers.IO) {
+                        try {
+                            executeHttpGet(params, sourceId, forceNetwork)
+                        } catch (e: TimeoutCancellationException) {
+                            // TCE extends CancellationException but means THIS slot's own budget
+                            // expired (NetworkClient.call caps its retry loop in withTimeout), not
+                            // an external cancel. It must be caught BEFORE CancellationException:
+                            // rethrowing it escapes async → awaitAll → runBlocking and kills the
+                            // whole batch instead of just this slot (see KDoc above).
+                            Timber.e(e, "http_get_batch timeout: ${params.url}")
+                            errorTable(e)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            // One dead URL must not sink the batch: error table for this slot only.
+                            Timber.e(e, "http_get_batch failed: ${params.url}")
+                            errorTable(e)
                         }
-                    }.awaitAll()
-                }
-                return LuaTable().also { out ->
-                    results.forEachIndexed { i, (bytes, code, headers) ->
-                        out.set(i + 1, responseTableBinary(bytes, code, headers))
                     }
-                }
-            } else {
-                val results = runBlocking {
-                    urls.map { url ->
-                        async(Dispatchers.IO) {
-                            try {
-                                if (!isSsrfSafe(url)) return@async Triple("", 0, emptyMap<String, List<String>>())
-                                val builder = getRequest(url)
-                                val headers = defaultHeaders(url) + batchHeaders
-                                headers.forEach { (k, v) -> builder.header(k, v) }
-                                if (forceNetwork) builder.header("Cache-Control", "no-cache")
-                                sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
-                                networkClient.call(builder).use { r ->
-                                    val body = r.body.string()
-                                    Triple(body, r.code, r.headers.toMultimap())
-                                }
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (e: Exception) {
-                                Timber.e(e, "http_get_batch failed: $url")
-                                Triple("", 0, emptyMap<String, List<String>>())
-                            }
-                        }
-                    }.awaitAll()
-                }
-                return LuaTable().also { out ->
-                    results.forEachIndexed { i, (body, code, headers) ->
-                        out.set(i + 1, responseTable(true, body, code, headers))
-                    }
+                }.awaitAll()
+            }
+            return LuaTable().also { out ->
+                results.forEachIndexed { i, table ->
+                    out.set(i + 1, withHeadersFallback(table))
                 }
             }
+        }
+
+        /** A plain URL string, or a table overriding the batch-wide defaults. */
+        private fun parseBatchItem(
+            value: LuaValue,
+            index: Int,
+            globalHeaders: Map<String, String>,
+            globalBinary: Boolean,
+            globalCharset: String,
+            globalTimeoutMs: Long?,
+            globalFollowRedirects: Boolean,
+            globalMethod: String,
+        ): HttpGetParams {
+            // type() (not isstring()): LuaJ reports LuaNumber.isstring() == true,
+            // and a bare number must be rejected as an item, not coerced to a URL.
+            if (value.type() == LuaValue.TSTRING) {
+                return HttpGetParams(
+                    url = value.checkjstring(),
+                    pluginHeaders = globalHeaders,
+                    charset = globalCharset,
+                    binary = globalBinary,
+                    followRedirects = globalFollowRedirects,
+                    method = globalMethod,
+                    timeoutMs = globalTimeoutMs,
+                    logTag = "http_get_batch",
+                )
+            }
+            if (!value.istable()) {
+                throw IllegalArgumentException(
+                    "http_get_batch: item #$index must be a string URL or a table with \"url\", " +
+                        "got ${value.typename()}"
+                )
+            }
+            val table = value.checktable()
+            val url = table.get("url").optjstring(null) ?: throw IllegalArgumentException(
+                "http_get_batch: item #$index is missing the required \"url\" field"
+            )
+            return HttpGetParams(
+                url = url,
+                pluginHeaders = globalHeaders + convertHeaders(table.get("headers").opttable(LuaTable())),
+                charset = table.get("charset").optjstring(globalCharset),
+                binary = table.get("binary").optboolean(globalBinary),
+                followRedirects = table.get("followRedirects").optboolean(globalFollowRedirects),
+                method = checkHttpMethod("http_get_batch", table.get("method").optjstring(globalMethod)),
+                timeoutMs = if (table.get("timeout").isnil()) globalTimeoutMs
+                            else table.get("timeout").optlong(0L).takeIf { it > 0 },
+                logTag = "http_get_batch",
+            )
+        }
+
+        /** Error tables carry no headers field; the batch contract always exposes it. */
+        private fun withHeadersFallback(table: LuaValue): LuaValue {
+            if (table.get("headers").isnil()) table.set("headers", LuaTable())
+            return table
         }
     }
 
