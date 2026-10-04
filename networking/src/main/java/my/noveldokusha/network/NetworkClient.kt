@@ -6,6 +6,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import my.noveldokusha.core.AppCacheConfig
 import my.noveldokusha.core.AppInternalState
 import my.noveldokusha.core.appPreferences.AppPreferences
+import my.noveldokusha.network.interceptors.ChromeHeadersInterceptor
 import my.noveldokusha.network.interceptors.CloudFareVerificationInterceptor
 import my.noveldokusha.network.interceptors.BudgetedCall
 import my.noveldokusha.network.interceptors.DecodeResponseInterceptor
@@ -118,6 +119,8 @@ class ScraperNetworkClient @Inject constructor(
                 if (appPreferences.CLOUDFLARE_BYPASS_ENABLED.value) {
                     addInterceptor(CloudFareVerificationInterceptor(appContext, appPreferences, cfConnectionPool))
                 }
+                // Chrome-like header set/order on the wire (runs after BridgeInterceptor)
+                addNetworkInterceptor(ChromeHeadersInterceptor())
                 dispatcher(Dispatcher().apply { maxRequestsPerHost = 16 })
                 cookieJar(cookieJar)
                 cache(Cache(cacheDir, cacheSize))
