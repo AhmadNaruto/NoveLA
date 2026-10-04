@@ -44,6 +44,10 @@ private val ERROR_CODES = listOf(HttpsURLConnection.HTTP_FORBIDDEN, HttpsURLConn
 private const val TAG = "CloudflareInterceptor"
 private const val MAX_MANUAL_ATTEMPTS = 2
 private const val COOLDOWN_MS = 120_000L
+// Кросс-вызовый cooldown после терминального отказа обхода: без него каждый
+// независимый запрос (обновление библиотеки на 10 новелл) открывал бы свой
+// WebView. Пока cooldown активен — запросы падают быстро, без popup.
+private const val TERMINAL_COOLDOWN_MS = 60_000L
 private val MANUAL_TIMEOUT = 35.seconds
 
 private val CLOUDFLARE_WHITELIST = listOf(
@@ -217,33 +221,56 @@ internal class CloudFareVerificationInterceptor(
         val host = bufferedRequest.url.host
 
         val hostLock = hostLocks.getOrPut(host) { ReentrantLock() }
-        return hostLock.withLock {
-            val cookieManager = CookieManager.getInstance()
-                ?: throw WebViewCookieManagerInitializationFailedException()
-            val userAgent = originalRequest.header("User-Agent") ?: resolveUserAgent(appPreferences)
+        // Счётчик живёт в рамках одной операции; терминальный отказ или отмена
+        // не должны засчитываться будущему запросу.
+        return try {
+            hostLock.withLock {
+                val cookieManager = CookieManager.getInstance()
+                    ?: throw WebViewCookieManagerInitializationFailedException()
+                val userAgent = originalRequest.header("User-Agent") ?: resolveUserAgent(appPreferences)
 
-            val existingCookie = cookieManager.getCookie(siteUrl) ?: ""
-            if (resolvedDomains.containsKey(host) || existingCookie.contains("cf_clearance")) {
-                Timber.d( "CF: cf_clearance cached for $host, trying direct retry")
-                val retryRequest = bufferedRequest.newBuilder()
-                    .header("Cookie", formatCookies(existingCookie))
-                    .header("User-Agent", userAgent)
-                    .header("Cache-Control", "no-store")
-                    .build()
-                // HTTP/2-соединение, отдавшее челлендж, CF помечает отравленным и вешает
-                // на нём потоки (Http2Stream$StreamTimeout на readTimeout). evictAll закрывает
-                // idle-соединения пула, чтобы ретрай ушёл на свежем соединении.
-                connectionPool.evictAll()
-                val retryResponse = chain.proceed(retryRequest)
-                if (isNotCloudflare(retryResponse, peekBodySafe(retryResponse))) {
-                    return@withLock retryResponse
+                val existingCookie = cookieManager.getCookie(siteUrl) ?: ""
+                if (resolvedDomains.containsKey(host) || existingCookie.contains("cf_clearance")) {
+                    Timber.d( "CF: cf_clearance cached for $host, trying direct retry")
+                    val retryRequest = bufferedRequest.newBuilder()
+                        .header("Cookie", formatCookies(existingCookie))
+                        .header("User-Agent", userAgent)
+                        .header("Cache-Control", "no-store")
+                        .build()
+                    // HTTP/2-соединение, отдавшее челлендж, CF помечает отравленным и вешает
+                    // на нём потоки (Http2Stream$StreamTimeout на readTimeout). evictAll закрывает
+                    // idle-соединения пула, чтобы ретрай ушёл на свежем соединении.
+                    connectionPool.evictAll()
+                    val retryResponse = chain.proceed(retryRequest)
+                    if (isNotCloudflare(retryResponse, peekBodySafe(retryResponse))) {
+                        return@withLock retryResponse
+                    }
+                    retryResponse.close()
+                    resolvedDomains.remove(host)
+                    clearCookiesForDomain(siteUrl, cookieManager)
                 }
-                retryResponse.close()
-                resolvedDomains.remove(host)
-                clearCookiesForDomain(siteUrl, cookieManager)
-            }
 
-            proceedWithBypass(chain, bufferedRequest, siteUrl, host, cookieManager, userAgent)
+                proceedWithBypass(chain, bufferedRequest, siteUrl, host, cookieManager, userAgent)
+            }
+        } catch (e: Exception) {
+            // Отмена (OkHttp "Canceled") или терминальный отказ обхода завершают
+            // текущую операцию — сброс счётчика, чтобы утечка не давала
+            // give-up следующему независимому запросу. Остальные IOException
+            // (например SocketTimeoutException) — операция продолжается через
+            // верхний retry-цикл NetworkClient, счётчик сохраняем.
+            val isCanceled = e is IOException && e.message?.contains("Canceled", ignoreCase = true) == true
+            if (e is CloudfareVerificationBypassFailedException || isCanceled) {
+                manualAttempts.remove(host)
+            }
+            // Терминальный отказ обхода (закрытый popup, abort, give-up) ставит
+            // кросс-вызовый cooldown: следующие независимые запросы к хосту
+            // падают быстро, без нового WebView. Отмена кулдаун не ставит.
+            // Уже активный cooldown не продлеваем и не укорачиваем.
+            if (e is CloudfareVerificationBypassFailedException && !isOnCooldown(host)) {
+                cooldownUntil[host] = System.currentTimeMillis() + TERMINAL_COOLDOWN_MS
+                Timber.d("CF: $host terminal cooldown ${TERMINAL_COOLDOWN_MS / 1000}s (bypass failed)")
+            }
+            throw e
         }
     }
 

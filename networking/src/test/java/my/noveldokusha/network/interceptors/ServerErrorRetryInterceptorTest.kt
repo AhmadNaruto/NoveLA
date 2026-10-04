@@ -1,6 +1,7 @@
 package my.noveldokusha.network.interceptors
 
 import com.sun.net.httpserver.HttpServer
+import my.noveldokusha.core.domain.CloudfareVerificationBypassFailedException
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -143,5 +144,31 @@ class ServerErrorRetryInterceptorTest {
         }
         // maxRetries=3 → 4 попытки, как и до появления маркера
         assertEquals(4, proceeds.get())
+    }
+
+    // ── Терминальная ошибка CF-обхода ─────────────────────────────────────────
+    //
+    // CloudfareVerificationBypassFailedException наследует IOException, но ретрай
+    // бессмыслен: каждый повтор заново гонит цикл WebView (15с авто + 35с manual)
+    // и съедает бюджет таймаута NetworkClient.
+
+    @Test
+    fun `cloudfare bypass failure propagates without retry`() {
+        val proceeds = AtomicInteger(0)
+        val client = OkHttpClient.Builder()
+            .addInterceptor(ServerErrorRetryInterceptor(maxRetries = 3, initialBackoffMs = 1))
+            .addInterceptor(object : Interceptor {
+                override fun intercept(chain: Interceptor.Chain): Response {
+                    proceeds.incrementAndGet()
+                    throw CloudfareVerificationBypassFailedException()
+                }
+            })
+            .build()
+        val request = Request.Builder().url("http://example.com/").get().build()
+
+        assertThrows(CloudfareVerificationBypassFailedException::class.java) {
+            client.newCall(request).execute()
+        }
+        assertEquals("терминальная ошибка обхода: ретраев не было", 1, proceeds.get())
     }
 }

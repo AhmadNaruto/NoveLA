@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.net.http.SslError
 import android.webkit.*
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.lifecycle.lifecycleScope
@@ -217,13 +218,22 @@ class WebViewActivity : ComponentActivity() {
                 }
             }
 
+            // Системная back-кнопка/жест в bypass-режиме: будим интерцептор сразу,
+            // не дожидаясь MANUAL_TIMEOUT. В обычном режиме выключен — поведение прежнее.
+            BackHandler(enabled = isBypassMode) {
+                closeBypassOnUserDismiss()
+            }
+
             Theme(themeProvider = themeProvider) {
                 WebViewScreen(
                     toolbarTitle = currentUrl,
                     isReady = isReady,
                     webViewFactory = { webView },
                     onNavigateToUrl = { url -> webView.loadUrl(url) },
-                    onBackClicked = { if (!isFinishing) finish() },
+                    onBackClicked = {
+                        if (isBypassMode) closeBypassOnUserDismiss()
+                        else if (!isFinishing) finish()
+                    },
                     onDoneClicked = {
                         if (!isFinishing) {
                             CookieManager.getInstance().flush()
@@ -329,6 +339,18 @@ class WebViewActivity : ComponentActivity() {
         CookieManager.getInstance().flush()
         CloudflareBypassSignal.notifyBypassFinished(host)
         CloudflareBypassSignal.channel.trySend(Unit)
+        finish()
+    }
+
+    // Пользователь закрыл обход, не решив челлендж: будим интерцептор сразу,
+    // не дожидаясь MANUAL_TIMEOUT (35с) в CloudFareVerificationInterceptor.
+    private fun closeBypassOnUserDismiss() {
+        if (isFinishing || hasAutoClosed) return
+        val host = Uri.parse(currentTargetUrl).host ?: ""
+        CookieManager.getInstance().flush()
+        CloudflareBypassSignal.notifyBypassFinished(host)
+        CloudflareBypassSignal.channel.trySend(Unit)
+        hasAutoClosed = true
         finish()
     }
 

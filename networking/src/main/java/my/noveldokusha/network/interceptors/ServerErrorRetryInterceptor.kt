@@ -1,5 +1,6 @@
 package my.noveldokusha.network.interceptors
 
+import my.noveldokusha.core.domain.CloudfareVerificationBypassFailedException
 import okhttp3.Interceptor
 import okhttp3.Response
 import timber.log.Timber
@@ -49,6 +50,9 @@ class ServerErrorRetryInterceptor(
             val response = try {
                 chain.proceed(request)
             } catch (e: IOException) {
+                // CF-обход терминален: ретрай лишь повторяет цикл WebView
+                // (15с авто + 35с manual) и съедает бюджет таймаута.
+                if (e is CloudfareVerificationBypassFailedException) throw e
                 lastException = e
                 null
             }
