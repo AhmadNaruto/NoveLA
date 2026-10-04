@@ -877,6 +877,10 @@
     <string name="video_source_no_video">Source does not support video</string>
     <string name="video_translate_unavailable">Translation is not available for video</string>
     <string name="video_settings_title">Settings</string>
+    <string name="video_playback_error">Playback error</string>
+    <string name="video_playback_error_codec">Device codecs cannot decode this stream</string>
+    <string name="video_playback_error_source">Source unavailable: server problem or damaged file</string>
+    <string name="video_variant_badge_dead">Unavailable</string>
     <string name="video_playback_speed">Speed</string>
     <string name="video_audio_track">Audio track</string>
     <string name="video_subtitles">Subtitles</string>

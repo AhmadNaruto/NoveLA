@@ -856,6 +856,10 @@
     <string name="video_loading_sources">正在获取来源…</string>
     <string name="video_open_in_other">在其他应用中打开</string>
     <string name="video_no_app_to_play">没有可播放此视频的应用</string>
+    <string name="video_playback_error">播放错误</string>
+    <string name="video_playback_error_codec">设备编解码器无法解码此流</string>
+    <string name="video_playback_error_source">来源不可用：服务器问题或文件损坏</string>
+    <string name="video_variant_badge_dead">不可用</string>
     <string name="video_quality">画质</string>
     <string name="video_sources_not_found">未找到来源</string>
     <string name="video_source_not_found">未找到来源</string>

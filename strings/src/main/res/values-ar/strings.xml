@@ -844,6 +844,10 @@
     <string name="video_loading_sources">جارٍ جلب المصادر…</string>
     <string name="video_open_in_other">فتح في تطبيق آخر</string>
     <string name="video_no_app_to_play">لا يوجد تطبيق متاح لتشغيل هذا الفيديو</string>
+    <string name="video_playback_error">خطأ في التشغيل</string>
+    <string name="video_playback_error_codec">لا تستطيع كوديكات الجهاز فك ترميز هذا البث</string>
+    <string name="video_playback_error_source">المصدر غير متاح: مشكلة في الخادم أو ملف تالف</string>
+    <string name="video_variant_badge_dead">غير متاح</string>
     <string name="video_quality">الجودة</string>
     <string name="video_sources_not_found">المصادر غير موجودة</string>
     <string name="video_source_not_found">المصدر غير موجود</string>

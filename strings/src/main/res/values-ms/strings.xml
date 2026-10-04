@@ -844,6 +844,10 @@
     <string name="video_loading_sources">Mendapatkan sumber…</string>
     <string name="video_open_in_other">Buka dalam aplikasi lain</string>
     <string name="video_no_app_to_play">Tiada aplikasi untuk memainkan video ini</string>
+    <string name="video_playback_error">Ralat pemutaran</string>
+    <string name="video_playback_error_codec">Codec peranti tidak dapat mentafsir strim ini</string>
+    <string name="video_playback_error_source">Sumber tidak tersedia: masalah pelayan atau fail rosak</string>
+    <string name="video_variant_badge_dead">Tidak tersedia</string>
     <string name="video_quality">Kualiti</string>
     <string name="video_sources_not_found">Sumber tidak dijumpai</string>
     <string name="video_source_not_found">Sumber tidak dijumpai</string>

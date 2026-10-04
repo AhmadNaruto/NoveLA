@@ -854,6 +854,10 @@
     <string name="video_loading_sources">Quellen werden geladen…</string>
     <string name="video_open_in_other">In anderer App öffnen</string>
     <string name="video_no_app_to_play">Keine App vorhanden, um dieses Video abzuspielen</string>
+    <string name="video_playback_error">Wiedergabefehler</string>
+    <string name="video_playback_error_codec">Die Codecs des Geräts können diesen Stream nicht decodieren</string>
+    <string name="video_playback_error_source">Quelle nicht verfügbar: Serverproblem oder beschädigte Datei</string>
+    <string name="video_variant_badge_dead">Nicht verfügbar</string>
     <string name="video_quality">Qualität</string>
     <string name="video_sources_not_found">Quellen nicht gefunden</string>
     <string name="video_source_not_found">Quelle nicht gefunden</string>

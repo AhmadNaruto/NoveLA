@@ -1310,6 +1310,10 @@
     <string name="video_loading_sources">Получение источников…</string>
     <string name="video_open_in_other">Открыть в другом</string>
     <string name="video_no_app_to_play">Нет приложения для воспроизведения</string>
+    <string name="video_playback_error">Ошибка воспроизведения</string>
+    <string name="video_playback_error_codec">Кодеки устройства не могут декодировать этот поток</string>
+    <string name="video_playback_error_source">Источник недоступен: проблема с сервером или файлом</string>
+    <string name="video_variant_badge_dead">Недоступен</string>
     <string name="video_quality">Качество</string>
     <string name="video_resolution">Разрешение</string>
     <string name="video_voiceover">Озвучка</string>

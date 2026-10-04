@@ -854,6 +854,10 @@
     <string name="video_loading_sources">Récupération des sources…</string>
     <string name="video_open_in_other">Ouvrir dans une autre application</string>
     <string name="video_no_app_to_play">Aucune application disponible pour lire cette vidéo</string>
+    <string name="video_playback_error">Erreur de lecture</string>
+    <string name="video_playback_error_codec">Les codecs de l\'appareil ne peuvent pas décoder ce flux</string>
+    <string name="video_playback_error_source">Source indisponible : problème de serveur ou fichier endommagé</string>
+    <string name="video_variant_badge_dead">Indisponible</string>
     <string name="video_quality">Qualité</string>
     <string name="video_sources_not_found">Sources introuvables</string>
     <string name="video_source_not_found">Source introuvable</string>

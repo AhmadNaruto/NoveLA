@@ -57,6 +57,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State as ComposeState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -77,6 +78,7 @@ import androidx.media3.common.C
 import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
@@ -91,6 +93,8 @@ import androidx.media3.ui.PlayerView
 import androidx.media3.ui.TrackSelectionDialogBuilder
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import my.noveldokusha.core.utils.formatDuration
 import my.noveldokusha.coreui.AppThemeProvider
 import my.noveldokusha.coreui.theme.Theme
@@ -99,6 +103,7 @@ import my.noveldokusha.network.MediaHttpClient
 import my.noveldokusha.reader.R
 import my.noveldokusha.scraper.domain.VideoSource
 import okhttp3.OkHttpClient
+import timber.log.Timber
 import javax.inject.Inject
 
 // Таймаут автоскрытия панели берётся из настроек (VIDEO_CONTROLLER_AUTO_HIDE_MS,
@@ -130,15 +135,31 @@ private val isEmulatorDevice: Boolean by lazy {
  * media #2118) отфильтровываются — остаётся программный `c2.android.*`.
  * Если фильтр оставит пусто, берём полный список: без декодеров воспроизведение
  * не начнётся вовсе.
+ *
+ * [preferSoftwareDecoder] — после падения hw-декодера (MediaTek: `c2.mtk.hevc.decoder`
+ * отклоняет 10-бит HEVC, err 0xe) аппаратные декодеры ставятся в конец списка,
+ * иначе ExoPlayer снова выберет их же; два условия (эмулятор + программный)
+ * работают в одной секции селектора, а не в двух взаимоисключающих.
  */
-private fun createRenderersFactory(context: Context): DefaultRenderersFactory =
+private fun createRenderersFactory(
+    context: Context,
+    preferSoftwareDecoder: Boolean = false,
+): DefaultRenderersFactory =
     DefaultRenderersFactory(context).apply {
         setEnableDecoderFallback(true)
-        if (isEmulatorDevice) {
+        if (isEmulatorDevice || preferSoftwareDecoder) {
             setMediaCodecSelector { mimeType, secure, tunneling ->
                 val all = MediaCodecSelector.DEFAULT.getDecoderInfos(mimeType, secure, tunneling)
-                val filtered = all.filterNot { it.name.contains("goldfish", ignoreCase = true) }
-                if (filtered.isEmpty()) all else filtered
+                // Отсев goldfish*: без него эмулятор рисует розовые полосы на HLS.
+                val filtered = if (isEmulatorDevice) {
+                    all.filterNot { it.name.contains("goldfish", ignoreCase = true) }
+                } else all
+                // c2.android.* наверх, vendor (c2.mtk.*) — в конец; сортировка
+                // безвредна и для прочих mime: списки декодеров там короткие.
+                val sorted = if (preferSoftwareDecoder) {
+                    filtered.sortedByDescending { it.name.startsWith("c2.android.") }
+                } else filtered
+                if (sorted.isEmpty()) all else sorted
             }
         }
     }
@@ -362,6 +383,66 @@ class VideoPlayerActivity : ComponentActivity() {
                                 s.videos.size > 1 && s.videos.none { it.quality == savedQuality }
                             )
                         }
+                        // Кеш probe-статусов вариантов — только в памяти, ключ —
+                        // полный URL (подпись в нём меняет ключ сама).
+                        // OK/UNKNOWN не перепроверяем (probe дорогой),
+                        // DEAD пробим заново при каждом открытии окна.
+                        val probeStatuses = remember { mutableStateMapOf<String, VideoVariantProbe.Status>() }
+                        // Пробы в полёте: не плодить дубли (прогрев и автопоказ
+                        // окна стартуют в одном кадре) и не давать позднему
+                        // UNKNOWN затереть DEAD от быстрой пробы.
+                        val probeInFlight = remember { mutableSetOf<String>() }
+                        // Проба одного URL в scope текущего эффекта: статус
+                        // пишется сразу по готовности, не дожидаясь остальных.
+                        fun CoroutineScope.probeAll(videos: List<VideoSource>) {
+                            videos.forEach video@{ video ->
+                                if (!probeInFlight.add(video.url)) return@video
+                                launch {
+                                    try {
+                                        val startedAt = System.currentTimeMillis()
+                                        val status = VideoVariantProbe.probe(
+                                            url = video.url,
+                                            headers = video.headers,
+                                            client = mediaClient,
+                                        )
+                                        // Диагностика на устройстве: без строки результата
+                                        // не отличить «бейдж не появился» от «проба
+                                        // не кончилась / вернула UNKNOWN».
+                                        Timber.d(
+                                            "VideoVariantProbe: ${video.quality} → $status " +
+                                                "(${System.currentTimeMillis() - startedAt}ms)",
+                                        )
+                                        // Поздний UNKNOWN не затирает уже
+                                        // известный статус дубликата.
+                                        if (status != VideoVariantProbe.Status.UNKNOWN ||
+                                            probeStatuses[video.url] == null
+                                        ) {
+                                            probeStatuses[video.url] = status
+                                        }
+                                    } finally {
+                                        probeInFlight.remove(video.url)
+                                    }
+                                }
+                            }
+                        }
+                        // Прогрев кеша — сразу при получении источников, без
+                        // ожидания открытия окна (ключи — URL, равенство по
+                        // содержимому). Открытый/закрытый диалог эти пробы не
+                        // отменяет: эффект висит на s.videos, а не на окне.
+                        LaunchedEffect(s.videos.map { it.url }) {
+                            probeAll(s.videos.filter { probeStatuses[it.url] == null })
+                        }
+                        // Открытие окна — дозапуск: отсутствующие плюс DEAD
+                        // (DEAD перепроверяем при каждом открытии, как договорились).
+                        LaunchedEffect(showVariantDialog) {
+                            if (!showVariantDialog) return@LaunchedEffect
+                            val pending = s.videos.filter { video ->
+                                val cached = probeStatuses[video.url]
+                                cached == null || cached == VideoVariantProbe.Status.DEAD
+                            }
+                            if (pending.isEmpty()) return@LaunchedEffect
+                            probeAll(pending)
+                        }
                         // Разрешения внутри одного исходника (HLS 240p…720p):
                         // кнопка «Разрешение» нужна, только когда выбирать есть
                         // из чего (одно разрешение — выбор бессмыслен).
@@ -369,6 +450,16 @@ class VideoPlayerActivity : ComponentActivity() {
                         // Меню шестерёнки: подменяет popup меди3 (там только
                         // «Скорость» и «Аудио», позиции 0/1) — см. PlayerSurface.
                         var showPlayerMenu by remember(video.url) { mutableStateOf(false) }
+                        // Ошибка воспроизведения: null — плеер играет. При
+                        // декодер-крэше первый раз флаг уходит в
+                        // forceSoftwareDecoder (пересоздание плеера), и только
+                        // повторный сбой показывает экран ошибки.
+                        var playerError by remember(video.url) { mutableStateOf<PlaybackException?>(null) }
+                        // Программный декодер вместо отказавшего hw — меняет
+                        // key(video.url) и пересоздаёт AndroidView с новым плеером.
+                        var forceSoftwareDecoder by remember(video.url) { mutableStateOf(false) }
+                        // Ручной повтор: инкремент в key() тоже пересобирает плеер.
+                        var retryToken by remember(video.url) { mutableStateOf(0) }
                         // Снимок настроек жестов: читается один раз при входе
                         // в Ready, пишется через viewModel.saveGestureSettings.
                         var gestureSettings by remember { mutableStateOf(viewModel.gestureSettings()) }
@@ -387,6 +478,8 @@ class VideoPlayerActivity : ComponentActivity() {
                             VariantDialog(
                                 videos = s.videos,
                                 selected = video,
+                                // Бейджи «10-бит не откроется» / «Недоступен».
+                                statuses = probeStatuses,
                                 onSelect = {
                                     // Смена варианта пересоздаёт плеер (key(video.url)):
                                     // фиксируем позицию и переносим её в стартовую,
@@ -411,8 +504,9 @@ class VideoPlayerActivity : ComponentActivity() {
                         // видео показывает обе, скрытие — через таймаут меди3.
                         var controlsVisible by remember(video.url) { mutableStateOf(true) }
                         Box(Modifier.fillMaxSize()) {
-                            // key(): смена варианта пересоздаёт AndroidView → новый плеер.
-                            key(video.url) {
+                            // key(): смена варианта/переключение на программный
+                            // декодер/повтор пересоздаёт AndroidView → новый плеер.
+                            key(video.url, forceSoftwareDecoder, retryToken) {
                                 PlayerSurface(
                                     video = video,
                                     startPositionMs = viewModel.startPositionMs,
@@ -511,6 +605,26 @@ class VideoPlayerActivity : ComponentActivity() {
                                     },
                                     onPlayerEnded = {
                                         persistAndSwitch(viewModel.nextChapterUrl())
+                                    },
+                                    preferSoftwareDecoder = forceSoftwareDecoder,
+                                    // Первый декодер-крэш молча уводит в
+                                    // программный декодер; прочие ошибки → экран ниже.
+                                    onPlayerError = { error ->
+                                        Timber.d("Player error: code=${error.errorCode}", error)
+                                        val isDecoderError =
+                                            // В media3 декодер-крэш — ERROR_CODE_DECODING_FAILED
+                                            // (имя ERROR_CODE_DECODER_FAILED из ExoPlayer2 здесь нет).
+                                            error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED ||
+                                                error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED
+                                        if (isDecoderError && !forceSoftwareDecoder) {
+                                            // Позицию фиксируем до пересоздания
+                                            // плеера — как при смене варианта.
+                                            persistPosition()
+                                            player?.currentPosition?.let(viewModel::updateStartPositionMs)
+                                            forceSoftwareDecoder = true
+                                        } else {
+                                            playerError = error
+                                        }
                                     },
                                 )
                             }
@@ -612,6 +726,60 @@ class VideoPlayerActivity : ComponentActivity() {
                             // поверх видео, читает только свой state — Ready
                             // от кадровых обновлений не перекомпозуется.
                             GestureHudOverlay(gestureHud)
+                            // Экран ошибки поверх плеера (последний ребёнок Box —
+                            // рисуется поверх шапки/панели и гасит их жесты,
+                            // иначе тапы уходили бы в мёртвый PlayerView).
+                            val playbackError = playerError
+                            if (playbackError != null) {
+                                // Диапазоны errorCode media3: 2xxx/3xxx — источник (сеть/сервер/парсинг),
+                                // 4xxx — декодер. Ниже — причина сбоя для пользователя.
+                                val errorCode = playbackError.errorCode
+                                val messageRes = when {
+                                    errorCode in 2000..3999 -> R.string.video_playback_error_source
+                                    errorCode in 4000..4999 -> R.string.video_playback_error_codec
+                                    else -> R.string.video_playback_error
+                                }
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Black.copy(alpha = 0.8f))
+                                        .clickable { }
+                                        .padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                ) {
+                                    Text(stringResource(messageRes))
+                                    Spacer(Modifier.height(16.dp))
+                                    Button(onClick = {
+                                        playerError = null
+                                        retryToken++
+                                    }) {
+                                        Text(stringResource(R.string.retry))
+                                    }
+                                    // Смена варианта — только когда есть из чего
+                                    // выбирать (та же проверка, что и в шапке).
+                                    if (s.videos.size > 1) {
+                                        Spacer(Modifier.height(16.dp))
+                                        Button(onClick = {
+                                            playerError = null
+                                            showVariantDialog = true
+                                        }) {
+                                            Text(stringResource(R.string.video_variant_title))
+                                        }
+                                    }
+                                    // Внешний плеер (MX Player) декодирует поток своим декодером —
+                                    // показываем кнопку только когда виноваты кодеки устройства.
+                                    if (errorCode in 4000..4999) {
+                                        Spacer(Modifier.height(16.dp))
+                                        Button(onClick = {
+                                            playerError = null
+                                            openInOtherApp(video)
+                                        }) {
+                                            Text(stringResource(R.string.video_open_in_other))
+                                        }
+                                    }
+                                }
+                            }
                         }
                         // Панель настроек: композируется безусловно — скрытие и
                         // exit-анимация идут через visible (см. VideoSettingsPanel).
@@ -787,7 +955,9 @@ class VideoPlayerActivity : ComponentActivity() {
         val intent = Intent(Intent.ACTION_VIEW)
             .setDataAndType(
                 Uri.parse(video.url),
-                if (video.url.contains(".m3u8")) "application/x-mpegURL" else "video/mp4"
+                // MIME по расширению: жёсткий video/mp4 для mkv/webm
+                // часть плееров отклоняет (Intent не резолвится).
+                if (video.url.contains(".m3u8")) "application/x-mpegURL" else "video/*"
             )
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         runCatching { startActivity(intent) }
@@ -868,6 +1038,8 @@ internal fun isResolutionLabel(quality: String): Boolean {
 private fun VariantOptionRow(
     label: String,
     selected: Boolean,
+    // Хвостовой бейдж статуса probe (10-бит/недоступен); null — не показываем.
+    badge: String?,
     onClick: () -> Unit,
 ) {
     Row(
@@ -883,6 +1055,14 @@ private fun VariantOptionRow(
             color = if (selected) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.onSurface,
         )
+        if (badge != null) Text(
+            text = badge,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 8.dp, end = 4.dp),
+        )
         if (selected) Icon(
             Icons.Rounded.Check,
             contentDescription = null,
@@ -897,6 +1077,7 @@ private fun VariantSection(
     title: String,
     items: List<Pair<VideoSource, String>>,
     selected: VideoSource,
+    statuses: Map<String, VideoVariantProbe.Status>,
     onSelect: (VideoSource) -> Unit,
 ) {
     Column {
@@ -907,9 +1088,16 @@ private fun VariantSection(
             modifier = Modifier.padding(start = 4.dp, top = 8.dp, end = 4.dp, bottom = 2.dp),
         )
         items.forEach { (video, label) ->
+            // Бейдж по статусу probe этого URL: один статус на URL — либо один,
+            // либо ничего (OK/UNKNOWN бейдж не показывают).
+            val badge = when (statuses[video.url]) {
+                VideoVariantProbe.Status.DEAD -> stringResource(R.string.video_variant_badge_dead)
+                else -> null
+            }
             VariantOptionRow(
                 label = label,
                 selected = video === selected,
+                badge = badge,
                 onClick = { onSelect(video) },
             )
         }
@@ -926,6 +1114,8 @@ private fun VariantSection(
 private fun VariantDialog(
     videos: List<VideoSource>,
     selected: VideoSource,
+    // Статус probe по URL: бейджи в строках вариантов (см. VariantSection).
+    statuses: Map<String, VideoVariantProbe.Status>,
     onSelect: (VideoSource) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
@@ -952,12 +1142,14 @@ private fun VariantDialog(
                     title = stringResource(R.string.video_quality),
                     items = qualities,
                     selected = selected,
+                    statuses = statuses,
                     onSelect = onSelect,
                 )
                 if (voiceovers.isNotEmpty()) VariantSection(
                     title = stringResource(R.string.video_voiceover),
                     items = voiceovers,
                     selected = selected,
+                    statuses = statuses,
                     onSelect = onSelect,
                 )
             }
@@ -1023,6 +1215,10 @@ private fun PlayerSurface(
     onPlayerCreated: (ExoPlayer) -> Unit,
     onPlayerReleased: (ExoPlayer) -> Unit,
     onPlayerEnded: () -> Unit,
+    // true — декодеры c2.android.* выбираются первыми (после падения hw).
+    preferSoftwareDecoder: Boolean,
+    // Ошибка воспроизведения уходит наверх: экран ошибки поверх плеера.
+    onPlayerError: (PlaybackException) -> Unit,
 ) {
     AndroidView(
         modifier = Modifier
@@ -1067,7 +1263,7 @@ private fun PlayerSurface(
                     OkHttpDataSource.Factory(mediaClient)
                         .setDefaultRequestProperties(video.headers)
                 )
-                val exoPlayer = ExoPlayer.Builder(ctx, createRenderersFactory(ctx))
+                val exoPlayer = ExoPlayer.Builder(ctx, createRenderersFactory(ctx, preferSoftwareDecoder))
                     .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
                     // Аудио-фокус: handleAudioFocus=true обязателен — без второго
                     // аргумента плеер фокус не запрашивает. Becoming-noisy: вынутые
@@ -1163,6 +1359,12 @@ private fun PlayerSurface(
                 exoPlayer.addListener(object : Player.Listener {
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         if (playbackState == Player.STATE_ENDED) onPlayerEnded()
+                    }
+
+                    // Без этого колбэка playback-ошибка (падение декодера)
+                    // оставляла бы экран висеть без единого сообщения.
+                    override fun onPlayerError(error: PlaybackException) {
+                        onPlayerError(error)
                     }
 
                     override fun onTracksChanged(tracks: Tracks) {

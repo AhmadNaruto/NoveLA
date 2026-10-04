@@ -854,6 +854,10 @@
     <string name="video_loading_sources">Pobieranie źródeł…</string>
     <string name="video_open_in_other">Otwórz w innej aplikacji</string>
     <string name="video_no_app_to_play">Brak aplikacji do odtwarzania tego wideo</string>
+    <string name="video_playback_error">Błąd odtwarzania</string>
+    <string name="video_playback_error_codec">Kodeki urządzenia nie mogą dekodować tego strumienia</string>
+    <string name="video_playback_error_source">Źródło niedostępne: problem z serwerem lub uszkodzony plik</string>
+    <string name="video_variant_badge_dead">Niedostępne</string>
     <string name="video_quality">Jakość</string>
     <string name="video_sources_not_found">Nie znaleziono źródeł</string>
     <string name="video_source_not_found">Nie znaleziono źródła</string>

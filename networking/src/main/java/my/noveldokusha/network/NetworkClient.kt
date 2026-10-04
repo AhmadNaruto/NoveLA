@@ -7,6 +7,7 @@ import my.noveldokusha.core.AppCacheConfig
 import my.noveldokusha.core.AppInternalState
 import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.network.interceptors.CloudFareVerificationInterceptor
+import my.noveldokusha.network.interceptors.BudgetedCall
 import my.noveldokusha.network.interceptors.DecodeResponseInterceptor
 import my.noveldokusha.network.interceptors.ServerErrorRetryInterceptor
 import my.noveldokusha.network.interceptors.UserAgentInterceptor
@@ -213,9 +214,16 @@ class ScraperNetworkClient @Inject constructor(
     override suspend fun callWithTimeout(request: Request.Builder, timeoutMs: Long, followRedirects: Boolean): Response {
         // Бюджет задан: одна попытка и нативные таймауты OkHttp = timeoutMs.
         // Без ретраев — их серия (3+3+3+3+15с) умножила бы бюджет и провалила
-        // быструю пробу живости ссылки. callTimeout режет весь вызов целиком
-        // (DNS+connect+редиректы+чтение тела), а не только отдельные фазы.
+        // быструю пробу живости ссылки. Ретраи ServerErrorRetryInterceptor тоже
+        // выключены: запрос помечается тегом BudgetedCall, интерсептор отдаёт его
+        // одним chain.proceed — иначе Thread.sleep-бэкофф (500..4000мс × попытки)
+        // шёл уже после отмены вызова и растягивал вызов далеко за бюджет.
+        // callTimeout режет весь вызов целиком (DNS+connect+редиректы+чтение
+        // тела), а не только отдельные фазы.
         if (timeoutMs <= 0) return call(request, followRedirects)
+        // Тег ставим ДО build(): он переживает built.newBuilder() внутри этого
+        // метода (OkHttp копирует tags) и доходит до интерсептора в сети.
+        request.tag(BudgetedCall::class.java, BudgetedCall)
         val built = request.build()
         val baseClient = if (followRedirects) clientWithRedirects else clientNoRedirects
         val budgetClient = baseClient.newBuilder()

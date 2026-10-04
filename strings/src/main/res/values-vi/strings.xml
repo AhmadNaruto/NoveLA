@@ -844,6 +844,10 @@
     <string name="video_loading_sources">Đang lấy nguồn…</string>
     <string name="video_open_in_other">Mở trong ứng dụng khác</string>
     <string name="video_no_app_to_play">Không có ứng dụng nào để phát video này</string>
+    <string name="video_playback_error">Lỗi phát</string>
+    <string name="video_playback_error_codec">Codec của thiết bị không thể giải mã luồng này</string>
+    <string name="video_playback_error_source">Nguồn không khả dụng: lỗi máy chủ hoặc tệp bị hỏng</string>
+    <string name="video_variant_badge_dead">Không khả dụng</string>
     <string name="video_quality">Chất lượng</string>
     <string name="video_sources_not_found">Không tìm thấy nguồn</string>
     <string name="video_source_not_found">Không tìm thấy nguồn</string>

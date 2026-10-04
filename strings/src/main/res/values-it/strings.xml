@@ -854,6 +854,10 @@
     <string name="video_loading_sources">Recupero delle fonti…</string>
     <string name="video_open_in_other">Apri in un\'altra app</string>
     <string name="video_no_app_to_play">Nessuna app disponibile per riprodurre questo video</string>
+    <string name="video_playback_error">Errore di riproduzione</string>
+    <string name="video_playback_error_codec">I codec del dispositivo non possono decodificare questo flusso</string>
+    <string name="video_playback_error_source">Sorgente non disponibile: problema del server o file danneggiato</string>
+    <string name="video_variant_badge_dead">Non disponibile</string>
     <string name="video_quality">Qualità</string>
     <string name="video_sources_not_found">Fonti non trovate</string>
     <string name="video_source_not_found">Fonte non trovata</string>

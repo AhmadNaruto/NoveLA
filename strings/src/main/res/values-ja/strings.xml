@@ -856,6 +856,10 @@
     <string name="video_loading_sources">ソースを取得中…</string>
     <string name="video_open_in_other">他のアプリで開く</string>
     <string name="video_no_app_to_play">このビデオを再生できるアプリがありません</string>
+    <string name="video_playback_error">再生エラー</string>
+    <string name="video_playback_error_codec">このデバイスのコーデックではこのストリームをデコードできません</string>
+    <string name="video_playback_error_source">ソースを使用できません：サーバーの問題またはファイルの破損</string>
+    <string name="video_variant_badge_dead">利用不可</string>
     <string name="video_quality">画質</string>
     <string name="video_sources_not_found">ソース一覧が見つかりません</string>
     <string name="video_source_not_found">ソースが見つかりません</string>

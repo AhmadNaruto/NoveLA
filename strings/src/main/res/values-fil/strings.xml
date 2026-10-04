@@ -844,6 +844,10 @@
     <string name="video_loading_sources">Kinukuha ang mga source…</string>
     <string name="video_open_in_other">Buksan sa ibang app</string>
     <string name="video_no_app_to_play">Walang available na app para i-play ang video na ito</string>
+    <string name="video_playback_error">Error sa playback</string>
+    <string name="video_playback_error_codec">Hindi kayang i-decode ng mga codec ng device ang stream na ito</string>
+    <string name="video_playback_error_source">Hindi available ang source: problema sa server o nasirang file</string>
+    <string name="video_variant_badge_dead">Hindi available</string>
     <string name="video_quality">Kalidad</string>
     <string name="video_sources_not_found">Hindi nahanap ang mga source</string>
     <string name="video_source_not_found">Hindi nahanap ang source</string>

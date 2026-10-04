@@ -844,6 +844,10 @@
     <string name="video_loading_sources">กำลังดึงซอร์ส…</string>
     <string name="video_open_in_other">เปิดในแอปอื่น</string>
     <string name="video_no_app_to_play">ไม่มีแอปสำหรับเล่นวิดีโอนี้</string>
+    <string name="video_playback_error">เกิดข้อผิดพลาดในการเล่น</string>
+    <string name="video_playback_error_codec">โคเดกของอุปกรณ์ไม่สามารถถอดรหัสสตรีมนี้ได้</string>
+    <string name="video_playback_error_source">ไม่พร้อมใช้งาน: ปัญหาเซิร์ฟเวอร์หรือไฟล์เสียหาย</string>
+    <string name="video_variant_badge_dead">ไม่พร้อมใช้งาน</string>
     <string name="video_quality">คุณภาพ</string>
     <string name="video_sources_not_found">ไม่พบซอร์ส</string>
     <string name="video_source_not_found">ไม่พบซอร์ส</string>

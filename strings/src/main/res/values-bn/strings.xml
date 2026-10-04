@@ -844,6 +844,10 @@
     <string name="video_loading_sources">সোর্স আনা হচ্ছে…</string>
     <string name="video_open_in_other">অন্য অ্যাপে খুলুন</string>
     <string name="video_no_app_to_play">এই ভিডিও চালানোর জন্য কোনো অ্যাপ নেই</string>
+    <string name="video_playback_error">প্লেব্যাক ত্রুটি</string>
+    <string name="video_playback_error_codec">ডিভাইসের কোডেক এই স্ট্রিম ডিকোড করতে পারে না</string>
+    <string name="video_playback_error_source">উৎস অনুপলব্ধ: সার্ভারের সমস্যা বা ক্ষতিগ্রস্ত ফাইল</string>
+    <string name="video_variant_badge_dead">অনুপলব্ধ</string>
     <string name="video_quality">মান</string>
     <string name="video_sources_not_found">উৎস পাওয়া যায়নি</string>
     <string name="video_source_not_found">উৎসটি পাওয়া যায়নি</string>
