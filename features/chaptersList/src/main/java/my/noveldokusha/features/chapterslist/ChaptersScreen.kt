@@ -122,7 +122,7 @@ internal fun ChaptersScreen(
     onCoverLongClick: () -> Unit,
     onChangeCover: () -> Unit,
     onOpenInBrowser: (url: String) -> Unit,
-    onGlobalSearchClick: (input: String) -> Unit,
+    onGlobalSearchClick: (input: String, contentType: String) -> Unit,
     onDownloadNext100Chapters: () -> Unit,
     onDownloadAllChapters: () -> Unit,
     onExport: (bookUrl: String, bookTitle: String) -> Unit,

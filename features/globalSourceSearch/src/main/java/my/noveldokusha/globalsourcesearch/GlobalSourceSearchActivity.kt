@@ -17,13 +17,15 @@ import javax.inject.Inject
 class GlobalSourceSearchActivity : BaseActivity() {
     class IntentData : Intent, GlobalSourceSearchStateBundle {
         override var initialInput by Extra_String()
+        override var contentType by Extra_String()
 
         constructor(intent: Intent) : super(intent)
-        constructor(ctx: Context, input: String) : super(
+        constructor(ctx: Context, input: String, contentType: String = "") : super(
             ctx,
             GlobalSourceSearchActivity::class.java
         ) {
             this.initialInput = input
+            this.contentType = contentType
         }
     }
 
@@ -54,6 +56,8 @@ class GlobalSourceSearchActivity : BaseActivity() {
                     onSearchInputSubmit = viewModel::search,
                     getLibraryBadge = viewModel::getLibraryBadge,
                     libraryBadgeData = viewModel.libraryBadgeData,
+                    selectedScope = viewModel.searchScope.value,
+                    onScopeChange = viewModel::onScopeChange,
                 )
             }
         }

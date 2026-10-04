@@ -97,7 +97,14 @@ class ChaptersActivity : BaseActivity() {
                     onCoverLongClick = { searchBookInDatabase(input = viewModel.bookTitle) },
                     onChangeCover = onDoAskForImage { viewModel.saveImageAsCover(it) },
                     onOpenInBrowser = { navigationRoutes.webView(this, url = it, bookUrl = it).let(::startActivity) },
-                    onGlobalSearchClick = { navigationRoutes.globalSearch(this, text = it).let(::startActivity) },
+                    // У новелл contentType = "" — нормализуем, иначе scope не фиксируется.
+                    onGlobalSearchClick = { text, contentType ->
+                        navigationRoutes.globalSearch(
+                            this,
+                            text = text,
+                            contentType = contentType.ifEmpty { "novel" }
+                        ).let(::startActivity)
+                    },
                     onDownloadNext100Chapters = viewModel::downloadNext100Chapters,
                     onDownloadAllChapters = viewModel::downloadAllChapters,
                     onExport = viewModel::onExportClicked,

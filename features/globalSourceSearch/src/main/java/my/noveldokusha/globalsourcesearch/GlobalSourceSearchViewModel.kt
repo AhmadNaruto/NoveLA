@@ -39,6 +39,7 @@ import javax.inject.Inject
 
 internal interface GlobalSourceSearchStateBundle {
     val initialInput: String
+    val contentType: String
 }
 
 @HiltViewModel
@@ -52,11 +53,19 @@ internal class GlobalSourceSearchViewModel @Inject constructor(
     private val translationManager: TranslationManager,
 ) : ViewModel(), GlobalSourceSearchStateBundle {
     override val initialInput by StateExtra_String(state)
+    // Тип контента из Intent: "" — все типы, иначе "novel"/"manga"/"video".
+    override val contentType by StateExtra_String(state)
 
     @Volatile
     private var searchJob: Job? = null
 
     val searchInput = state.asMutableStateOf("searchInput") { initialInput }
+    // Выбранный scope фильтра источников; переживает поворот экрана.
+    // При входе из глобального поиска (contentType пустой) дефолт берётся из
+    // настроек; со страницы книги — фиксируется на типе этой книги.
+    val searchScope = state.asMutableStateOf("searchScope") {
+        contentType.ifEmpty { appPreferences.GLOBAL_SEARCH_CONTENT_TYPE.value }
+    }
     val sourcesResults = mutableStateListOf<SourceResults>()
 
     // In-library badge data: normalized URL -> count, title -> count
@@ -102,25 +111,50 @@ internal class GlobalSourceSearchViewModel @Inject constructor(
     fun search(text: String) {
         if (text.isBlank()) return
 
+        val scope = searchScope.value
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             sourcesResults.clear()
             scraperRepository.sourcesCatalogListFlow()
                 .take(1)
                 .collect { sources ->
-                    sources.map { source ->
-                        SourceResults(
-                            source = source,
-                            searchInput = text,
-                            coroutineScope = this@launch,
-                            appPreferences = appPreferences,
-                            translationSettingsResolver = translationSettingsResolver,
-                            bookTranslationDao = bookTranslationDao,
-                            translationManager = translationManager,
-                        )
-                    }.let(sourcesResults::addAll)
+                    sources
+                        .filter { matchesScope(it.catalog.contentType, scope) }
+                        .map { source ->
+                            SourceResults(
+                                source = source,
+                                searchInput = text,
+                                coroutineScope = this@launch,
+                                appPreferences = appPreferences,
+                                translationSettingsResolver = translationSettingsResolver,
+                                bookTranslationDao = bookTranslationDao,
+                                translationManager = translationManager,
+                            )
+                        }.let(sourcesResults::addAll)
                 }
         }
+    }
+
+    // Смена scope фильтра: сохраняем выбор в настройки, при введённом
+    // тексте автоматически перезапускаем поиск.
+    fun onScopeChange(scope: String) {
+        if (scope == searchScope.value) return
+        searchScope.value = scope
+        // Сохраняем выбор в настройки только при входе из глобального поиска;
+        // при входе со страницы книги (contentType != "") — scope временный,
+        // в настройки не пишем.
+        if (contentType.isEmpty()) {
+            appPreferences.GLOBAL_SEARCH_CONTENT_TYPE.value = scope
+        }
+        if (searchInput.value.isNotBlank()) search(searchInput.value)
+    }
+
+    // Совпадение типа источника со scope: "" — все типы,
+    // "novel" включает источники с пустым contentType (пустой = новелла).
+    private fun matchesScope(sourceContentType: String, scope: String): Boolean = when (scope) {
+        "" -> true
+        "novel" -> sourceContentType == "novel" || sourceContentType.isEmpty()
+        else -> sourceContentType == scope
     }
 }
 

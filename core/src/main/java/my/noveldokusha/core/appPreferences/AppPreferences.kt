@@ -663,6 +663,11 @@ class AppPreferences @Inject constructor(
     val FINDER_SOURCES_PINNED = object : Preference<Set<String>>("FINDER_SOURCES_PINNED") {
         override var value by SharedPreference_StringSet(name, preferences, setOf())
     }
+    // Выбранный scope типа контента в глобальном поиске:
+    // "" — все типы (дефолт при первом открытии), иначе "novel"/"manga"/"video".
+    val GLOBAL_SEARCH_CONTENT_TYPE = object : Preference<String>("GLOBAL_SEARCH_CONTENT_TYPE") {
+        override var value by SharedPreference_String(name, preferences, "")
+    }
     val LIBRARY_FILTER_READ = object : Preference<TernaryState>("LIBRARY_FILTER_READ") {
         override var value by SharedPreference_Enum(
             name,

@@ -33,7 +33,8 @@ interface NavigationRoutes {
         databaseBaseUrl: String
     ): Intent
 
-    fun globalSearch(context: Context, text: String): Intent
+    // contentType: "" — все типы, иначе "novel"/"manga"/"video"
+    fun globalSearch(context: Context, text: String, contentType: String = ""): Intent
     fun sourceCatalog(context: Context, sourceBaseUrl: String): Intent
 
     fun novelMigration(context: Context, bookUrl: String, bookTitle: String): Intent

@@ -43,6 +43,9 @@ internal data class ChaptersScreenState(
         val coverImageUrl: String? = null,
         val description: String = "",
         val category: String = "",
+        // Тип контента книги: "" — новелла (дефолт источников без content_type),
+        // иначе "novel"/"manga"/"video".
+        val contentType: String = "",
     ) {
         constructor(book: Book) : this(
             title = book.title,
@@ -53,6 +56,7 @@ internal data class ChaptersScreenState(
             coverImageUrl = book.coverImageUrl,
             description = book.description,
             category = book.category,
+            contentType = book.contentType,
         )
     }
 }

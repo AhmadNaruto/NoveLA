@@ -57,7 +57,7 @@ internal fun ChaptersScreenBody(
     onStopDownload: (chapter: ChapterWithContext) -> Unit,
     onPullRefresh: () -> Unit,
     onCoverLongClick: () -> Unit,
-    onGlobalSearchClick: (input: String) -> Unit,
+    onGlobalSearchClick: (input: String, contentType: String) -> Unit,
     bookCategory: String,
     categories: () -> List<String>,
     onCategoryClick: () -> Unit,

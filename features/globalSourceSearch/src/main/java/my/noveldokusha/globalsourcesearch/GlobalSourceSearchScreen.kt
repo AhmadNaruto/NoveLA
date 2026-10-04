@@ -1,12 +1,16 @@
 package my.noveldokusha.globalsourcesearch
 
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -27,6 +31,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import my.noveldokusha.coreui.components.AnimatedTransition
 import my.noveldokusha.coreui.components.LibraryBadgeMaps
 import my.noveldokusha.coreui.components.LibraryBadgeState
@@ -34,6 +39,7 @@ import my.noveldokusha.coreui.components.ToolbarMode
 import my.noveldokusha.coreui.components.TopAppBarSearch
 import my.noveldokusha.coreui.theme.InternalTheme
 import my.noveldokusha.feature.local_database.BookMetadata
+import my.noveldokusha.strings.R as StringsR
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
@@ -47,6 +53,8 @@ internal fun GlobalSourceSearchScreen(
     onPressBack: () -> Unit,
     getLibraryBadge: (String, String) -> LibraryBadgeState? = { _, _ -> null },
     libraryBadgeData: State<LibraryBadgeMaps> = androidx.compose.runtime.mutableStateOf(LibraryBadgeMaps()),
+    selectedScope: String = "",
+    onScopeChange: (String) -> Unit = {},
 ) {
     val focusRequester = remember { FocusRequester() }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
@@ -109,6 +117,28 @@ internal fun GlobalSourceSearchScreen(
                         }
                     }
                 }
+
+                // Селектор типа контента: показывается всегда (и при входе
+                // из глобального поиска, и со страницы книги).
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    val scopeOptions = listOf(
+                        "" to stringResource(StringsR.string.all_categories),
+                        "novel" to stringResource(StringsR.string.content_type_novel),
+                        "manga" to stringResource(StringsR.string.content_type_manga),
+                        "video" to stringResource(StringsR.string.content_type_video),
+                    )
+                    scopeOptions.forEach { (value, label) ->
+                        FilterChip(
+                            selected = selectedScope == value,
+                            onClick = { onScopeChange(value) },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+
                 val progress by remember {
                     derivedStateOf {
                         val totalCount = listSources.size.coerceAtLeast(1)
@@ -116,7 +146,9 @@ internal fun GlobalSourceSearchScreen(
                         finishedCount.toFloat() / totalCount.toFloat()
                     }
                 }
-                if (progress < 1f) {
+                // При пустой выборке (scope без источников) не показываем —
+                // иначе индикатор висит вечно над "нет результатов".
+                if (progress < 1f && listSources.isNotEmpty()) {
                     LinearProgressIndicator(
                         progress = { progress },
                         modifier = Modifier.fillMaxWidth(),

@@ -96,7 +96,7 @@ internal fun ChaptersScreenHeader(
     onClearTranslationClick: () -> Unit,
     modifier: Modifier = Modifier,
     onCoverLongClick: () -> Unit,
-    onGlobalSearchClick: (input: String) -> Unit,
+    onGlobalSearchClick: (input: String, contentType: String) -> Unit,
     onScrollToLastRead: (() -> Unit)?,
     onScrollToChapter: () -> Unit,
     bookCategory: String,
@@ -199,7 +199,7 @@ internal fun ChaptersScreenHeader(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.clickableNoIndicator {
-                                onGlobalSearchClick(bookState.title)
+                                onGlobalSearchClick(bookState.title, bookState.contentType)
                             }
                         )
                     }

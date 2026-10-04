@@ -76,8 +76,9 @@ class AppNavigationRoutes @Inject constructor() : NavigationRoutes {
     override fun globalSearch(
         context: Context,
         text: String,
+        contentType: String,
     ): Intent {
-        return GlobalSourceSearchActivity.IntentData(context, text)
+        return GlobalSourceSearchActivity.IntentData(context, text, contentType)
     }
 
     override fun webView(context: Context, url: String, bookUrl: String?): Intent {
