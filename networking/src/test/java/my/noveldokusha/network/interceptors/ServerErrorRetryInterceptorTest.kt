@@ -1,12 +1,16 @@
 package my.noveldokusha.network.interceptors
 
 import com.sun.net.httpserver.HttpServer
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -80,5 +84,64 @@ class ServerErrorRetryInterceptorTest {
             assertEquals(404, response.code)
         }
         assertEquals(1, hits.get())
+    }
+
+    // ── Вызов с бюджетом (маркер BudgetedCall) ────────────────────────────────
+    //
+    // Бюджетный вызов (NetworkClient.callWithTimeout): ретраи и Thread.sleep-бэкофф
+    // нарушали бы обещание «одна попытка» — после callTimeout попытки падают
+    // мгновенно, но сон интерсептора идёт в полную величину и вылезает за бюджет.
+
+    /** «Сеть», которая всегда бросает IOException: внутренний интерсептор после ретраев. */
+    private fun alwaysFailingClient(proceeds: AtomicInteger): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(ServerErrorRetryInterceptor(maxRetries = 3, initialBackoffMs = 50))
+            .addInterceptor(object : Interceptor {
+                override fun intercept(chain: Interceptor.Chain): Response {
+                    proceeds.incrementAndGet()
+                    throw IOException("boom")
+                }
+            })
+            .build()
+
+    private fun budgetedRequest(url: String): Request =
+        Request.Builder().url(url).get()
+            .tag(BudgetedCall::class.java, BudgetedCall)
+            .build()
+
+    @Test
+    fun `budgeted request propagates IOException after a single proceed`() {
+        val proceeds = AtomicInteger(0)
+        val client = alwaysFailingClient(proceeds)
+
+        val error = assertThrows(IOException::class.java) {
+            client.newCall(budgetedRequest("http://example.com/")).execute()
+        }
+
+        assertEquals("boom", error.message)
+        assertEquals("бюджетный вызов: ретраев и backoff-сна не было", 1, proceeds.get())
+    }
+
+    @Test
+    fun `budgeted request returns first 503 without retry`() {
+        val url = startServer(failCount = Int.MAX_VALUE)
+
+        client.newCall(budgetedRequest(url)).execute().use { response ->
+            assertEquals(503, response.code)
+        }
+        assertEquals("503 ушёл вызывающему с первого раза", 1, hits.get())
+    }
+
+    @Test
+    fun `request without budget marker still retries IOException`() {
+        val proceeds = AtomicInteger(0)
+        val client = alwaysFailingClient(proceeds)
+        val request = Request.Builder().url("http://example.com/").get().build()
+
+        assertThrows(IOException::class.java) {
+            client.newCall(request).execute()
+        }
+        // maxRetries=3 → 4 попытки, как и до появления маркера
+        assertEquals(4, proceeds.get())
     }
 }
