@@ -67,6 +67,11 @@ data class DownloadTaskState(
     val consecutiveErrors: Int = 0,
     val skippedCount: Int = 0,
     val translationErrorCount: Int = 0,
+    // Постраничный прогресс текущей главы (мультистраничная загрузка).
+    // Runtime-only: в DownloadTaskEntity не сохраняется, после restore = null,
+    // первый же callback перезаполняет.
+    val pagesDone: Int? = null,
+    val pagesTotal: Int? = null,
 ) {
     val progressText: String
         get() = "$currentIndex / $totalCount"
@@ -646,8 +651,17 @@ class DownloadManager @Inject constructor(
 
                     val chapterUrl = current.chapterUrls[i]
 
-                    // Обновляем индекс, сохраняем в БД и обновляем уведомление
-                    val withIndex = updateTask(bookUrl) { it.copy(currentIndex = i + 1) }
+                    // currentIndex = индекс главы, которая качается прямо сейчас.
+                    // Было i + 1 («сколько начато») — из-за этого textDownloadUiStates
+                    // пропускала активную главу по index < currentIndex (уведомление
+                    // при этом показывало 100% в начале загрузки), а resume перепрыгивал
+                    // незавершённую главу. К моменту старта главы i уже скачаны,
+                    // поэтому i = и «к текущему моменту выполнено», и «где мы».
+                    // Счётчики страниц прошлой главы обнуляем — не должны мелькать
+                    // на бейдже новой.
+                    val withIndex = updateTask(bookUrl) {
+                        it.copy(currentIndex = i, pagesDone = null, pagesTotal = null)
+                    }
                     if (withIndex != null) {
                         scheduleSave(withIndex)
                         notifications[bookUrl]?.updateProgress(withIndex)
@@ -852,6 +866,17 @@ class DownloadManager @Inject constructor(
     }
 
     /**
+     * Приёмник постраничного прогресса для [fetchChapterForDownload]:
+     * (сделано, всего) по каждой странице мультистраничной главы — в том
+     * числе по уже лежащим на диске/скопированным из кэша, иначе быстрый
+     * проход по кэшу давал бы скачанным главам ложный старт.
+     * Пишем только в runtime-состояние: на каждую страницу базу не трогаем.
+     */
+    private fun pageProgressSink(bookUrl: String): suspend (Int, Int) -> Unit = { done, total ->
+        updateTask(bookUrl) { it.copy(pagesDone = done, pagesTotal = total) }
+    }
+
+    /**
      * Загружает главу с [MAX_FETCH_RETRIES] попытками и exponential backoff.
      *
      * Backoff: 0s → 60s → 300s → 600s между попытками.
@@ -883,7 +908,9 @@ class DownloadManager @Inject constructor(
                 }
             }
 
-            val result = chapterBodyRepository.fetchChapterForDownload(chapterUrl)
+            val result = chapterBodyRepository.fetchChapterForDownload(
+                chapterUrl, pageProgressSink(bookUrl)
+            )
             when (result) {
                 is my.noveldokusha.core.Response.Success -> {
                     // Пустое тело — легитимный успех: страничная глава
@@ -961,7 +988,9 @@ class DownloadManager @Inject constructor(
             }
 
             Timber.d("network retry for $chapterUrl (hasNetwork=$hasNetwork, delay=${delayMs}ms)")
-            val result = chapterBodyRepository.fetchChapterForDownload(chapterUrl)
+            val result = chapterBodyRepository.fetchChapterForDownload(
+                chapterUrl, pageProgressSink(bookUrl)
+            )
             when (result) {
                 is my.noveldokusha.core.Response.Success -> {
                     updateTask(bookUrl) { it.copy(isWaitingForNetwork = false) }

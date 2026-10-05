@@ -54,7 +54,9 @@ internal fun ChaptersScreenBody(
     onChapterClick: (chapter: ChapterWithContext) -> Unit,
     onChapterLongClick: (chapter: ChapterWithContext) -> Unit,
     onChapterDownload: (chapter: ChapterWithContext) -> Unit,
-    onStopDownload: (chapter: ChapterWithContext) -> Unit,
+    onPauseDownload: (chapter: ChapterWithContext) -> Unit,
+    onResumeDownload: (chapter: ChapterWithContext) -> Unit,
+    onCancelDownload: (chapter: ChapterWithContext) -> Unit,
     onPullRefresh: () -> Unit,
     onCoverLongClick: () -> Unit,
     onGlobalSearchClick: (input: String, contentType: String) -> Unit,
@@ -198,14 +200,16 @@ internal fun ChaptersScreenBody(
                             chapterWithContext = entry.data,
                             translatedTitle = state.translatedChapterTitles.value[entry.data.chapter.url],
                             chapterSize = state.chapterSizes.value[entry.data.chapter.url],
-                            videoDownloadState = state.videoDownloadStates.value[entry.data.chapter.url],
+                            downloadUi = state.chapterDownloads.value[entry.data.chapter.url],
                             selected = state.selectedChaptersUrl.containsKey(entry.data.chapter.url),
                             isLocalSource = state.isLocalSource.value,
                             highlighted = entry.data.chapter.url == highlightedChapterUrl,
                             onClick = { onChapterClick(entry.data) },
                             onLongClick = { onChapterLongClick(entry.data) },
                             onDownload = { onChapterDownload(entry.data) },
-                            onStopDownload = { onStopDownload(entry.data) }
+                            onPauseDownload = { onPauseDownload(entry.data) },
+                            onResumeDownload = { onResumeDownload(entry.data) },
+                            onCancelDownload = { onCancelDownload(entry.data) }
                         )
                     }
                 }

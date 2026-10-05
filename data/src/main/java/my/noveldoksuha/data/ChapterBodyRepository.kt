@@ -59,9 +59,13 @@ class ChapterBodyRepository @Inject constructor(
      *   возвращает "" — легитимный успех, ретраи не нужны.
      * - Текстовая глава: как [fetchBody] + сохранение тела в кэш.
      * - Ошибка: [Response.Error] — DownloadManager ретраит.
+     *
+     * [onProgress] получает (сделано, всего) по каждой странице страничной
+     * главы — DownloadManager кладёт это в бейдж списка глав.
      */
     suspend fun fetchChapterForDownload(
         urlChapter: String,
+        onProgress: suspend (Int, Int) -> Unit = { _, _ -> },
     ): Response<String> {
         if (urlChapter.isLocalUri) {
             // Локальные главы — только текст, страниц у них нет.
@@ -80,7 +84,9 @@ class ChapterBodyRepository @Inject constructor(
                             chapterPagesDao.insertReplace(
                                 ChapterPages(url = urlChapter, pages = encodePages(pages))
                             )
-                            val bytes = downloadedPageChaptersStore.downloadChapter(urlChapter, pages)
+                            val bytes = downloadedPageChaptersStore.downloadChapter(
+                                urlChapter, pages, onProgress
+                            )
                             Timber.d("page chapter downloaded: $urlChapter ($bytes bytes)")
                             Response.Success("")
                         } catch (e: Exception) {

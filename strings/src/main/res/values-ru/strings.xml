@@ -532,6 +532,8 @@
 
     <string name="notification_channel_name_app_updates_checker">Проверка обновлений</string>
 
+    <string name="notification_channel_name_video_downloads_paused">Загрузки видео на паузе</string>
+
     <string name="new_app_version_available">Доступна новая версия приложения</string>
 
     <string name="backup_restored">Резервная копия восстановлена</string>
@@ -984,6 +986,10 @@
     <string name="download_already_queued">Уже в очереди</string>
 
     <string name="download_all_cached">Все главы уже скачаны</string>
+
+    <string name="download_paused_count">Загрузок на паузе: %1$d</string>
+
+    <string name="download_active_chapters_more">· ещё %1$d</string>
 
     <string name="download_next_100_chapters">Скачать следующие 100 глав</string>
     <string name="download_all_chapters">Скачать все главы</string>

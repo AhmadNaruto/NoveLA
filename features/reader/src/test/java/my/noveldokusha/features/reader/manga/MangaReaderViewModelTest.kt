@@ -466,7 +466,7 @@ class MangaReaderViewModelTest {
 
     @Test
     fun downloadOnOpenDownloadsChapterPages() = runTest(dispatcher) {
-        whenever(downloadedPageChaptersStore.downloadChapter(any(), any())).thenReturn(0L)
+        whenever(downloadedPageChaptersStore.downloadChapter(any(), any(), any())).thenReturn(0L)
         appPreferences = prefs(downloadOnOpen = true)
         whenever(bookChaptersRepository.chapters(bookUrl)).thenReturn(chapters(ch1Url))
         whenever(libraryBooks.get(bookUrl)).thenReturn(Book(title = "B", url = bookUrl))
@@ -475,7 +475,7 @@ class MangaReaderViewModelTest {
         vm.init(bookUrl, ch1Url)
         advanceUntilIdle()
 
-        verify(downloadedPageChaptersStore).downloadChapter(eq(ch1Url), eq(listOf("a", "b")))
+        verify(downloadedPageChaptersStore).downloadChapter(eq(ch1Url), eq(listOf("a", "b")), any())
     }
 
     @Test
@@ -487,7 +487,7 @@ class MangaReaderViewModelTest {
         vm.init(bookUrl, ch1Url)
         advanceUntilIdle()
 
-        verify(downloadedPageChaptersStore, never()).downloadChapter(any(), any())
+        verify(downloadedPageChaptersStore, never()).downloadChapter(any(), any(), any())
     }
 
     // ---- helpers для webtoon-окна ----

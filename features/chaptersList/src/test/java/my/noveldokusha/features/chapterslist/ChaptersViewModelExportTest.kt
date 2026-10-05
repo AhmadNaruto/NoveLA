@@ -220,8 +220,11 @@ class ChaptersViewModelExportTest {
             readingHistoryDao = mock<ReadingHistoryDao>(),
             libraryUpdatesInteractions = mock<LibraryUpdatesInteractions>(),
             // Task 14: видео-путь в тестах не используется (книга не видео),
-            // observe() не вызывается — заглушки не нужны.
-            videoDownloadManager = mock<VideoDownloadManager>(),
+            // но init-подписка бейджей читает uiStates безусловно — без стаба
+            // mock возвращает null → NPE в combine.
+            videoDownloadManager = mock<VideoDownloadManager>().also { m ->
+                whenever(m.uiStates).thenReturn(MutableStateFlow(emptyMap()))
+            },
             videoRepository = mock<VideoRepository>(),
             stateHandle = stateHandle,
         ).also { vm ->

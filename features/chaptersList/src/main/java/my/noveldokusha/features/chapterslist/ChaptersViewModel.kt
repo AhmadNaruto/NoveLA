@@ -29,11 +29,13 @@ import my.noveldokusha.core.Response
 import androidx.lifecycle.ViewModel
 import my.noveldokusha.data.AppRepository
 import my.noveldokusha.data.DownloadManager
+import my.noveldokusha.data.DownloadTaskState
 import my.noveldokusha.data.EnqueueResult
 import my.noveldokusha.data.DownloaderRepository
 import my.noveldokusha.data.LocalBookImporterRepository
 import my.noveldokusha.data.VideoRepository
-import my.noveldokusha.features.reader.video.DownloadState
+import my.noveldokusha.features.reader.video.ChapterDownloadUi
+import my.noveldokusha.features.reader.video.ChapterDownloadUiState
 import my.noveldokusha.features.reader.video.VideoDownloadManager
 import my.noveldokusha.chapterslist.R
 import my.noveldokusha.strings.R as StringsR
@@ -155,7 +157,7 @@ internal class ChaptersViewModel @Inject constructor(
         translatedChapterTitles = mutableStateOf(emptyMap()),
         chapterSizes = mutableStateOf(emptyMap()),
         downloadTask = mutableStateOf(null),
-        videoDownloadStates = mutableStateOf(emptyMap()),
+        chapterDownloads = mutableStateOf(emptyMap()),
     )
 
     // ─── Экспорт книги ───────────────────────────────────────────────────────
@@ -502,19 +504,23 @@ internal class ChaptersViewModel @Inject constructor(
             }
         }
 
-        // Статусы media3-загрузок видео-эпизодов (Task 14) → бейджи глав.
-        // Статусы резолвятся заново при каждой перезагрузке списка глав;
-        // для не-видео книг подписок не создаётся.
+        // Единая карта бейджей глав (Task 14): видео (media3 — один общий
+        // опрос uiStates на все активные эпизоды) плюс текст/манга из текущей
+        // задачи книги. Свои главы фильтруем по списку: в карте media3
+        // живут загрузки всех книг процесса.
         viewModelScope.launch {
-            snapshotFlow { state.chapters.map { it.chapter.url } }
-                .flatMapLatest { urls ->
-                    if (urls.isEmpty() || !isVideoBook()) flowOf(emptyMap<String, DownloadState>())
-                    else combine(urls.map { videoDownloadManager.observe(it) }) { statuses ->
-                        urls.zip(statuses).toMap()
-                    }
-                }
+            combine(
+                videoDownloadManager.uiStates,
+                snapshotFlow { state.downloadTask.value },
+                snapshotFlow { state.chapters.associate { it.chapter.url to it.downloaded } },
+            ) { videoStates, task, downloaded ->
+                val video = videoStates.filterKeys { it in downloaded }
+                // Видео-запись главы не перезаписывается текстовой («+» справа
+                // перекрывает слева).
+                textDownloadUiStates(task, downloaded) + video
+            }
                 .distinctUntilChanged()
-                .collect { state.videoDownloadStates.value = it }
+                .collect { state.chapterDownloads.value = it }
         }
 
         // Подписываемся на статус загрузки текущей книги
@@ -996,45 +1002,118 @@ internal class ChaptersViewModel @Inject constructor(
         return source?.contentType == "video"
     }
 
+    /**
+     * Бейджи текстовых/манга-загрузок из задачи текущей книги.
+     *
+     * Скачанные главы — COMPLETED (бейдж живёт независимо от задачи);
+     * из очереди — текущая глава DOWNLOADING, хвост QUEUED, всё при паузе PAUSED.
+     */
+    private fun textDownloadUiStates(
+        task: DownloadTaskState?,
+        downloaded: Map<String, Boolean>,
+    ): Map<String, ChapterDownloadUi> {
+        val states = HashMap<String, ChapterDownloadUi>(downloaded.size)
+        for ((url, isDownloaded) in downloaded) {
+            if (isDownloaded) states[url] = ChapterDownloadUi(ChapterDownloadUiState.COMPLETED)
+        }
+        if (task == null || task.isCompleted || task.isCancelled) return states
+
+        for ((index, url) in task.chapterUrls.withIndex()) {
+            if (index < task.currentIndex) continue // глава уже пройдена worker'ом
+            if (states.containsKey(url)) continue
+            states[url] = when {
+                task.isPaused -> ChapterDownloadUi(ChapterDownloadUiState.PAUSED)
+                index == task.currentIndex -> ChapterDownloadUi(
+                    state = ChapterDownloadUiState.DOWNLOADING,
+                    // Постраничный прогресс текущей главы (мультистраничная
+                    // загрузка) вместо главового: при одной главе
+                    // currentIndex/totalCount даёт 0/1 и кольцо стояло бы на нуле
+                    // до самого конца. Если страниц нет (текст) — как раньше.
+                    progress = task.pagesTotal
+                        ?.takeIf { it > 0 }
+                        ?.let { (task.pagesDone ?: 0).toFloat() / it }
+                        ?: task.totalCount
+                            .takeIf { it != 0 }
+                            ?.let { task.currentIndex.toFloat() / it },
+                )
+
+                else -> ChapterDownloadUi(ChapterDownloadUiState.QUEUED)
+            }
+        }
+        return states
+    }
+
     // Видео: резолв потока через плагин → media3-очередь. Последовательно,
     // чтобы не забивать источник сотнями параллельных запросов.
-    private suspend fun enqueueVideoDownloads(chapterUrls: List<String>) {
+    private suspend fun enqueueVideoDownloads(chapters: List<ChapterWithContext>) {
+        val chapterUrls = chapters.map { it.chapter.url }
         var added = 0
         var failed = 0
         var skipped = 0
-        for (url in chapterUrls) {
-            // Уже скачанные пропускаем ДО резолва — без этого каждая глава
-            // гонит лишний сетевой запрос через плагин.
-            if (videoDownloadManager.completedVideo(url) != null) {
-                skipped++
-                continue
-            }
-            when (val result = videoRepository.resolve(url)) {
-                is Response.Success -> {
-                    val video = result.data.firstOrNull()
-                    if (video == null) {
+        // Уже скачанные пропускаем ДО резолва — без этого каждая глава
+        // гонит лишний сетевой запрос через плагин.
+        val completed = chapterUrls
+            .filter { videoDownloadManager.completedVideo(it) != null }
+            .toSet()
+        val pending = chapters.filter { it.chapter.url !in completed }
+        // Метки, поставленные markQueued, обязаны сняться в finally для всего,
+        // что не попало в media3: иначе отмена viewModelScope (CancellationException
+        // приходит из resolve ДО тела when) или Throw из enqueue/toasty оставили бы
+        // вечный ghost-QUEUED в singleton-наборе — самовосстановления там нет.
+        val enqueued = mutableSetOf<String>()
+        try {
+            // Оптимистичная метка + заголовки серий — до резолва: бейдж «в очереди»
+            // появляется сразу, а не после сетевого запроса, старта сервиса и тика
+            // опроса; названия нужны уведомлениям ещё до первой заявки media3.
+            videoDownloadManager.markQueued(pending.map { it.chapter.url }.toSet())
+            videoDownloadManager.registerChapterTitles(
+                pending.associate { it.chapter.url to it.chapter.title }
+            )
+            // Тост до резолва: каждый resolve — сетевой запрос через плагин,
+            // очередь уже сформирована, ждать ради тоста весь цикл не нужно.
+            if (pending.isNotEmpty()) toasty.show(R.string.download_added_to_queue)
+
+            for (url in chapterUrls) {
+                if (url in completed) {
+                    skipped++
+                    continue
+                }
+                when (val result = videoRepository.resolve(url)) {
+                    is Response.Success -> {
+                        val video = result.data.firstOrNull()
+                        if (video == null) {
+                            failed++
+                            videoDownloadManager.unmarkQueued(url)
+                            Timber.e("enqueueVideoDownloads: пустой поток для $url")
+                        } else {
+                            videoDownloadManager.enqueue(url, video)
+                            enqueued.add(url)
+                            added++
+                        }
+                    }
+                    is Response.Error -> {
                         failed++
-                        Timber.e("enqueueVideoDownloads: пустой поток для $url")
-                    } else {
-                        videoDownloadManager.enqueue(url, video)
-                        added++
+                        videoDownloadManager.unmarkQueued(url)
+                        Timber.e(
+                            result.exception,
+                            "enqueueVideoDownloads: резолв не удался для $url: ${result.message}"
+                        )
                     }
                 }
-                is Response.Error -> {
-                    failed++
-                    Timber.e(
-                        result.exception,
-                        "enqueueVideoDownloads: резолв не удался для $url: ${result.message}"
-                    )
-                }
+            }
+        } finally {
+            // Штатное завершение: enqueue-нутые остались в enqueued → их метки
+            // гаснут через active/states на следующем тике, без фликера.
+            // Completed не трогаем — markQueued их не помечал. unmarkQueued по
+            // отсутствующему ключу — no-op, дубль с ветками failed безвреден.
+            for (url in chapterUrls) {
+                if (url !in completed && url !in enqueued) videoDownloadManager.unmarkQueued(url)
             }
         }
         Timber.d("enqueueVideoDownloads: added=$added failed=$failed skipped=$skipped")
-        when {
-            // Всё уже скачано (added=0, failed=0) — это не ошибка, молчим
-            added > 0 -> toasty.show(R.string.download_added_to_queue)
-            failed > 0 -> toasty.show(R.string.download_error)
-        }
+        // «Добавлено в очередь» уже показано до резолва — здесь только ошибки;
+        // всё скачано (added=0, failed=0) — молчим, как и раньше.
+        if (failed > 0) toasty.show(R.string.download_error)
     }
 
     fun downloadNext100Chapters() {
@@ -1049,7 +1128,7 @@ internal class ChaptersViewModel @Inject constructor(
         val chapterUrls = nextChapters.map { it.chapter.url }
         viewModelScope.launch {
             if (isVideoBook()) {
-                enqueueVideoDownloads(chapterUrls)
+                enqueueVideoDownloads(nextChapters)
                 return@launch
             }
             when (val result = downloadManager.enqueue(
@@ -1072,7 +1151,7 @@ internal class ChaptersViewModel @Inject constructor(
         val chapterUrls = allChapters.map { it.chapter.url }
         viewModelScope.launch {
             if (isVideoBook()) {
-                enqueueVideoDownloads(chapterUrls)
+                enqueueVideoDownloads(allChapters)
                 return@launch
             }
             when (val result = downloadManager.enqueue(
@@ -1100,7 +1179,7 @@ internal class ChaptersViewModel @Inject constructor(
         val chapterUrls = sortedChapters.map { it.chapter.url }
         viewModelScope.launch {
             if (isVideoBook()) {
-                enqueueVideoDownloads(chapterUrls)
+                enqueueVideoDownloads(sortedChapters)
                 return@launch
             }
             when (val result = downloadManager.enqueue(
@@ -1232,7 +1311,7 @@ internal class ChaptersViewModel @Inject constructor(
         if (state.isLocalSource.value) return
         viewModelScope.launch {
             if (isVideoBook()) {
-                enqueueVideoDownloads(listOf(chapter.chapter.url))
+                enqueueVideoDownloads(listOf(chapter))
                 return@launch
             }
             when (downloadManager.enqueue(
@@ -1249,9 +1328,32 @@ internal class ChaptersViewModel @Inject constructor(
         }
     }
 
-    // Остановка идущей/очередной видео-загрузки: отмена и удаление media3-загрузки.
-    fun onStopVideoDownload(chapter: ChapterWithContext) {
-        videoDownloadManager.remove(chapter.chapter.url)
+    // Пауза/возобновление загрузки главы. Видео — per-episode stopReason в
+    // media3; текст/манга — пауза всей задачи книги (per-chapter для текста
+    // DownloadManager не поддерживает, так и задумано).
+    fun onPauseChapterDownload(chapter: ChapterWithContext) {
+        viewModelScope.launch {
+            if (isVideoBook()) videoDownloadManager.pause(chapter.chapter.url)
+            else downloadManager.pause(bookUrl)
+        }
+    }
+
+    fun onResumeChapterDownload(chapter: ChapterWithContext) {
+        viewModelScope.launch {
+            if (isVideoBook()) videoDownloadManager.resume(chapter.chapter.url)
+            else downloadManager.resume(bookUrl)
+        }
+    }
+
+    // Отмена загрузки главы. Видео — снятие конкретной заявки media3
+    // (index + кэш-файлы снимает сам менеджер); текст/манга — отмена задачи
+    // книги, как и пауза: per-chapter отмены для текстового DownloadManager
+    // не существует, так и задумано.
+    fun onCancelChapterDownload(chapter: ChapterWithContext) {
+        viewModelScope.launch {
+            if (isVideoBook()) videoDownloadManager.remove(chapter.chapter.url)
+            else downloadManager.cancel(bookUrl)
+        }
     }
 
     fun unselectAll() {

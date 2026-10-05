@@ -43,6 +43,12 @@
 			android:exported="false"
 			android:foregroundServiceType="dataSync" />
 
+		<!-- Кнопки уведомлений видео-загрузок; intent-filter не нужен —
+		     PendingIntent указывает компонент явно. -->
+		<receiver
+			android:name="my.noveldokusha.features.reader.video.VideoDownloadNotificationReceiver"
+			android:exported="false" />
+
 		<receiver
 			android:name="androidx.media.session.MediaButtonReceiver"
 			android:exported="true"

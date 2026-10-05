@@ -403,6 +403,7 @@
     <string name="notification_channel_name_import_epub">Import book</string>
     <string name="notification_channel_name_restore_backup">Restore backup</string>
     <string name="notification_channel_name_app_updates_checker">Updates checker</string>
+    <string name="notification_channel_name_video_downloads_paused">Video downloads paused</string>
     <string name="new_app_version_available">New app version available</string>
     <string name="backup_restored">Backup restored</string>
     <string name="keep_screen_on">Keep screen on</string>
