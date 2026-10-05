@@ -883,4 +883,11 @@
     <string name="video_gesture_swap_sides">Đổi nửa màn hình</string>
     <string name="video_gesture_sensitivity">Độ nhạy vuốt</string>
     <string name="video_subtitle_track">Dòng phụ đề</string>
+    <string name="failed_to_restore_backup_incomplete">Tệp sao lưu không hoàn chỉnh hoặc bị hỏng</string>
+    <string name="failed_to_restore_backup_too_short">Tệp sao lưu trống hoặc quá ngắn</string>
+    <string name="failed_to_restore_backup_empty_archive">Tệp lưu trữ sao lưu trống</string>
+    <string name="failed_to_restore_backup_missing_database">Tệp lưu trữ sao lưu không chứa cơ sở dữ liệu</string>
+    <string name="failed_to_restore_error">Lỗi khôi phục: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Định dạng tệp sao lưu không hợp lệ. Mong đợi tệp ZIP</string>
+    <string name="failed_to_restore_read_error">Không thể đọc tệp sao lưu: %1$s</string>
 </resources>

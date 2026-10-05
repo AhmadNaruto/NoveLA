@@ -35,6 +35,13 @@
     <string name="failed_to_make_backup">Failed to make backup</string>
     <string name="failed_to_restore_cant_access_file">Failed to restore, can\'t access file</string>
     <string name="failed_to_restore_invalid_backup_database">Failed to restore, invalid backup database</string>
+    <string name="failed_to_restore_backup_incomplete">Backup file is incomplete or corrupted</string>
+    <string name="failed_to_restore_backup_too_short">Backup file is empty or too short</string>
+    <string name="failed_to_restore_backup_empty_archive">Backup archive is empty</string>
+    <string name="failed_to_restore_backup_missing_database">Backup archive contains no database</string>
+    <string name="failed_to_restore_error">Restore error: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Invalid backup file format. Expected ZIP file</string>
+    <string name="failed_to_restore_read_error">Failed to read backup file: %1$s</string>
     <string name="database_restored">Database restored</string>
     <string name="web_view_not_available">Web view not available</string>
     <string name="invalid_URL">Invalid URL</string>

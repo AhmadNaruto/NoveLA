@@ -883,4 +883,12 @@
     <string name="video_gesture_swap_sides">Palitan ang mga kalahati ng screen</string>
     <string name="video_gesture_sensitivity">Sensitivity ng swipe</string>
     <string name="video_subtitle_track">Subtitle track</string>
+
+    <string name="failed_to_restore_backup_incomplete">Hindi kumpleto o nasira ang backup file</string>
+    <string name="failed_to_restore_backup_too_short">Walang laman o masyadong maikli ang backup file</string>
+    <string name="failed_to_restore_backup_empty_archive">Walang laman ang backup archive</string>
+    <string name="failed_to_restore_backup_missing_database">Walang database sa backup archive</string>
+    <string name="failed_to_restore_error">Error sa restore: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Hindi wasto ang format ng backup file. Inaasahan ang ZIP file</string>
+    <string name="failed_to_restore_read_error">Nabigo ang pagbasa ng backup file: %1$s</string>
 </resources>

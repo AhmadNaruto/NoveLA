@@ -883,4 +883,12 @@
     <string name="video_gesture_swap_sides">تبديل نصفي الشاشة</string>
     <string name="video_gesture_sensitivity">حساسية السحب</string>
     <string name="video_subtitle_track">مسار الترجمة الفرعية</string>
+
+    <string name="failed_to_restore_backup_incomplete">ملف النسخ الاحتياطي غير مكتمل أو تالف</string>
+    <string name="failed_to_restore_backup_too_short">ملف النسخ الاحتياطي فارغ أو قصير جدًا</string>
+    <string name="failed_to_restore_backup_empty_archive">أرشيف النسخ الاحتياطي فارغ</string>
+    <string name="failed_to_restore_backup_missing_database">أرشيف النسخ الاحتياطي لا يحتوي على قاعدة بيانات</string>
+    <string name="failed_to_restore_error">خطأ في الاستعادة: %1$s</string>
+    <string name="failed_to_restore_invalid_format">صيغة ملف النسخ الاحتياطي غير صالحة. يُتوقع ملف ZIP</string>
+    <string name="failed_to_restore_read_error">فشلت قراءة ملف النسخ الاحتياطي: %1$s</string>
 </resources>

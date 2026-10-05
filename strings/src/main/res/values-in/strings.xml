@@ -883,4 +883,12 @@
     <string name="video_gesture_swap_sides">Tukar bagian layar</string>
     <string name="video_gesture_sensitivity">Sensitivitas geser</string>
     <string name="video_subtitle_track">Trek subtitle</string>
+
+    <string name="failed_to_restore_backup_incomplete">Berkas cadangan tidak lengkap atau rusak</string>
+    <string name="failed_to_restore_backup_too_short">Berkas cadangan kosong atau terlalu pendek</string>
+    <string name="failed_to_restore_backup_empty_archive">Arsip cadangan kosong</string>
+    <string name="failed_to_restore_backup_missing_database">Arsip cadangan tidak berisi basis data</string>
+    <string name="failed_to_restore_error">Kesalahan pemulihan: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Format berkas cadangan tidak valid. Berkas ZIP diharapkan</string>
+    <string name="failed_to_restore_read_error">Gagal membaca berkas cadangan: %1$s</string>
 </resources>

@@ -893,4 +893,11 @@
     <string name="video_gesture_swap_sides">Trocar metades da tela</string>
     <string name="video_gesture_sensitivity">Sensibilidade do deslize</string>
     <string name="video_subtitle_track">Faixa de legendas</string>
+    <string name="failed_to_restore_backup_incomplete">O ficheiro de backup está incompleto ou corrompido</string>
+    <string name="failed_to_restore_backup_too_short">O ficheiro de backup está vazio ou demasiado curto</string>
+    <string name="failed_to_restore_backup_empty_archive">O arquivo de backup está vazio</string>
+    <string name="failed_to_restore_backup_missing_database">O arquivo de backup não contém base de dados</string>
+    <string name="failed_to_restore_error">Erro ao restaurar: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Formato de ficheiro de backup inválido. Era esperado um ficheiro ZIP</string>
+    <string name="failed_to_restore_read_error">Falha ao ler o ficheiro de backup: %1$s</string>
 </resources>

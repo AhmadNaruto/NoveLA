@@ -893,4 +893,12 @@
     <string name="video_gesture_swap_sides">Inverser les moitiés de l\'écran</string>
     <string name="video_gesture_sensitivity">Sensibilité du glissement</string>
     <string name="video_subtitle_track">Piste de sous-titres</string>
+
+    <string name="failed_to_restore_backup_incomplete">Le fichier de sauvegarde est incomplet ou endommagé</string>
+    <string name="failed_to_restore_backup_too_short">Le fichier de sauvegarde est vide ou trop court</string>
+    <string name="failed_to_restore_backup_empty_archive">L\'archive de sauvegarde est vide</string>
+    <string name="failed_to_restore_backup_missing_database">L\'archive de sauvegarde ne contient aucune base de données</string>
+    <string name="failed_to_restore_error">Erreur de restauration : %1$s</string>
+    <string name="failed_to_restore_invalid_format">Format de fichier de sauvegarde invalide. Fichier ZIP attendu</string>
+    <string name="failed_to_restore_read_error">Impossible de lire le fichier de sauvegarde : %1$s</string>
 </resources>

@@ -893,4 +893,11 @@
     <string name="video_gesture_swap_sides">Zamień połowy ekranu</string>
     <string name="video_gesture_sensitivity">Czułość przesuwania</string>
     <string name="video_subtitle_track">Ścieżka napisów</string>
+    <string name="failed_to_restore_backup_incomplete">Plik kopii zapasowej jest niekompletny lub uszkodzony</string>
+    <string name="failed_to_restore_backup_too_short">Plik kopii zapasowej jest pusty lub za krótki</string>
+    <string name="failed_to_restore_backup_empty_archive">Archiwum kopii zapasowej jest puste</string>
+    <string name="failed_to_restore_backup_missing_database">Archiwum kopii zapasowej nie zawiera bazy danych</string>
+    <string name="failed_to_restore_error">Błąd przywracania: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Nieprawidłowy format pliku kopii zapasowej. Oczekiwano pliku ZIP</string>
+    <string name="failed_to_restore_read_error">Nie udało się odczytać pliku kopii zapasowej: %1$s</string>
 </resources>

@@ -893,4 +893,12 @@
     <string name="video_gesture_swap_sides">Intercambiar mitades de pantalla</string>
     <string name="video_gesture_sensitivity">Sensibilidad del deslizamiento</string>
     <string name="video_subtitle_track">Pista de subtítulos</string>
+
+    <string name="failed_to_restore_backup_incomplete">El archivo de copia de seguridad está incompleto o dañado</string>
+    <string name="failed_to_restore_backup_too_short">El archivo de copia de seguridad está vacío o demasiado corto</string>
+    <string name="failed_to_restore_backup_empty_archive">El archivo comprimido de la copia de seguridad está vacío</string>
+    <string name="failed_to_restore_backup_missing_database">El archivo comprimido de la copia de seguridad no contiene ninguna base de datos</string>
+    <string name="failed_to_restore_error">Error al restaurar: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Formato de archivo de copia de seguridad no válido. Se esperaba un archivo ZIP</string>
+    <string name="failed_to_restore_read_error">No se pudo leer el archivo de copia de seguridad: %1$s</string>
 </resources>

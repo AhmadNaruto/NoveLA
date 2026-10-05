@@ -883,4 +883,12 @@
     <string name="video_gesture_swap_sides">স্ক্রিনের দুই অর্ধেক বদলান</string>
     <string name="video_gesture_sensitivity">সোয়াইপের সংবেদনশীলতা</string>
     <string name="video_subtitle_track">সাবটাইটেল ট্র্যাক</string>
+
+    <string name="failed_to_restore_backup_incomplete">ব্যাকআপ ফাইল অসম্পূর্ণ বা নষ্ট</string>
+    <string name="failed_to_restore_backup_too_short">ব্যাকআপ ফাইল খালি বা খুব ছোট</string>
+    <string name="failed_to_restore_backup_empty_archive">ব্যাকআপ আর্কাইভ খালি</string>
+    <string name="failed_to_restore_backup_missing_database">ব্যাকআপ আর্কাইভে কোনো ডাটাবেস নেই</string>
+    <string name="failed_to_restore_error">পুনরুদ্ধার ত্রুটি: %1$s</string>
+    <string name="failed_to_restore_invalid_format">অবৈধ ব্যাকআপ ফাইল ফর্ম্যাট। ZIP ফাইল প্রত্যাশিত</string>
+    <string name="failed_to_restore_read_error">ব্যাকআপ ফাইল পড়তে ব্যর্থ: %1$s</string>
 </resources>

@@ -883,4 +883,12 @@
     <string name="video_gesture_swap_sides">स्क्रीन के आधे हिस्से बदलें</string>
     <string name="video_gesture_sensitivity">स्वाइप की संवेदनशीलता</string>
     <string name="video_subtitle_track">सबटाइटल ट्रैक</string>
+
+    <string name="failed_to_restore_backup_incomplete">बैकअप फ़ाइल अधूरी या दूषित है</string>
+    <string name="failed_to_restore_backup_too_short">बैकअप फ़ाइल खाली या बहुत छोटी है</string>
+    <string name="failed_to_restore_backup_empty_archive">बैकअप आर्काइव खाली है</string>
+    <string name="failed_to_restore_backup_missing_database">बैकअप आर्काइव में कोई डेटाबेस नहीं है</string>
+    <string name="failed_to_restore_error">पुनर्स्थापन में त्रुटि: %1$s</string>
+    <string name="failed_to_restore_invalid_format">अमान्य बैकअप फ़ाइल प्रारूप। ZIP फ़ाइल अपेक्षित</string>
+    <string name="failed_to_restore_read_error">बैकअप फ़ाइल पढ़ने में विफल: %1$s</string>
 </resources>

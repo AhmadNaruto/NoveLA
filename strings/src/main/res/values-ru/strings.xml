@@ -66,6 +66,20 @@
 
     <string name="failed_to_restore_invalid_backup_database">Не удалось восстановить, неверная база данных резервной копии</string>
 
+    <string name="failed_to_restore_backup_incomplete">Файл бэкапа неполный или повреждён</string>
+
+    <string name="failed_to_restore_backup_too_short">Файл бэкапа пуст или слишком короткий</string>
+
+    <string name="failed_to_restore_backup_empty_archive">Архив бэкапа пуст</string>
+
+    <string name="failed_to_restore_backup_missing_database">В архиве нет базы данных</string>
+
+    <string name="failed_to_restore_error">Ошибка восстановления: %1$s</string>
+
+    <string name="failed_to_restore_invalid_format">Неверный формат файла резервной копии. Ожидается ZIP-файл</string>
+
+    <string name="failed_to_restore_read_error">Не удалось прочитать файл резервной копии: %1$s</string>
+
     <string name="database_restored">База данных восстановлена</string>
 
     <string name="web_view_not_available">Веб-просмотр недоступен</string>

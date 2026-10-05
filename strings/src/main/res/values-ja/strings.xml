@@ -895,4 +895,11 @@
     <string name="video_gesture_swap_sides">画面の左右を入れ替え</string>
     <string name="video_gesture_sensitivity">スワイプ感度</string>
     <string name="video_subtitle_track">字幕トラック</string>
+    <string name="failed_to_restore_backup_incomplete">バックアップファイルが不完全か破損しています</string>
+    <string name="failed_to_restore_backup_too_short">バックアップファイルが空か短すぎます</string>
+    <string name="failed_to_restore_backup_empty_archive">バックアップアーカイブが空です</string>
+    <string name="failed_to_restore_backup_missing_database">バックアップアーカイブにデータベースが含まれていません</string>
+    <string name="failed_to_restore_error">復元エラー：%1$s</string>
+    <string name="failed_to_restore_invalid_format">バックアップファイルの形式が無効です。ZIPファイルが必要です</string>
+    <string name="failed_to_restore_read_error">バックアップファイルの読み込みに失敗しました：%1$s</string>
 </resources>
