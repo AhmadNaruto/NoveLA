@@ -203,6 +203,7 @@ internal fun ChaptersScreenBody(
                             downloadUi = state.chapterDownloads.value[entry.data.chapter.url],
                             selected = state.selectedChaptersUrl.containsKey(entry.data.chapter.url),
                             isLocalSource = state.isLocalSource.value,
+                            showCancelAction = state.isVideoBook.value,
                             highlighted = entry.data.chapter.url == highlightedChapterUrl,
                             onClick = { onChapterClick(entry.data) },
                             onLongClick = { onChapterLongClick(entry.data) },

@@ -3,6 +3,7 @@ package my.noveldokusha.features.chapterslist
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -157,6 +158,9 @@ internal class ChaptersViewModel @Inject constructor(
         translatedChapterTitles = mutableStateOf(emptyMap()),
         chapterSizes = mutableStateOf(emptyMap()),
         downloadTask = mutableStateOf(null),
+        // Флаг видео-книги для UI: та же семантика, что в isVideoBook() —
+        // метка из Book.contentType, при пустой — из contentType источника.
+        isVideoBook = derivedStateOf { isVideoContentType(book.value.contentType) },
         chapterDownloads = mutableStateOf(emptyMap()),
     )
 
@@ -994,12 +998,18 @@ internal class ChaptersViewModel @Inject constructor(
 
     // Видео-книги: HTML-путь скачивания не применим — качаем через media3
     // (Task 14). Как в resolveGateType читалера: метка из Book.contentType,
-    // при пустой — из contentType источника.
+    // при пустой — из contentType источника. Общий helper для самих действий
+    // и для UI-флага state.isVideoBook, чтобы они не разъезжались.
+    private fun contentTypeOf(storedContentType: String?): String =
+        storedContentType?.takeIf { it.isNotEmpty() } ?: source?.contentType.orEmpty()
+
+    private fun isVideoContentType(storedContentType: String?): Boolean =
+        contentTypeOf(storedContentType) == "video"
+
     private suspend fun isVideoBook(): Boolean {
         val stored = runCatching { appRepository.libraryBooks.get(bookUrl)?.contentType }
             .getOrNull()
-        if (!stored.isNullOrEmpty()) return stored == "video"
-        return source?.contentType == "video"
+        return isVideoContentType(stored)
     }
 
     /**
@@ -1046,6 +1056,11 @@ internal class ChaptersViewModel @Inject constructor(
     // Видео: резолв потока через плагин → media3-очередь. Последовательно,
     // чтобы не забивать источник сотнями параллельных запросов.
     private suspend fun enqueueVideoDownloads(chapters: List<ChapterWithContext>) {
+        // Явное действие юзера «скачать» = он хочет качать. Глобальная пауза
+        // от предыдущей сессии или остаток после стопа не должна молча родить
+        // заявки на паузе (born-paused ветка enqueue) — снимаем её. FGS
+        // поднимется заново, это ок: скачивание только что запросили.
+        if (videoDownloadManager.isPausedAll) videoDownloadManager.resumeAll()
         val chapterUrls = chapters.map { it.chapter.url }
         var added = 0
         var failed = 0
@@ -1061,6 +1076,12 @@ internal class ChaptersViewModel @Inject constructor(
         // приходит из resolve ДО тела when) или Throw из enqueue/toasty оставили бы
         // вечный ghost-QUEUED в singleton-наборе — самовосстановления там нет.
         val enqueued = mutableSetOf<String>()
+        // Поколение отмены фиксируем ДО разметки: «Стоп» из шторки во время
+        // цикла (resolve — сетевой запрос на каждую главу) снимает уже
+        // добавленные заявки media3, а цикл продолжал бы добавлять новые —
+        // пользователь видел бы «отменяет по 1». Сверяем поколение перед
+        // каждой главой: вышли — метки этих глав гасит finally (не попали в enqueued).
+        val generation = videoDownloadManager.cancelGeneration
         try {
             // Оптимистичная метка + заголовки серий — до резолва: бейдж «в очереди»
             // появляется сразу, а не после сетевого запроса, старта сервиса и тика
@@ -1078,7 +1099,14 @@ internal class ChaptersViewModel @Inject constructor(
                     skipped++
                     continue
                 }
-                when (val result = videoRepository.resolve(url)) {
+                // Гонка со «Стопом»: до резолва...
+                if (videoDownloadManager.cancelGeneration != generation) break
+                val result = videoRepository.resolve(url)
+                // ...и после — отмена могла прийти, пока запрос летел в сеть.
+                // Тогда результат не используем: метку снимет finally, счётчики
+                // добавленных/ошибок на прерванном цикле не критичны.
+                if (videoDownloadManager.cancelGeneration != generation) break
+                when (result) {
                     is Response.Success -> {
                         val video = result.data.firstOrNull()
                         if (video == null) {
@@ -1086,6 +1114,9 @@ internal class ChaptersViewModel @Inject constructor(
                             videoDownloadManager.unmarkQueued(url)
                             Timber.e("enqueueVideoDownloads: пустой поток для $url")
                         } else {
+                            // Пауза новых глав во время глобальной паузы — внутри
+                            // enqueue (born-paused add / FIFO сервиса), здесь
+                            // service-старт не дёргаем.
                             videoDownloadManager.enqueue(url, video)
                             enqueued.add(url)
                             added++

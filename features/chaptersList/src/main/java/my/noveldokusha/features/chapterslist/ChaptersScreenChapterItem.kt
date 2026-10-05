@@ -64,6 +64,9 @@ internal fun ChaptersScreenChapterItem(
     downloadUi: ChapterDownloadUi? = null,
     selected: Boolean,
     isLocalSource: Boolean,
+    // Кнопка отмены (X) показывается только у видео-книг: у текста/манги
+    // отмена снимает всю задачу книги, а не одну главу (см. onCancelChapterDownload).
+    showCancelAction: Boolean,
     highlighted: Boolean = false,
     modifier: Modifier = Modifier,
     onLongClick: () -> Unit,
@@ -199,8 +202,12 @@ internal fun ChaptersScreenChapterItem(
 
                                 // В очереди: приглушённый глиф с пульсацией — отличим
                                 // и от скачанного, и от неактивного.
+                                // «X» рисуем только у видео-книг (showCancelAction):
+                                // у текста/манги отмена сбрасывает всю задачу книги.
                                 ChapterDownloadUiState.QUEUED -> Row {
-                                    DownloadCancelButton(onCancelDownload = stableOnCancelDownload)
+                                    if (showCancelAction) {
+                                        DownloadCancelButton(onCancelDownload = stableOnCancelDownload)
+                                    }
                                     IconButton(onClick = stableOnPauseDownload) {
                                         val pulse by rememberInfiniteTransition(label = "queuedPulse").animateFloat(
                                             initialValue = 0.35f,
@@ -217,7 +224,9 @@ internal fun ChaptersScreenChapterItem(
                                 }
 
                                 ChapterDownloadUiState.DOWNLOADING -> Row {
-                                    DownloadCancelButton(onCancelDownload = stableOnCancelDownload)
+                                    if (showCancelAction) {
+                                        DownloadCancelButton(onCancelDownload = stableOnCancelDownload)
+                                    }
                                     IconButton(onClick = stableOnPauseDownload) {
                                         DownloadRing(
                                             progress = downloadUi?.progress,
@@ -228,7 +237,9 @@ internal fun ChaptersScreenChapterItem(
 
                                 // Пауза: кольцо заморожено на прогрессе, в центре — пауза.
                                 ChapterDownloadUiState.PAUSED -> Row {
-                                    DownloadCancelButton(onCancelDownload = stableOnCancelDownload)
+                                    if (showCancelAction) {
+                                        DownloadCancelButton(onCancelDownload = stableOnCancelDownload)
+                                    }
                                     IconButton(onClick = stableOnResumeDownload) {
                                         val description = stringResource(id = R.string.download_resume)
                                         val colors = MaterialTheme.colorScheme
@@ -282,7 +293,8 @@ internal fun ChaptersScreenChapterItem(
 
 
 /**
- * Отмена загрузки в строке главы (доступна в QUEUED/DOWNLOADING/PAUSED).
+ * Отмена загрузки в строке главы (доступна в QUEUED/DOWNLOADING/PAUSED,
+ * только у видео-книг — см. showCancelAction).
  * Стоит слева от статус-кольца: слот кольца всегда у правого края строки,
  * 48dp на кнопку строка отдаёт только пока глава реально качается.
  * Глиф мелкий и без фона — кольцо остаётся главным сигналом.
@@ -368,6 +380,7 @@ private fun PreviewView(
             downloadUi = previewProviderState.downloadUi,
             selected = previewProviderState.selected,
             isLocalSource = false,
+            showCancelAction = previewProviderState.showCancelAction,
             onLongClick = {},
             onClick = {},
             onDownload = {},
@@ -382,7 +395,9 @@ private fun PreviewView(
 private data class PreviewProviderState(
     val chapterWithContext: ChapterWithContext,
     val downloadUi: ChapterDownloadUi? = null,
-    val selected: Boolean
+    val selected: Boolean,
+    // false — не-видео книга: «X» отмены в трейлинге не рисуется.
+    val showCancelAction: Boolean = true,
 )
 
 private class PreviewProvider : PreviewParameterProvider<PreviewProviderState> {
@@ -437,7 +452,8 @@ private class PreviewProvider : PreviewParameterProvider<PreviewProviderState> {
                 lastReadChapter = false
             ),
             downloadUi = ChapterDownloadUi(ChapterDownloadUiState.PAUSED, progress = 0.75f),
-            selected = false
+            selected = false,
+            showCancelAction = false
         ),
         PreviewProviderState(
             chapterWithContext = ChapterWithContext(

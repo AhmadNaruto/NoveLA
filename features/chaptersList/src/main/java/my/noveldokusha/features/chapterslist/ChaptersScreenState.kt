@@ -28,6 +28,9 @@ internal data class ChaptersScreenState(
     val translatedChapterTitles: MutableState<Map<String, String>>,
     val chapterSizes: MutableState<Map<String, ChapterSize>>,
     val downloadTask: MutableState<DownloadTaskState?>,
+    // Видео-книга (media3): «X» отмены в строке главы имеет смысл только у неё —
+    // у текста/манги отмена снимает всю задачу книги, а не одну главу.
+    val isVideoBook: State<Boolean>,
     // Статусы загрузок глав (видео media3 + текст/манга): chapterUrl → бейдж.
     val chapterDownloads: MutableState<Map<String, ChapterDownloadUi>>,
 ) {

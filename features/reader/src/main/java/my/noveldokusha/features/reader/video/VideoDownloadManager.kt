@@ -44,6 +44,7 @@ import timber.log.Timber
 import java.io.File
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -139,7 +140,42 @@ class VideoDownloadManager @Inject constructor(
     private val wakeSignal = MutableStateFlow(0L)
 
     // Уведомление «на паузе»: показано/скрыто, чтобы не дёргать notify на каждом тике.
+    // Вolatile: пишет и опрос (IO), и кнопки из шторки (главный поток).
+    @Volatile
     private var pausedNotificationShown = false
+
+    // Показанный в 1402 набор id — в паре с pausedNotificationShown (их пишут
+    // только show/close). Поллинг сравнивает с актуальным и перепоказывает,
+    // когда resolve-цикл дозаписал главы в паузу уже после оптимистичного
+    // показа: счётчик в уведомлении не замерзает на «1 серия».
+    @Volatile
+    private var pausedNotificationUrls: List<String> = emptyList()
+
+    /**
+     * Поколение отмены: +1 на каждый [cancelAll].
+     *
+     * Гонка со «Стопом» из шторки: enqueueVideoDownloads резолвит главы
+     * по одной (сетевой запрос, сотни мс), и cancelAll() не видит ещё не
+     * добавленные заявки — цикл добавлял бы новые уже после отмены, и
+     * пользователь видел «отменяет по 1». Цикл фиксирует поколение до
+     * старта и сверяет перед каждой главой.
+     */
+    private val cancelEpoch = AtomicInteger(0)
+
+    /** Текущее поколение отмены — см. [cancelEpoch]. */
+    val cancelGeneration: Int get() = cancelEpoch.get()
+
+    /**
+     * Включена ли глобальная пауза ([pauseAll] без [resumeAll]).
+     *
+     * Заявки, добавленные циклом enqueueVideoDownloads уже после паузы,
+     * стартовали бы сразу — флаг говорит поставить их на паузу.
+     */
+    @Volatile
+    private var pausedAll = false
+
+    /** Текущее состояние глобальной паузы — см. [pausedAll]. */
+    val isPausedAll: Boolean get() = pausedAll
 
     // Снято ли stale-уведомление 1402 при первом инициализированном тике
     // (один раз на процесс, см. uiStatesPollLoop).
@@ -244,8 +280,20 @@ class VideoDownloadManager @Inject constructor(
             // с работающим FGS. Если загрузки всё ещё на паузе — перепоказ ниже.
             if (initialized && !staleCleared) {
                 staleCleared = true
-                notificationsCenter.close(PAUSED_NOTIFICATION_ID)
-                pausedNotificationShown = false
+                closePausedNotification()
+            }
+            // Страховка микро-гонки: пауза могла пройти между проверкой
+            // isPausedAll в enqueue и доставкой add-интента — глава ушла бы
+            // в качку. Условие по stopReason: null-id путь в media3 дополнительно
+            // пишет индекс, звать его каждый тик на уже паузнутых нельзя;
+            // для уже паузнутых заявок setStopReason не шлёт listener-событий,
+            // так что цикла пробуждений нет. Тик тут идёт всегда: во время
+            // паузы currentDownloads непуст (STOPPED-заявки активны),
+            // а пустое active означает, что чинить нечего.
+            if (initialized && pausedAll &&
+                active.values.any { it.stopReason != STOP_REASON_PAUSED }
+            ) {
+                downloadManager.setStopReason(null, STOP_REASON_PAUSED)
             }
             // FGS-уведомление гаснет вместе с сервисом после паузы всех заявок
             // (media3 onIdle → stopSelf) — показываем своё «на паузе» вместо него.
@@ -306,10 +354,27 @@ class VideoDownloadManager @Inject constructor(
      * release() — singleton живёт и обрабатывает сообщения, когда сервис
      * остановлен.
      */
-    fun pauseAll() = downloadManager.setStopReason(null, STOP_REASON_PAUSED)
+    fun pauseAll() {
+        // Флаг до setStopReason: цикл enqueueVideoDownloads читает его сразу
+        // после резолва и ставит новые заявки на паузу.
+        pausedAll = true
+        downloadManager.setStopReason(null, STOP_REASON_PAUSED)
+        // Уведомление «на паузе» сразу, не через тик опроса (500 мс+): иначе
+        // FGS-гаснет вместе с сервисом, а Resume появляется лишь на следующем
+        // опросе — шторка успевает закрыться, и возобновить нечего.
+        // setStopReason асинхронен (handler DownloadService), state ещё не
+        // STOPPED — показываем оптимистично по currentDownloads: все они сейчас
+        // и уйдут в паузу. Поллинг (updatePausedNotification) — страховка.
+        val ids = downloadManager.currentDownloads.map { it.request.id }
+        if (ids.isNotEmpty()) showPausedNotificationIfChanged(ids)
+    }
 
     /** Возобновление всех + поднятие FGS заново. */
     fun resumeAll() {
+        pausedAll = false
+        // Немедленно: stale-1402 не должен висеть рядом с работающим FGS,
+        // ждать тик опроса нельзя.
+        closePausedNotification()
         downloadManager.setStopReason(null, Download.STOP_REASON_NONE)
         // Пауза гасила FGS (media3 onIdle → stopSelf): без него докачка пойдёт
         // без уведомления. У остановленного сервиса scheduler == null, так что
@@ -326,6 +391,15 @@ class VideoDownloadManager @Inject constructor(
      * он стирает и уже скачанное.
      */
     fun cancelAll() {
+        // Поколение в первую очередь: цикл enqueueVideoDownloads, резолвящий
+        // главы, увидит смену и выйдет, не добавляя новые заявки поверх отмены.
+        cancelEpoch.incrementAndGet()
+        // Немедленно: уведомление «на паузе» после Стопа устарело.
+        closePausedNotification()
+        // Очередь вся удалена — флаг глобальной паузы не должен переживать её:
+        // иначе цепочка «пауза → стоп → новый запуск» рождает новые заявки
+        // сразу на паузе, и юзер вынужден жать Resume в шторке.
+        pausedAll = false
         // id читаем с диска, а не из памяти менеджера: на холодном старте
         // DownloadManager только что создан — currentDownloads пуст, пока
         // MSG_INITIALIZE стоит в очереди HandlerThread, а onReceive уже идёт.
@@ -407,9 +481,27 @@ class VideoDownloadManager @Inject constructor(
         val mime = video.mime ?: MimeTypes.APPLICATION_M3U8.takeIf { video.url.contains(".m3u8") }
         if (mime != null) builder.setMimeType(mime)
         if (video.headers.isNotEmpty()) builder.setData(encodeHeaders(video.headers))
-        DownloadService.sendAddDownload(
-            context, VideoDownloadService::class.java, builder.build(), true
-        )
+        val request = builder.build()
+        if (pausedAll) {
+            // Глобальная пауза: НЕ через сервис. sendAddDownload(foreground=true)
+            // поднял бы FGS на каждую главу (мигание шторки), и глава успела бы
+            // качнуться до пер-главной паузы — юзер видел «паузу по 1».
+            // Прямой addDownload кладёт заявку в память и индекс сразу
+            // STATE_STOPPED/STOP_REASON_PAUSED: сервис не поднимается
+            // (needsStartedService(STOPPED) == false), байты не идут, add идёт
+            // в тот же handler FIFO — без гонок. resumeAll подхватит:
+            // setStopReason(null, NONE) + startForeground.
+            downloadManager.addDownload(request, STOP_REASON_PAUSED)
+        } else {
+            DownloadService.sendAddDownload(
+                context, VideoDownloadService::class.java, request, true
+            )
+            // Пауза могла пройти между проверкой выше и доставкой add-интента:
+            // обе команды уходят в один работающий сервис FIFO (сначала add,
+            // потом stop) — глава останется на паузе. Здесь, а не у вызывающего,
+            // чтобы тот не дёргал service-старт сам.
+            if (pausedAll) pause(chapterUrl)
+        }
     }
 
     /**
@@ -454,17 +546,43 @@ class VideoDownloadManager @Inject constructor(
      */
     private fun updatePausedNotification(downloads: List<Download>) {
         if (needsPausedNotification(downloads.map { it.state })) {
-            if (!pausedNotificationShown) showPausedNotification(downloads)
+            showPausedNotificationIfChanged(
+                downloads.filter { it.state == Download.STATE_STOPPED }.map { it.request.id }
+            )
         } else if (pausedNotificationShown) {
-            notificationsCenter.close(PAUSED_NOTIFICATION_ID)
-            pausedNotificationShown = false
+            closePausedNotification()
         }
     }
 
-    private fun showPausedNotification(downloads: List<Download>) {
-        val pausedUrls = downloads
-            .filter { it.state == Download.STATE_STOPPED }
-            .map { it.request.id }
+    /**
+     * Показ/перепоказ 1402, если набор паузнутых id изменился.
+     *
+     * Без сравнения счётчик замерзал бы на значении оптимистичного показа
+     * (пауза застала цикл в начале — «1 серия» при 40 фактически паузнутых).
+     */
+    private fun showPausedNotificationIfChanged(pausedUrls: List<String>) {
+        if (pausedNotificationShown && pausedUrls == pausedNotificationUrls) return
+        showPausedNotification(pausedUrls)
+    }
+
+    /** Немедленное закрытие 1402: после Стоп/возобновления оно stale. */
+    private fun closePausedNotification() {
+        // Без проверки shown: 1402 переживает рестарт процесса (stale из
+        // прошлой сессии), cancel несуществующего id — no-op.
+        notificationsCenter.close(PAUSED_NOTIFICATION_ID)
+        pausedNotificationShown = false
+        pausedNotificationUrls = emptyList()
+    }
+
+    /**
+     * Показ уведомления «на паузе» по уже отобранному списку id (порядок —
+     * порядок заявок, как в [registerChapterTitles]).
+     *
+     * Отбор делает вызывающий: поллинг фильтрует по состоянию, а pauseAll()
+     * показывает оптимистично — setStopReason ещё не дошёл до handler'а и
+     * state на момент вызова не STOPPED.
+     */
+    private fun showPausedNotification(pausedUrls: List<String>) {
         val pausedCount = pausedUrls.size
         val pausedText = context.getString(R.string.download_paused_count, pausedCount)
         // Названия серий — какие именно на паузе. Нет заголовков — прежний
@@ -515,6 +633,7 @@ class VideoDownloadManager @Inject constructor(
             )
         }
         pausedNotificationShown = true
+        pausedNotificationUrls = pausedUrls
     }
 
     /** Явный компонент receiver'а: intent-filter для кнопок уведомления не нужен. */
