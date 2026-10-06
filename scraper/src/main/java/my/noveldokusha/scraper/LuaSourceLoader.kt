@@ -141,6 +141,9 @@ class LuaEngine @Inject constructor(
     // ограниченного пула (Dispatchers.IO.limitedParallelism(4)).
     private val usedBytecodeCache = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
 
+    // In-memory LRU cache for compiled bytecodes to bypass disk read I/O on repeated loads
+    private val inMemoryBytecodeCache = LruCache<String, ByteArray>(50)
+
     private fun createSandboxGlobals(): Globals = createLuaSandboxGlobals()
 
     suspend fun loadScript(luaCode: String): LuaValue = withContext(Dispatchers.IO) {
@@ -159,20 +162,33 @@ class LuaEngine @Inject constructor(
     }
 
     /**
-     * Возвращает chunk-функцию скрипта, предпочитая скомпилированный байткод с диска.
+     * Возвращает chunk-функцию скрипта, предпочитая скомпилированный байткод с диска / памяти.
      * Ключ кэша = sha256(исходник) + тег версии LuaJ, поэтому изменение скрипта
      * или апгрейд движка автоматически инвалидируют кэш. При повреждённом/несовместимом
      * байткоде удаляем файл и перекомпилируем из текста.
      */
     private fun loadScriptChunk(globals: Globals, luaCode: String): LuaValue {
         val cacheFile = bytecodeCacheFile(luaCode)
+        val cacheKey = cacheFile.name
+
+        inMemoryBytecodeCache.get(cacheKey)?.let { bytes ->
+            usedBytecodeCache.add(cacheKey)
+            try {
+                return loadLuaBytecodeChunk(globals, bytes, SCRIPT_CHUNK_NAME)
+            } catch (e: Exception) {
+                Timber.w(e, "Corrupt in-memory Lua bytecode cache, recompiling: $cacheKey")
+                inMemoryBytecodeCache.remove(cacheKey)
+            }
+        }
+
         if (cacheFile.exists()) {
             try {
                 val bytes = cacheFile.readBytes()
-                usedBytecodeCache.add(cacheFile.name)
+                inMemoryBytecodeCache.put(cacheKey, bytes)
+                usedBytecodeCache.add(cacheKey)
                 return loadLuaBytecodeChunk(globals, bytes, SCRIPT_CHUNK_NAME)
             } catch (e: Exception) {
-                Timber.w(e, "Corrupt Lua bytecode cache, recompiling: ${cacheFile.name}")
+                Timber.w(e, "Corrupt Lua bytecode cache, recompiling: $cacheKey")
                 cacheFile.delete()
             }
         }
@@ -180,9 +196,10 @@ class LuaEngine @Inject constructor(
         try {
             cacheFile.parentFile?.mkdirs()
             atomicWrite(cacheFile, bytes)
-            usedBytecodeCache.add(cacheFile.name)
+            inMemoryBytecodeCache.put(cacheKey, bytes)
+            usedBytecodeCache.add(cacheKey)
         } catch (e: Exception) {
-            Timber.w(e, "Failed to save Lua bytecode cache: ${cacheFile.name}")
+            Timber.w(e, "Failed to save Lua bytecode cache: $cacheKey")
         }
         return loadLuaBytecodeChunk(globals, bytes, SCRIPT_CHUNK_NAME)
     }
@@ -203,6 +220,7 @@ class LuaEngine @Inject constructor(
         bytecodeDir.listFiles()?.forEach { file ->
             if (file.extension == "lbc" && !usedBytecodeCache.contains(file.name)) {
                 Timber.d("Pruning orphan Lua bytecode: ${file.name}")
+                inMemoryBytecodeCache.remove(file.name)
                 file.delete()
             }
         }
@@ -221,6 +239,7 @@ class LuaEngine @Inject constructor(
 
     fun clearBytecodeCache() {
         usedBytecodeCache.clear()
+        inMemoryBytecodeCache.evictAll()
         bytecodeDir.deleteRecursively()
     }
 
@@ -514,12 +533,11 @@ class LuaEngine @Inject constructor(
     /**
      * responseTable для бинарных данных: body — Lua-таблица байтов {0x00, 0x3F, ...}.
      * Индексы 1-based (Lua-конвенция).
+     * Оптимизировано с помощью LuaByteArrayTable (lazy access) для исключения GC pressure.
      */
     private fun responseTableBinary(bytes: ByteArray, code: Int, headers: Map<String, List<String>> = emptyMap()) = LuaTable().also { t ->
         t.set("success", LuaValue.valueOf(code in 200..299))
-        val bodyTable = LuaTable()
-        for (i in bytes.indices) bodyTable.set(i + 1, LuaValue.valueOf(bytes[i].toInt() and 0xFF))
-        t.set("body", bodyTable)
+        t.set("body", LuaByteArrayTable(bytes))
         t.set("code", LuaValue.valueOf(code))
         val h = LuaTable()
         headers.forEach { (k, values) ->
@@ -1200,7 +1218,15 @@ class LuaEngine @Inject constructor(
         is Float    -> LuaValue.valueOf(obj.toDouble())
         is Number   -> LuaValue.valueOf(obj.toDouble())
         is Map<*,*> -> LuaTable().also { t ->
-            obj.forEach { (k, v) -> t.set(LuaValue.valueOf(k.toString()), convertToLua(v)) }
+            obj.forEach { (k, v) ->
+                val keyLua = when (k) {
+                    is Int -> LuaValue.valueOf(k)
+                    is Number -> LuaValue.valueOf(k.toDouble())
+                    is String -> LuaValue.valueOf(k)
+                    else -> LuaValue.valueOf(k.toString())
+                }
+                t.set(keyLua, convertToLua(v))
+            }
         }
         is List<*>  -> LuaTable().also { t ->
             obj.forEachIndexed { i, v -> t.set(i + 1, convertToLua(v)) }
@@ -1494,6 +1520,36 @@ private class Base64EncodeFunction : OneArgFunction() {
             android.util.Base64.NO_WRAP
         ))
     } catch (_: Exception) { LuaValue.NIL }
+}
+
+/**
+ * Dynamic lazy wrapper table for binary response bytes ({0x00, 0x3F, ...}).
+ * Prevents allocating millions of individual LuaInteger objects upfront when loading
+ * binary data, reducing GC pressure while keeping 1-based indexing and length.
+ */
+internal class LuaByteArrayTable(val bytes: ByteArray) : LuaTable() {
+    override fun len(): LuaValue = LuaValue.valueOf(bytes.size)
+    override fun length(): Int = bytes.size
+    override fun get(key: Int): LuaValue {
+        return if (key in 1..bytes.size) {
+            LuaValue.valueOf(bytes[key - 1].toInt() and 0xFF)
+        } else {
+            super.get(key)
+        }
+    }
+    override fun get(key: LuaValue): LuaValue {
+        return if (key.isnumber()) {
+            val idx = key.toint()
+            if (idx in 1..bytes.size) {
+                LuaValue.valueOf(bytes[idx - 1].toInt() and 0xFF)
+            } else {
+                super.get(key)
+            }
+        } else {
+            super.get(key)
+        }
+    }
+    override fun tojstring(): String = String(bytes, Charsets.UTF_8)
 }
 
 // os_time — Unix timestamp в миллисекундах (для cache-busting в URL)
