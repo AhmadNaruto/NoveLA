@@ -435,6 +435,7 @@
     <string name="single_tap_to_open_settings">Single tap to open menu</string>
     <string name="source_name_local">Local EPUB/FB2</string>
     <string name="source_name_local_manga">Local CBZ</string>
+    <string name="source_not_found">Source not found</string>
 
     <string name="delete_novel">Delete novel</string>
     <string name="delete_book_translations">Delete all translations for this book</string>
