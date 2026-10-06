@@ -2,7 +2,9 @@ package my.noveldokusha.settings.sections
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Info
@@ -12,8 +14,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import my.noveldokusha.coreui.components.SlimListItem
 import my.noveldokusha.coreui.theme.colorAccent
 import my.noveldokusha.coreui.theme.textPadding
@@ -27,6 +31,8 @@ internal fun SettingsAbout(
     appVersion: String,
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    val copiedMessage = stringResource(R.string.copied_to_clipboard)
 
     Text(
         text = stringResource(R.string.about),
@@ -41,7 +47,14 @@ internal fun SettingsAbout(
         },
         leadingContent = {
             Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        },
+        modifier = Modifier.combinedClickable(
+            onClick = {},
+            onLongClick = {
+                clipboardManager.setText(AnnotatedString(appVersion))
+                Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
+            }
+        )
     )
 
     SlimListItem(

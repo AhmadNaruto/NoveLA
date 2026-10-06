@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.net.http.SslError
 import android.webkit.*
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.lifecycle.lifecycleScope
@@ -113,8 +114,14 @@ class WebViewActivity : ComponentActivity() {
                 ): Boolean {
                     val url = request?.url?.toString() ?: return false
                     val scheme = request.url.scheme?.lowercase()
-                    return when (scheme) {
-                        "http", "https" -> false
+                    return when {
+                        scheme == "http" || scheme == "https" -> false
+                        // Cloudflare Turnstile рендерит свой iframe как about:blank /
+                        // about:srcdoc — эти URL обязательны для мобильного обхода.
+                        scheme == "about" && (
+                            url.startsWith("about:blank", ignoreCase = true) ||
+                                url.startsWith("about:srcdoc", ignoreCase = true)
+                            ) -> false
                         else -> {
                             Timber.d("Ignoring unsupported scheme: $url")
                             true
@@ -147,7 +154,8 @@ class WebViewActivity : ComponentActivity() {
                     errorResponse: WebResourceResponse?
                 ) {
                     super.onReceivedHttpError(view, request, errorResponse)
-                    Timber.w("HTTP error ${errorResponse?.statusCode} for ${request?.url}")
+                    // isForMainFrame различает навигацию от subresource/fetch.
+                    Timber.w("HTTP error ${errorResponse?.statusCode} for ${request?.url} isForMainFrame=${request?.isForMainFrame}")
                     abortBypassIfFatal(
                         url = request?.url?.toString(),
                         isMainFrame = request?.isForMainFrame == true,
@@ -210,13 +218,22 @@ class WebViewActivity : ComponentActivity() {
                 }
             }
 
+            // Системная back-кнопка/жест в bypass-режиме: будим интерцептор сразу,
+            // не дожидаясь MANUAL_TIMEOUT. В обычном режиме выключен — поведение прежнее.
+            BackHandler(enabled = isBypassMode) {
+                closeBypassOnUserDismiss()
+            }
+
             Theme(themeProvider = themeProvider) {
                 WebViewScreen(
                     toolbarTitle = currentUrl,
                     isReady = isReady,
                     webViewFactory = { webView },
                     onNavigateToUrl = { url -> webView.loadUrl(url) },
-                    onBackClicked = { if (!isFinishing) finish() },
+                    onBackClicked = {
+                        if (isBypassMode) closeBypassOnUserDismiss()
+                        else if (!isFinishing) finish()
+                    },
                     onDoneClicked = {
                         if (!isFinishing) {
                             CookieManager.getInstance().flush()
@@ -322,6 +339,18 @@ class WebViewActivity : ComponentActivity() {
         CookieManager.getInstance().flush()
         CloudflareBypassSignal.notifyBypassFinished(host)
         CloudflareBypassSignal.channel.trySend(Unit)
+        finish()
+    }
+
+    // Пользователь закрыл обход, не решив челлендж: будим интерцептор сразу,
+    // не дожидаясь MANUAL_TIMEOUT (35с) в CloudFareVerificationInterceptor.
+    private fun closeBypassOnUserDismiss() {
+        if (isFinishing || hasAutoClosed) return
+        val host = Uri.parse(currentTargetUrl).host ?: ""
+        CookieManager.getInstance().flush()
+        CloudflareBypassSignal.notifyBypassFinished(host)
+        CloudflareBypassSignal.channel.trySend(Unit)
+        hasAutoClosed = true
         finish()
     }
 

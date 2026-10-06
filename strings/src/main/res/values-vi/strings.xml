@@ -79,6 +79,7 @@
     <string name="filter">Bộ lọc</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Tiểu thuyết</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">Tất cả</string>
     <string name="read">Đã đọc</string>
     <string name="sort">Sắp xếp</string>
@@ -410,6 +411,7 @@
     <string name="invalid_regex_pattern_with">Mẫu regex không hợp lệ: %s</string>
     <string name="regex_cleanup_title">Regex</string>
     <string name="enabled">Đã bật</string>
+    <string name="whole_words_only">Chỉ từ hoàn chỉnh</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">Đã đọc gần đây</string>
@@ -539,6 +541,10 @@
     <string name="cleaning_manga_cache">Đang xóa manga offline…</string>
     <string name="manga_cache_cleaned">Đã xóa manga offline</string>
     <string name="manga_cache_clean_failed">Xóa manga offline thất bại</string>
+    <string name="clean_offline_video">Xóa video offline</string>
+    <string name="clean_offline_video_confirmation">Thao tác này sẽ xóa các video đã tải. Để xem offline, bạn cần tải lại chúng.</string>
+    <string name="cleaning_offline_video">Đang xóa video offline…</string>
+    <string name="offline_video_clean_failed">Xóa video offline thất bại</string>
     <string name="all_sources">Tất cả nguồn</string>
     <string name="reset_filters">Đặt lại</string>
 
@@ -833,4 +839,55 @@
     <string name="github_repository">Kho GitHub</string>
     <string name="report_issue">Báo lỗi</string>
     <string name="report_issue_description">Tạo báo cáo lỗi trên GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Đang lấy nguồn…</string>
+    <string name="video_open_in_other">Mở trong ứng dụng khác</string>
+    <string name="video_no_app_to_play">Không có ứng dụng nào để phát video này</string>
+    <string name="video_playback_error">Lỗi phát</string>
+    <string name="video_playback_error_codec">Codec của thiết bị không thể giải mã luồng này</string>
+    <string name="video_playback_error_source">Nguồn không khả dụng: lỗi máy chủ hoặc tệp bị hỏng</string>
+    <string name="video_variant_badge_dead">Không khả dụng</string>
+    <string name="video_quality">Chất lượng</string>
+    <string name="video_sources_not_found">Không tìm thấy nguồn</string>
+    <string name="video_source_not_found">Không tìm thấy nguồn</string>
+    <string name="video_source_no_video">Nguồn không hỗ trợ video</string>
+    <string name="video_translate_unavailable">Tính năng dịch không khả dụng cho video</string>
+    <string name="video_resolution">Độ phân giải</string>
+    <string name="video_voiceover">Lồng tiếng</string>
+    <string name="video_variant_title">Chọn biến thể</string>
+    <string name="video_variant_fallback">Biến thể %1$d</string>
+    <string name="video_settings_title">Cài đặt</string>
+    <string name="video_playback_speed">Tốc độ</string>
+    <string name="video_audio_track">Âm thanh</string>
+    <string name="video_subtitles">Phụ đề</string>
+    <string name="video_subtitles_none">Không có phụ đề</string>
+    <string name="video_subtitles_off">Tắt</string>
+    <string name="video_keep_screen_on">Giữ màn hình sáng</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Phát</string>
+    <string name="video_section_video">Video</string>
+    <string name="video_section_gestures">Thao tác</string>
+    <string name="video_section_audio">Âm thanh</string>
+    <string name="video_section_subtitles">Phụ đề</string>
+    <string name="video_section_screen">Màn hình</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Bước tua</string>
+    <string name="video_seconds_value">%1$d giây</string>
+    <string name="video_controller_auto_hide">Tự động ẩn điều khiển</string>
+    <string name="video_auto_hide_never">Không bao giờ</string>
+    <string name="video_variant">Biến thể</string>
+    <string name="video_gesture_double_tap">Chạm hai lần để tua</string>
+    <string name="video_gesture_vertical_swipe">Vuốt dọc: âm lượng và độ sáng</string>
+    <string name="video_gesture_long_press">Giữ để tua nhanh 2×</string>
+    <string name="video_gesture_swap_sides">Đổi nửa màn hình</string>
+    <string name="video_gesture_sensitivity">Độ nhạy vuốt</string>
+    <string name="video_subtitle_track">Dòng phụ đề</string>
+    <string name="failed_to_restore_backup_incomplete">Tệp sao lưu không hoàn chỉnh hoặc bị hỏng</string>
+    <string name="failed_to_restore_backup_too_short">Tệp sao lưu trống hoặc quá ngắn</string>
+    <string name="failed_to_restore_backup_empty_archive">Tệp lưu trữ sao lưu trống</string>
+    <string name="failed_to_restore_backup_missing_database">Tệp lưu trữ sao lưu không chứa cơ sở dữ liệu</string>
+    <string name="failed_to_restore_error">Lỗi khôi phục: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Định dạng tệp sao lưu không hợp lệ. Mong đợi tệp ZIP</string>
+    <string name="failed_to_restore_read_error">Không thể đọc tệp sao lưu: %1$s</string>
 </resources>

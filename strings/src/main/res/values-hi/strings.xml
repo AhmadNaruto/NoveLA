@@ -79,6 +79,7 @@
     <string name="filter">फ़िल्टर</string>
     <string name="content_type_manga">मंगा</string>
     <string name="content_type_novel">उपन्यास</string>
+    <string name="content_type_video">वीडियो</string>
     <string name="filter_all">सभी</string>
     <string name="read">पढ़ें</string>
     <string name="sort">क्रमबद्ध करें</string>
@@ -410,6 +411,7 @@
     <string name="invalid_regex_pattern_with">अमान्य रेगेक्स पैटर्न: %s</string>
     <string name="regex_cleanup_title">रेगेक्स</string>
     <string name="enabled">सक्षम</string>
+    <string name="whole_words_only">केवल पूरे शब्द</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">अंतिम पढ़ा गया</string>
@@ -539,6 +541,10 @@
     <string name="cleaning_manga_cache">ओफ़लाइन मंगा साफ़ हो रहा है…</string>
     <string name="manga_cache_cleaned">ओफ़लाइन मंगा साफ़ हो गया</string>
     <string name="manga_cache_clean_failed">ओफ़लाइन मंगा साफ़ करने में विफल</string>
+    <string name="clean_offline_video">ओफ़लाइन वीडियो हटाएँ</string>
+    <string name="clean_offline_video_confirmation">यह डाउनलोड किए गए वीडियो हटा देगा। ओफ़लाइन देखने के लिए उन्हें फिर से डाउनलोड करना होगा।</string>
+    <string name="cleaning_offline_video">ओफ़लाइन वीडियो हटाए जा रहे हैं…</string>
+    <string name="offline_video_clean_failed">ओफ़लाइन वीडियो हटाने में विफल</string>
     <string name="all_sources">सभी स्रोत</string>
     <string name="reset_filters">रीसेट</string>
 
@@ -833,4 +839,56 @@
     <string name="github_repository">GitHub रिपॉज़िटरी</string>
     <string name="report_issue">समस्या की रिपोर्ट करें</string>
     <string name="report_issue_description">GitHub पर बग रिपोर्ट बनाएं</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">स्रोत प्राप्त किए जा रहे हैं…</string>
+    <string name="video_open_in_other">दूसरे ऐप में खोलें</string>
+    <string name="video_no_app_to_play">इस वीडियो को चलाने के लिए कोई ऐप उपलब्ध नहीं है</string>
+    <string name="video_playback_error">प्लेबैक त्रुटि</string>
+    <string name="video_playback_error_codec">डिवाइस के कोडेक इस स्ट्रीम को डिकोड नहीं कर सकते</string>
+    <string name="video_playback_error_source">स्रोत उपलब्ध नहीं: सर्वर की समस्या या क्षतिग्रस्त फ़ाइल</string>
+    <string name="video_variant_badge_dead">उपलब्ध नहीं</string>
+    <string name="video_quality">गुणवत्ता</string>
+    <string name="video_sources_not_found">स्रोत नहीं मिले</string>
+    <string name="video_source_not_found">स्रोत नहीं मिला</string>
+    <string name="video_source_no_video">स्रोत वीडियो का समर्थन नहीं करता</string>
+    <string name="video_translate_unavailable">वीडियो के लिए अनुवाद उपलब्ध नहीं है</string>
+    <string name="video_resolution">रेज़ॉल्यूशन</string>
+    <string name="video_voiceover">वॉइसओवर</string>
+    <string name="video_variant_title">वेरिएंट चुनें</string>
+    <string name="video_variant_fallback">वेरिएंट %1$d</string>
+    <string name="video_settings_title">सेटिंग्स</string>
+    <string name="video_playback_speed">गति</string>
+    <string name="video_audio_track">ऑडियो ट्रैक</string>
+    <string name="video_subtitles">सबटाइटल</string>
+    <string name="video_subtitles_none">कोई सबटाइटल नहीं</string>
+    <string name="video_subtitles_off">बंद</string>
+    <string name="video_keep_screen_on">स्क्रीन चालू रखें</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">प्लेबैक</string>
+    <string name="video_section_video">वीडियो</string>
+    <string name="video_section_gestures">जेस्चर</string>
+    <string name="video_section_audio">ऑडियो</string>
+    <string name="video_section_subtitles">सबटाइटल</string>
+    <string name="video_section_screen">स्क्रीन</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">स्किप चरण</string>
+    <string name="video_seconds_value">%1$d सेकंड</string>
+    <string name="video_controller_auto_hide">नियंत्रण स्वचालित रूप से छिपाएँ</string>
+    <string name="video_auto_hide_never">कभी नहीं</string>
+    <string name="video_variant">वेरिएंट</string>
+    <string name="video_gesture_double_tap">दो बार टैप करके स्किप करें</string>
+    <string name="video_gesture_vertical_swipe">ऊर्ध्वाधर स्वाइप: वॉल्यूम और चमक</string>
+    <string name="video_gesture_long_press">2× गति के लिए लंबा दबाएँ</string>
+    <string name="video_gesture_swap_sides">स्क्रीन के आधे हिस्से बदलें</string>
+    <string name="video_gesture_sensitivity">स्वाइप की संवेदनशीलता</string>
+    <string name="video_subtitle_track">सबटाइटल ट्रैक</string>
+
+    <string name="failed_to_restore_backup_incomplete">बैकअप फ़ाइल अधूरी या दूषित है</string>
+    <string name="failed_to_restore_backup_too_short">बैकअप फ़ाइल खाली या बहुत छोटी है</string>
+    <string name="failed_to_restore_backup_empty_archive">बैकअप आर्काइव खाली है</string>
+    <string name="failed_to_restore_backup_missing_database">बैकअप आर्काइव में कोई डेटाबेस नहीं है</string>
+    <string name="failed_to_restore_error">पुनर्स्थापन में त्रुटि: %1$s</string>
+    <string name="failed_to_restore_invalid_format">अमान्य बैकअप फ़ाइल प्रारूप। ZIP फ़ाइल अपेक्षित</string>
+    <string name="failed_to_restore_read_error">बैकअप फ़ाइल पढ़ने में विफल: %1$s</string>
 </resources>

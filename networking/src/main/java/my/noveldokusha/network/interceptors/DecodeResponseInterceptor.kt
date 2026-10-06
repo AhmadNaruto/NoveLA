@@ -4,6 +4,8 @@ import okhttp3.Interceptor
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.asResponseBody
 import okio.GzipSource
+import okio.InflaterSource
+import java.util.zip.Inflater
 import okio.buffer
 import okio.source
 import org.brotli.dec.BrotliInputStream
@@ -31,6 +33,7 @@ internal class DecodeResponseInterceptor : Interceptor {
         val decompressedSource = when (contentEncoding) {
             "br" -> BrotliInputStream(body.source().inputStream()).source().buffer()
             "gzip" -> GzipSource(body.source()).buffer()
+            "deflate" -> InflaterSource(body.source(), Inflater()).buffer()
             else -> return response
         }
 

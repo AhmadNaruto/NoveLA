@@ -1,6 +1,7 @@
 package my.noveldokusha.network
 
 import com.google.gson.Gson
+import my.noveldokusha.core.AppCacheConfig
 import okhttp3.CacheControl
 import okhttp3.FormBody
 import okhttp3.Headers
@@ -10,7 +11,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
-private val DEFAULT_CACHE_CONTROL = CacheControl.Builder().maxAge(10, TimeUnit.MINUTES).build()
+private val DEFAULT_CACHE_CONTROL =
+    CacheControl.Builder().maxAge(AppCacheConfig.HTTP_MAX_AGE_SECONDS, TimeUnit.SECONDS).build()
 private val DEFAULT_HEADERS = Headers.Builder().build()
 private val DEFAULT_BODY: RequestBody = FormBody.Builder().build()
 private val GSON = Gson()

@@ -11,10 +11,11 @@ import org.jsoup.nodes.Document
  * и JS-редиректом на реальный сайт. OkHttp не выполняет JS, поэтому нужно
  * извлекать URL редиректа вручную.
  */
-private val META_REFRESH_URL = Regex("""url\s*=\s*['"]?(https?://[^'">\s]+)""", RegexOption.IGNORE_CASE)
+private val META_REFRESH_URL = Regex("""url\s*=\s*['"]?([^'">\s]+)""", RegexOption.IGNORE_CASE)
 private val WINDOW_LOCATION_HREF = Regex("""window\.location\.href\s*=\s*['"]([^'"]+)['"]""")
 private val WINDOW_LOCATION = Regex("""window\.location\s*=\s*['"]([^'"]+)['"]""")
-private val WINDOW_LOCATION_REPLACE = Regex("""window\.location\.replace\s*\(\s*['"]([^'"]+)['"]""")
+// substring-матчинг покрывает и window.location.replace(...), и self/top/document.location*
+private val LOCATION_METHOD = Regex("""location\.(?:replace|assign)\s*\(\s*['"]([^'"]+)['"]""")
 private val LOCATION_HREF = Regex("""location\.href\s*=\s*['"]([^'"]+)['"]""")
 private val LOCATION = Regex("""location\s*=\s*['"]([^'"]+)['"]""")
 private val SCRIPT_LOCATION_PATTERN = Regex("""(?:window\.)?location(?:\.href)?\s*=\s*['"]([^'"]+)['"]""")
@@ -37,17 +38,21 @@ object JsRedirectResolver {
             val content = metaRefresh.attr("content")
             val urlMatch = META_REFRESH_URL.find(content)
             if (urlMatch != null) {
-                val url = urlMatch.groupValues[1]
-                Timber.d("Found meta refresh redirect: $url")
-                return normalizeUrl(url)
+                val target = urlMatch.groupValues[1]
+                // javascript: — это не навигация, пропускаем и ищем дальше
+                if (!target.startsWith("javascript:", ignoreCase = true)) {
+                    val url = toAbsoluteUrl(doc, target)
+                    Timber.d("Found meta refresh redirect: $url")
+                    return normalizeUrl(url)
+                }
             }
         }
 
-        // 2. window.location.href = "..." или window.location = "..."
+        // 2. window.location.href = "..." или location = "..." / location.replace(...) / location.assign(...)
         val locationPatterns = listOf(
             WINDOW_LOCATION_HREF,
             WINDOW_LOCATION,
-            WINDOW_LOCATION_REPLACE,
+            LOCATION_METHOD,
             LOCATION_HREF,
             LOCATION,
         )
@@ -55,48 +60,16 @@ object JsRedirectResolver {
         for (pattern in locationPatterns) {
             val match = pattern.find(html)
             if (match != null) {
-                var url = match.groupValues[1]
-                // Сначала убираем экранированные слеши \/ -> / (в JS так экранируют https?://)
-                url = url.replace("\\/", "/")
-                // Если URL относительный — превращаем в абсолютный
-                if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("//")) {
-                    try {
-                        val baseUri = doc.location()
-                        if (baseUri.isNotEmpty()) {
-                            val base = java.net.URI(baseUri)
-                            url = if (url.startsWith("/")) {
-                                "${base.scheme}://${base.host}$url"
-                            } else {
-                                val parent = baseUri.substringBeforeLast("/")
-                                "$parent/$url"
-                            }
-                        }
-                    } catch (_: Exception) {
-                        // Если не удалось — оставляем как есть
-                    }
-                }
-                // Если URL начинается с // — добавляем протокол
-                if (url.startsWith("//")) {
-                    try {
-                        val baseUri = doc.location()
-                        if (baseUri.isNotEmpty()) {
-                            val scheme = java.net.URI(baseUri).scheme
-                            url = "$scheme:$url"
-                        }
-                    } catch (_: Exception) {
-                        url = "https:$url"
-                    }
-                }
+                val url = toAbsoluteUrl(doc, match.groupValues[1])
                 Timber.d("Found JS redirect: $url")
                 return normalizeUrl(url)
             }
         }
 
         // 3. Поиск в script-тегах через регулярку по всему HTML
-        val scriptPattern = SCRIPT_LOCATION_PATTERN
-        val scriptMatch = scriptPattern.find(html)
+        val scriptMatch = SCRIPT_LOCATION_PATTERN.find(html)
         if (scriptMatch != null) {
-            val url = scriptMatch.groupValues[1]
+            val url = toAbsoluteUrl(doc, scriptMatch.groupValues[1])
             Timber.d("Found script redirect: $url")
             return normalizeUrl(url)
         }
@@ -105,11 +78,51 @@ object JsRedirectResolver {
     }
 
     /**
-     * Нормализует URL: заменяет экранированные слеши \/ на /,
-     * удаляет лишние пробелы.
+     * Резолвит относительный и protocol-relative URL против [doc].location(),
+     * заменяет экранированные слеши \/ на /.
+     */
+    private fun toAbsoluteUrl(doc: Document, rawUrl: String): String {
+        var url = rawUrl.replace("\\/", "/").trim()
+        if (url.startsWith("javascript:", ignoreCase = true)) return url
+        // Если URL относительный — превращаем в абсолютный
+        if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("//")) {
+            try {
+                val baseUri = doc.location()
+                if (baseUri.isNotEmpty()) {
+                    val base = java.net.URI(baseUri)
+                    url = if (url.startsWith("/")) {
+                        "${base.scheme}://${base.host}$url"
+                    } else {
+                        val parent = baseUri.substringBeforeLast("/")
+                        "$parent/$url"
+                    }
+                }
+            } catch (_: Exception) {
+                // Если не удалось — оставляем как есть
+            }
+        }
+        // Если URL начинается с // — добавляем протокол
+        if (url.startsWith("//")) {
+            try {
+                val baseUri = doc.location()
+                if (baseUri.isNotEmpty()) {
+                    val scheme = java.net.URI(baseUri).scheme
+                    url = "$scheme:$url"
+                }
+            } catch (_: Exception) {
+                url = "https:$url"
+            }
+        }
+        return url
+    }
+
+    /**
+     * Нормализует URL: декодирует HTML-энтити (&#x3D; → =), заменяет
+     * экранированные слеши \/ на /, удаляет лишние пробелы.
      */
     private fun normalizeUrl(url: String): String {
-        var result = url.replace("\\/", "/").trim()
+        var result = org.jsoup.parser.Parser.unescapeEntities(url, false)
+            .replace("\\/", "/").trim()
         // Редирект-обёртки могут вкладывать абсолютный URL внутрь пути,
         // напр. "https://a.com/x/https://b.com/y" — берём последний абсолютный URL.
         val idx = maxOf(result.lastIndexOf("https://"), result.lastIndexOf("http://"))

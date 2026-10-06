@@ -79,6 +79,7 @@
     <string name="filter">フィルター</string>
     <string name="content_type_manga">マンガ</string>
     <string name="content_type_novel">小説</string>
+    <string name="content_type_video">ビデオ</string>
     <string name="filter_all">すべて</string>
     <string name="read">読む</string>
     <string name="sort">並べ替え</string>
@@ -410,6 +411,7 @@
     <string name="invalid_regex_pattern_with">無効な正規表現パターン：%s</string>
     <string name="regex_cleanup_title">正規表現</string>
     <string name="enabled">有効</string>
+    <string name="whole_words_only">完全な単語のみ</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">最後に読んだ</string>
@@ -539,6 +541,10 @@
     <string name="cleaning_manga_cache">オフラインマンガをクリア中…</string>
     <string name="manga_cache_cleaned">オフラインマンガをクリアしました</string>
     <string name="manga_cache_clean_failed">オフラインマンガのクリアに失敗しました</string>
+    <string name="clean_offline_video">オフラインビデオを削除</string>
+    <string name="clean_offline_video_confirmation">これによりダウンロード済みのビデオが削除されます。オフラインで視聴するには再度ダウンロードする必要があります。</string>
+    <string name="cleaning_offline_video">オフラインビデオを削除中…</string>
+    <string name="offline_video_clean_failed">オフラインビデオの削除に失敗しました</string>
     <string name="all_sources">すべてのソース</string>
     <string name="reset_filters">リセット</string>
 
@@ -845,4 +851,55 @@
     <string name="github_repository">GitHub リポジトリ</string>
     <string name="report_issue">問題を報告</string>
     <string name="report_issue_description">GitHub でバグレポートを作成</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">ソースを取得中…</string>
+    <string name="video_open_in_other">他のアプリで開く</string>
+    <string name="video_no_app_to_play">このビデオを再生できるアプリがありません</string>
+    <string name="video_playback_error">再生エラー</string>
+    <string name="video_playback_error_codec">このデバイスのコーデックではこのストリームをデコードできません</string>
+    <string name="video_playback_error_source">ソースを使用できません：サーバーの問題またはファイルの破損</string>
+    <string name="video_variant_badge_dead">利用不可</string>
+    <string name="video_quality">画質</string>
+    <string name="video_sources_not_found">ソース一覧が見つかりません</string>
+    <string name="video_source_not_found">ソースが見つかりません</string>
+    <string name="video_source_no_video">ソースはビデオに対応していません</string>
+    <string name="video_translate_unavailable">ビデオでは翻訳を使用できません</string>
+    <string name="video_resolution">解像度</string>
+    <string name="video_voiceover">吹き替え</string>
+    <string name="video_variant_title">バージョンを選択</string>
+    <string name="video_variant_fallback">バージョン %1$d</string>
+    <string name="video_settings_title">設定</string>
+    <string name="video_playback_speed">再生速度</string>
+    <string name="video_audio_track">音声トラック</string>
+    <string name="video_subtitles">字幕</string>
+    <string name="video_subtitles_none">字幕なし</string>
+    <string name="video_subtitles_off">オフ</string>
+    <string name="video_keep_screen_on">画面をオンのままにする</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">再生</string>
+    <string name="video_section_video">映像</string>
+    <string name="video_section_gestures">ジェスチャー</string>
+    <string name="video_section_audio">音声</string>
+    <string name="video_section_subtitles">字幕</string>
+    <string name="video_section_screen">画面</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">シーク間隔</string>
+    <string name="video_seconds_value">%1$d 秒</string>
+    <string name="video_controller_auto_hide">コントロールを自動的に隠す</string>
+    <string name="video_auto_hide_never">しない</string>
+    <string name="video_variant">バージョン</string>
+    <string name="video_gesture_double_tap">ダブルタップでシーク</string>
+    <string name="video_gesture_vertical_swipe">縦スワイプ: 音量と明るさ</string>
+    <string name="video_gesture_long_press">長押しで2倍速</string>
+    <string name="video_gesture_swap_sides">画面の左右を入れ替え</string>
+    <string name="video_gesture_sensitivity">スワイプ感度</string>
+    <string name="video_subtitle_track">字幕トラック</string>
+    <string name="failed_to_restore_backup_incomplete">バックアップファイルが不完全か破損しています</string>
+    <string name="failed_to_restore_backup_too_short">バックアップファイルが空か短すぎます</string>
+    <string name="failed_to_restore_backup_empty_archive">バックアップアーカイブが空です</string>
+    <string name="failed_to_restore_backup_missing_database">バックアップアーカイブにデータベースが含まれていません</string>
+    <string name="failed_to_restore_error">復元エラー：%1$s</string>
+    <string name="failed_to_restore_invalid_format">バックアップファイルの形式が無効です。ZIPファイルが必要です</string>
+    <string name="failed_to_restore_read_error">バックアップファイルの読み込みに失敗しました：%1$s</string>
 </resources>

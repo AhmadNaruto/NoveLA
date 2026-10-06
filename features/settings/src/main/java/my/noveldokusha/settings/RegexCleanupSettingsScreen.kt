@@ -298,8 +298,8 @@ fun RegexCleanupSettingsScreen(
                     previewText = state.previewText.ifEmpty {
                         stringResource(id = R.string.preview_sample_text)
                     },
-                    onSave = { pattern, replacement, enabled, desc ->
-                        viewModel.onSaveRule(pattern, replacement, enabled, desc)
+                    onSave = { pattern, replacement, enabled, wholeWords, desc ->
+                        viewModel.onSaveRule(pattern, replacement, enabled, wholeWords, desc)
                     },
                     onPreviewChange = { viewModel.updatePreview(it) },
                     onDismiss = { viewModel.onDismissBottomSheet() }
@@ -475,7 +475,7 @@ private fun RegexRuleBottomSheetContent(
     validationError: String?,
     duplicatePatternError: Boolean,
     previewText: String,
-    onSave: (pattern: String, replacement: String, enabled: Boolean, description: String) -> Unit,
+    onSave: (pattern: String, replacement: String, enabled: Boolean, wholeWordsOnly: Boolean, description: String) -> Unit,
     onPreviewChange: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -483,6 +483,7 @@ private fun RegexRuleBottomSheetContent(
     var replacement by remember { mutableStateOf(rule.replacement) }
     var description by remember { mutableStateOf(rule.description) }
     var isEnabled by remember { mutableStateOf(rule.isEnabled) }
+    var wholeWordsOnly by remember { mutableStateOf(rule.wholeWordsOnly) }
     var localPreviewText by remember { mutableStateOf(previewText) }
     var isPatternValid by remember { mutableStateOf(true) }
     var showError by remember { mutableStateOf(false) }
@@ -672,6 +673,29 @@ private fun RegexRuleBottomSheetContent(
             )
         }
 
+        // Whole words only toggle
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = stringResource(id = R.string.whole_words_only),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Switch(
+                checked = wholeWordsOnly,
+                onCheckedChange = { wholeWordsOnly = it },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            )
+        }
+
         Spacer(modifier = Modifier.height(10.dp))
 
         // Preview
@@ -722,7 +746,8 @@ private fun RegexRuleBottomSheetContent(
                     text = localPreviewText,
                     pattern = pattern,
                     replacement = replacement,
-                    isEnabled = isEnabled
+                    isEnabled = isEnabled,
+                    wholeWordsOnly = wholeWordsOnly
                 )
             }
         }
@@ -761,7 +786,7 @@ private fun RegexRuleBottomSheetContent(
             Button(
                 onClick = {
                     if (pattern.isNotEmpty() && isPatternValid) {
-                        onSave(pattern, replacement, isEnabled, description)
+                        onSave(pattern, replacement, isEnabled, wholeWordsOnly, description)
                     } else {
                         showError = true
                     }
@@ -792,7 +817,8 @@ private fun PreviewText(
     text: String,
     pattern: String,
     replacement: String,
-    isEnabled: Boolean
+    isEnabled: Boolean,
+    wholeWordsOnly: Boolean
 ) {
     if (!isEnabled || pattern.isEmpty()) {
         Text(
@@ -803,10 +829,15 @@ private fun PreviewText(
         return
     }
 
+    // Single source of truth for the pattern the reader applies
+    val effectivePattern = remember(pattern, wholeWordsOnly) {
+        RegexRule(pattern = pattern, wholeWordsOnly = wholeWordsOnly).effectivePattern
+    }
+
     // Compute result using the same logic as the reader: text.replace(Regex(pattern), replacement)
-    val resultText = remember(pattern, replacement, text) {
+    val resultText = remember(pattern, wholeWordsOnly, replacement, text) {
         try {
-            text.replace(Regex(pattern), replacement)
+            text.replace(Regex(effectivePattern), replacement)
         } catch (e: Exception) {
             text
         }
@@ -822,9 +853,9 @@ private fun PreviewText(
     }
 
     // Pre-compute match ranges outside buildAnnotatedString (no try-catch inside composable)
-    val matches = remember(pattern, text) {
+    val matches = remember(pattern, wholeWordsOnly, text) {
         try {
-            Regex(pattern).findAll(text).toList()
+            Regex(effectivePattern).findAll(text).toList()
         } catch (e: Exception) {
             emptyList()
         }

@@ -25,6 +25,7 @@ import my.noveldokusha.data.AppRepository
 import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.core.appPreferences.TranslationSettingsResolver
 import my.noveldokusha.features.reader.ReaderRepository
+import my.noveldokusha.features.reader.decodeLastReadPosition
 import my.noveldokusha.features.reader.domain.ChapterLoaded
 import my.noveldokusha.features.reader.domain.ChapterState
 import my.noveldokusha.features.reader.domain.ReaderItem
@@ -73,7 +74,6 @@ internal class ReaderSession(
 
     private var lastChapterIndex: Int = -1
     private var preloadTriggeredForChapter = -1
-    private val sessionCreatedTime = System.currentTimeMillis()
 
     var bookTitle: String? = null
     var bookCoverUrl: String? = null
@@ -82,7 +82,8 @@ internal class ReaderSession(
         ChapterState(
             chapterUrl = chapterUrl,
             chapterItemPosition = 0,
-            offset = 0
+            offset = 0,
+            savedWithSplit = appPreferences.READER_SENTENCE_SPLITTING.value
         )
     ) { _, old, new ->
         chapterUrl = new.chapterUrl
@@ -187,9 +188,7 @@ internal class ReaderSession(
             getParallelOrder = appPreferences.TRANSLATION_PARALLEL_ORDER.state(scope)::value,
             onBufferLow = {
                 val currentChapterIndex = ttsCurrentChapterIndex
-                val sessionAge = System.currentTimeMillis() - sessionCreatedTime
                 if (currentChapterIndex < 0) return@ReaderTextToSpeech
-                if (sessionAge < 3000) return@ReaderTextToSpeech
                 if (
                     readerTextToSpeech.isSpeaking.value &&
                     !readerChaptersLoader.hasLoadingError &&
@@ -201,6 +200,13 @@ internal class ReaderSession(
                             .onFailure { Timber.w(it, "onBufferLow: tryLoadNext failed") }
                     }
                 }
+            },
+            onSpeakerPaused = { itemPos ->
+                // При паузе позиция TTS становится источником зеркала currentChapter,
+                // чтобы view-записи (onPause/W-obs) не начинались с устаревшей главы:
+                // без этого «Last read» оставался на последней ВИДИМОЙ главе, а не на
+                // реально прослушанной TTS. Тот же ChapterState уходит и в репозиторий.
+                currentChapter = saveLastReadPositionStateSpeaker(itemPos)
             },
         )
 
@@ -218,34 +224,6 @@ internal class ReaderSession(
     }
 
     fun init() {
-        // Подписываемся ДО initLoadData, чтобы поймать chapterLoadedFlow(Total)
-        // и инициализировать currentActiveItemState сохранённой позицией.
-        // Иначе setPlaying(true) увидит chapterIndex=-1 и стартует с первого видимого элемента.
-        scope.launch {
-            readerChaptersLoader.chapterLoadedFlow
-                .filter { it.type == ChapterLoaded.Type.Initial }
-                .take(1)
-                .collect { loaded ->
-                    val chapterIndex = loaded.chapterIndex
-                    if (chapterIndex !in 0 until orderedChapters.size) return@collect
-                    val chapter = orderedChapters[chapterIndex]
-                    val pos = readerRepository.getInitialChapterItemPosition(
-                        bookUrl = bookUrl,
-                        chapterIndex = chapterIndex,
-                        chapter = chapter,
-                    )
-                    readerTextToSpeech.forceResetState(
-                        ReaderItem.Title(
-                            chapterUrl = chapter.url,
-                            chapterIndex = pos.chapterIndex,
-                            chapterItemPosition = pos.chapterItemPosition,
-                            text = ""
-                        )
-                    )
-                    Timber.d("TTS-JUMP init: forceResetState(${pos.chapterIndex},${pos.chapterItemPosition})")
-                }
-        }
-
         initLoadData()
         scope.launch {
             appRepository.libraryBooks.updateLastReadEpochTimeMilli(
@@ -295,10 +273,13 @@ internal class ReaderSession(
             bookCoverUrl = book.await()?.coverImageUrl
             bookTitle = book.await()?.title
             readerLiveTranslation.bookTitle = bookTitle ?: ""
+            // Позиция из БД может быть закодирована знаком (гранулярность сплита), декодируем.
+            val savedPosition = decodeLastReadPosition(chapter.await()?.lastReadPosition ?: 0)
             currentChapter = ChapterState(
                 chapterUrl = chapterUrl,
-                chapterItemPosition = chapter.await()?.lastReadPosition ?: 0,
+                chapterItemPosition = savedPosition.position,
                 offset = chapter.await()?.lastReadOffset ?: 0,
+                savedWithSplit = savedPosition.savedWithSplit,
             )
 
             // Загружаем главу только после того как translatorState готов
@@ -458,14 +439,15 @@ internal class ReaderSession(
     }
 
     fun reloadReader(chapterLastState: ChapterState) {
+        // Перестройка списка: старые позиции подсветок больше не существуют,
+        // иначе ручная подсветка/TTS указывают на чужой или несуществующий абзац.
+        readerManualHighlight.clear()
         readerChaptersLoader.restartInitial(chapterLastState)
         readerTextToSpeech.stop()
+        readerTextToSpeech.clearActiveItemState()
     }
 
     fun updateInfoViewTo(itemIndex: Int, userHasScrolled: Boolean = false) {
-        val sessionAge = System.currentTimeMillis() - sessionCreatedTime
-        if (sessionAge < 3000) return
-
         val stats = readerChaptersLoader.getItemContext(
             itemIndex = itemIndex,
             chapterUrl = chapterUrl
@@ -482,12 +464,15 @@ internal class ReaderSession(
             chapterIndex >= ttsCurrentChapterIndex + 1
         ) {
             Timber.d("Auto-stop TTS: user on chapter $chapterIndex, TTS was on $ttsCurrentChapterIndex")
-            // Останавливаем, но НЕ перезаписываем позицию чтения на «видимый»
-            // пользователем элемент. forceResetState(видимый mid-абзац) затирала активный
-            // item, и при последующем resume/автопереходе чтение начиналось с середины
-            // новой главы, пропуская её Title и первый абзац. Остановка без сброса
-            // сохраняет позицию, и автопереход возобновляется с правильного места.
+            // Авто-остановка: позиция TTS сбрасывается к первому видимому элементу, чтобы
+            // следующий «Старт» начинал с него, а не со старой далёкой позиции (пауза на
+            // главе N, скролл на N+2 → озвучка шла с главы N). Сброс ставит валидный
+            // chapterIndex → isThereActiveItem остаётся true, isActive не гаснет и
+            // уведомление/мини-плеер TTS продолжают жить.
             readerTextToSpeech.stop()
+            readerTextToSpeech.forceResetState(
+                items.getOrNull(itemIndex) as? ReaderItem.Position
+            )
         }
 
         if (chapterIndex != lastChapterIndex) {
@@ -536,14 +521,22 @@ internal class ReaderSession(
         )
     }
 
-    private fun saveLastReadPositionStateSpeaker(item: ReaderItem.Position) {
+    /**
+     * Сохраняет позицию озвучки в репозиторий и возвращает построенный [ChapterState],
+     * чтобы вызывающая сторона (пауза TTS) могла зеркалить его в [currentChapter]
+     * без повторного построения.
+     */
+    private fun saveLastReadPositionStateSpeaker(item: ReaderItem.Position): ChapterState {
+        val chapterState = ChapterState(
+            chapterUrl = item.chapterUrl,
+            chapterItemPosition = item.chapterItemPosition,
+            offset = 0,
+            savedWithSplit = appPreferences.READER_SENTENCE_SPLITTING.value
+        )
         readerRepository.saveBookLastReadPositionState(
             bookUrl = bookUrl,
-            newChapter = ChapterState(
-                chapterUrl = item.chapterUrl,
-                chapterItemPosition = item.chapterItemPosition,
-                offset = 0
-            )
+            newChapter = chapterState
         )
+        return chapterState
     }
 }

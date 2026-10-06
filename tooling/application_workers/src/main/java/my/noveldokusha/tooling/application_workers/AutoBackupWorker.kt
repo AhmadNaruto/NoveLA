@@ -21,19 +21,25 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import my.noveldokusha.core.AppFileResolver
 import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.data.AppRepository
 import my.noveldokusha.data.CoverRepository
 import my.noveldokusha.data.backfillCovers
 import my.noveldokusha.feature.local_database.AppDatabase
+import my.noveldokusha.scraper.Scraper
+import my.noveldokusha.tooling.backup_create.BackupArchiveValidator
+import my.noveldokusha.tooling.backup_create.BackupValidationException
 import org.json.JSONObject
 import java.io.File
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.zip.ZipEntry
+import java.util.zip.ZipException
 import java.util.zip.ZipOutputStream
 
 class AutoBackupWorker(
@@ -49,6 +55,7 @@ class AutoBackupWorker(
         fun appPreferences(): AppPreferences
         fun appFileResolver(): AppFileResolver
         fun coverRepository(): CoverRepository
+        fun scraper(): Scraper
     }
 
     companion object {
@@ -223,6 +230,7 @@ class AutoBackupWorker(
         val appPreferences = entryPoint.appPreferences()
         val appFileResolver = entryPoint.appFileResolver()
         val coverRepository = entryPoint.coverRepository()
+        val scraper = entryPoint.scraper()
         Timber.d( "performAutoBackup: got dependencies via EntryPoint")
 
         val pattern = "yyyyMMdd_HHmmss"
@@ -246,40 +254,47 @@ class AutoBackupWorker(
         }
         Timber.d( "performAutoBackup: file created successfully")
 
-        // Step 1: clean non-library data
-        Timber.d( "performAutoBackup: clearing non-library data")
-        appRepository.settings.clearNonLibraryData()
-        Timber.d( "performAutoBackup: non-library data cleared")
-
-        // Step 2: verify source database integrity
-        val sourceIntegrity = appDatabase.integrityCheck()
-        if (sourceIntegrity != "ok") {
-            Timber.e( "performAutoBackup: Source database integrity check FAILED: $sourceIntegrity")
-            return false
-        }
-        Timber.d( "performAutoBackup: source database integrity OK")
-
-        // Step 3: VACUUM INTO temporary file
         val tempDbFile = File(ctx.cacheDir, "auto_backup_vacuum_into_${System.currentTimeMillis()}.db")
         try {
-            appDatabase.vacuumInto(tempDbFile.absolutePath)
-            Timber.d( "performAutoBackup: VACUUM INTO done, temp file size: ${tempDbFile.length()}")
+            // Step 1: clean non-library data
+            Timber.d( "performAutoBackup: clearing non-library data")
+            appRepository.settings.clearNonLibraryData()
+            Timber.d( "performAutoBackup: non-library data cleared")
+
+            // Step 2: verify source database integrity
+            val sourceIntegrity = appDatabase.integrityCheck()
+            if (sourceIntegrity != "ok") {
+                Timber.e( "performAutoBackup: Source database integrity check FAILED: $sourceIntegrity")
+                throw Exception("Source database integrity check failed: $sourceIntegrity")
+            }
+            Timber.d( "performAutoBackup: source database integrity OK")
+
+            // Step 3: VACUUM INTO temporary file
+            try {
+                appDatabase.vacuumInto(tempDbFile.absolutePath)
+                Timber.d( "performAutoBackup: VACUUM INTO done, temp file size: ${tempDbFile.length()}")
+            } catch (e: Exception) {
+                tempDbFile.delete()
+                throw e
+            }
+
+            // Step 4: verify snapshot integrity
+            val snapshotIntegrity = AppDatabase.checkFileIntegrity(ctx, tempDbFile.absolutePath)
+            if (snapshotIntegrity != "ok") {
+                tempDbFile.delete()
+                throw Exception("Auto backup snapshot integrity check failed: $snapshotIntegrity")
+            }
+            Timber.d( "performAutoBackup: snapshot integrity OK")
         } catch (e: Exception) {
-            tempDbFile.delete()
+            // The document was just created and is still empty: safe to remove
+            Timber.e(e, "performAutoBackup: Backup preparation failed, deleting document")
+            deleteBackupDocument(ctx, createUri)
             throw e
         }
 
-        // Step 4: verify snapshot integrity
-        val snapshotIntegrity = AppDatabase.checkFileIntegrity(ctx, tempDbFile.absolutePath)
-        if (snapshotIntegrity != "ok") {
-            tempDbFile.delete()
-            throw Exception("Auto backup snapshot integrity check failed: $snapshotIntegrity")
-        }
-        Timber.d( "performAutoBackup: snapshot integrity OK")
-
         Timber.d( "performAutoBackup: writing zip...")
         try {
-        ctx.contentResolver.openOutputStream(createUri)?.use { outputStream ->
+        ctx.contentResolver.openOutputStream(createUri, "wt")?.use { outputStream ->
             val zip = ZipOutputStream(outputStream)
 
             // Database
@@ -376,6 +391,7 @@ class AutoBackupWorker(
                                     put("replacement", rule.replacement)
                                     put("isEnabled", rule.isEnabled)
                                     put("description", rule.description)
+                                    put("wholeWordsOnly", rule.wholeWordsOnly)
                                 }
                             }
                         ))
@@ -387,6 +403,7 @@ class AutoBackupWorker(
                                         put("replacement", rule.replacement)
                                         put("isEnabled", rule.isEnabled)
                                         put("description", rule.description)
+                                        put("wholeWordsOnly", rule.wholeWordsOnly)
                                     }
                                 }))
                             }
@@ -429,9 +446,18 @@ class AutoBackupWorker(
                 // Best-effort: make sure local covers exist before we back them up,
                 // so the archive contains up-to-date artwork (idempotent, skips valid covers).
                 // Isolated so a single book's cover-sync failure cannot abort the whole backup.
+                // Ждём загрузки Lua-плагинов перед первым обращением к scraper:
+                // при холодном старте (WorkManager) loadedSourcesFlow ещё пуст и
+                // coverReferer не найдёт глобал рефера плагина. Таймаут не фейлит
+                // задачу: продолжаем с фолбэком.
+                try {
+                    withTimeout(30_000L) { scraper.awaitLoaded() }
+                } catch (e: Exception) {
+                    Timber.w(e, "performAutoBackup: timed out waiting for Lua sources, referer falls back")
+                }
                 try {
                     val books = appRepository.libraryBooks.getAllInLibrary()
-                    backfillCovers(books, appFileResolver, coverRepository)
+                    backfillCovers(books, appFileResolver, coverRepository, scraper)
                 } catch (e: Exception) {
                     Timber.e(e, "performAutoBackup: cover backfill failed, continuing backup")
                 }
@@ -471,10 +497,28 @@ class AutoBackupWorker(
             Timber.d( "performAutoBackup: zip closed")
         } ?: run {
             Timber.e( "performAutoBackup: FAILED to open output stream")
+            deleteBackupDocument(ctx, createUri)
             return false
         }
+        } catch (e: Exception) {
+            // Remove the partially written document, then propagate to doWork
+            Timber.e(e, "performAutoBackup: Backup failed, deleting partial document")
+            deleteBackupDocument(ctx, createUri)
+            throw e
         } finally {
             tempDbFile.delete()
+        }
+
+        try {
+            validateBackupArchive(ctx, createUri)
+        } catch (e: Exception) {
+            if (e is BackupValidationException || e is ZipException) {
+                Timber.e(e, "performAutoBackup: Backup archive rejected, deleting document")
+                deleteBackupDocument(ctx, createUri)
+            } else {
+                Timber.e(e, "performAutoBackup: Verification failed with infrastructure error, keeping document")
+            }
+            throw e
         }
 
         try {
@@ -487,6 +531,26 @@ class AutoBackupWorker(
         appPreferences.BACKUP_AUTO_LAST_TIMESTAMP.value = System.currentTimeMillis()
         Timber.d( "performAutoBackup: COMPLETED successfully")
         return true
+    }
+
+    /**
+     * Verifies the finished backup archive at [uri]. Throws
+     * [BackupValidationException] or [ZipException] when the archive is
+     * rejected and the document must be deleted; any other exception is an
+     * infrastructure failure and the document must be kept.
+     */
+    private fun validateBackupArchive(ctx: Context, uri: Uri) {
+        val input = ctx.contentResolver.openInputStream(uri)
+            ?: throw IOException("Cannot open backup document for validation")
+        input.use { stream -> BackupArchiveValidator.validate(stream) }
+    }
+
+    private fun deleteBackupDocument(ctx: Context, uri: Uri) {
+        try {
+            ctx.contentResolver.delete(uri, null, null)
+        } catch (e: Exception) {
+            Timber.e(e, "performAutoBackup: Failed to delete backup document")
+        }
     }
 
     private fun rotateAutoBackups(ctx: Context, directoryUri: String, maxCount: Int) {

@@ -22,16 +22,20 @@ import kotlin.math.max
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import my.noveldokusha.core.AppFileResolver
 import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.core.isCoverValid
 import my.noveldokusha.core.isHttpsUrl
+import my.noveldokusha.core.isLocalUri
+import my.noveldokusha.network.NetworkClient
 import my.noveldokusha.coreui.states.NotificationsCenter
 import my.noveldokusha.data.CoverRepository
 import my.noveldokusha.epub_tooling.exportStreaming
 import my.noveldokusha.feature.local_database.AppDatabase
 import my.noveldokusha.feature.local_database.tables.Book
 import my.noveldokusha.feature.local_database.tables.Chapter
+import my.noveldokusha.scraper.Scraper
 import my.noveldokusha.strings.R as StringsR
 import org.json.JSONArray
 import timber.log.Timber
@@ -63,6 +67,8 @@ class BookExportWorker(
         fun notificationsCenter(): NotificationsCenter
         fun appFileResolver(): AppFileResolver
         fun coverRepository(): CoverRepository
+        fun networkClient(): NetworkClient
+        fun scraper(): Scraper
     }
 
     companion object {
@@ -139,6 +145,8 @@ class BookExportWorker(
         val notificationsCenter = entryPoint.notificationsCenter()
         val appFileResolver = entryPoint.appFileResolver()
         val coverRepository = entryPoint.coverRepository()
+        val networkClient = entryPoint.networkClient()
+        val scraper = entryPoint.scraper()
 
         val bookUrl = inputData.getString(KEY_BOOK_URL) ?: return Result.failure()
         val bookTitle = inputData.getString(KEY_BOOK_TITLE) ?: return Result.failure()
@@ -252,7 +260,16 @@ class BookExportWorker(
         // если кэша нет, но есть remote-URL). Автора локально не храним.
         val book = appDatabase.libraryDao().get(bookUrl)
         val description = book?.description?.takeIf { it.isNotBlank() }
-        val coverBytes = loadCoverBytes(book, appFileResolver, coverRepository)
+        // Ждём загрузки Lua-плагинов перед первым обращением к scraper:
+        // при холодном старте (WorkManager) loadedSourcesFlow ещё пуст и
+        // coverReferer/getCompatibleSource не найдут глобал рефера плагина.
+        // Таймаут не фейлит задачу: обложка/экспорт важнее идеального рефера.
+        try {
+            withTimeout(30_000L) { scraper.awaitLoaded() }
+        } catch (e: Exception) {
+            Timber.w(e, "BookExport: timed out waiting for Lua sources, referer falls back")
+        }
+        val coverBytes = loadCoverBytes(book, appFileResolver, coverRepository, scraper)
 
         try {
             // openOutputStream — блокирующий SAF-вызов, выполняем на Dispatchers.IO.
@@ -276,7 +293,53 @@ class BookExportWorker(
                         loadChapterBatch(appDatabase, chapters, offset, count, exportMode, sourceLang, targetLang)
                     },
                     coverBytes,
-                    description
+                    description,
+                    // Картинки глав. Для локальных/импортированных книг файлы
+                    // лежат в storage-папке книги (src — относительный путь).
+                    // Для сетевых книг байтов нет — src это абсолютный URL,
+                    // который ридер грузит по сети; при экспорте скачиваем
+                    // картинку, чтобы EPUB был автономным. Сбой загрузки не
+                    // валит экспорт: src остаётся в XHTML как есть.
+                    { src ->
+                        // Локальные/импортированные книги: файл лежит в storage-папке.
+                        // Вся лямбда в try: битый/небезопасный src (require в
+                        // getStorageBookImageFile) не должен ронять экспорт книги —
+                        // картинка просто не вшивается, src остаётся в XHTML.
+                        try {
+                            val localFile = if (bookUrl.isLocalUri) {
+                                appFileResolver.getStorageBookImageFile(
+                                    appFileResolver.getLocalBookFolderName(bookUrl),
+                                    src
+                                ).takeIf { it.exists() && it.length() > 0L }
+                            } else {
+                                null
+                            }
+                            localFile?.readBytes() ?: if (src.isHttpsUrl) {
+                                // Сетевые книги: src — абсолютный URL, байтов локально
+                                // нет, скачиваем при экспорте (EPUB должен быть автономным).
+                                // Рефер: глобал плагина referer приоритетнее,
+                                // иначе — прежнее поведение (URL страницы книги).
+                                val referer = scraper.getCompatibleSource(bookUrl)?.referer
+                                    ?.takeIf { it.isNotBlank() } ?: bookUrl
+                                networkClient.getWithHeaders(
+                                    src,
+                                    mapOf("Referer" to referer)
+                                ).use { response ->
+                                    if (!response.isSuccessful) null else {
+                                        val bytes = response.body?.bytes()
+                                        bytes?.takeIf { it.isNotEmpty() }
+                                    }
+                                }
+                            } else {
+                                null
+                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            // Сеть недоступна/картинка мертва — src останется в XHTML.
+                            null
+                        }
+                    }
                 ) { done, _ ->
                     lastProgress = done
                     // Троттлинг по времени: notify() на каждые 5 глав при быстром
@@ -382,6 +445,7 @@ class BookExportWorker(
         book: Book?,
         appFileResolver: AppFileResolver,
         coverRepository: CoverRepository,
+        scraper: Scraper,
     ): ByteArray? = book?.let { b ->
         val coverFile = appFileResolver.getStorageBookCoverImageFile(
             appFileResolver.getLocalBookFolderName(b.url)
@@ -390,7 +454,11 @@ class BookExportWorker(
             if (isCoverValid(coverFile)) {
                 coverFile.readBytes()
             } else {
-                coverRepository.ensureCover(coverFile, b.coverImageUrl.takeIf { it.isHttpsUrl })
+                coverRepository.ensureCover(
+                    coverFile,
+                    b.coverImageUrl.takeIf { it.isHttpsUrl },
+                    referer = scraper.coverReferer(b.url),
+                )
                 if (isCoverValid(coverFile)) coverFile.readBytes() else null
             }
         }

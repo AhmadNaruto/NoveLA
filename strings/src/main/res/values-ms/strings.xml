@@ -79,6 +79,7 @@
     <string name="filter">Tapis</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Novel</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">Semua</string>
     <string name="read">Baca</string>
     <string name="sort">Susun</string>
@@ -410,6 +411,7 @@
     <string name="invalid_regex_pattern_with">Corak regex tidak sah: %s</string>
     <string name="regex_cleanup_title">Regex</string>
     <string name="enabled">Diaktifkan</string>
+    <string name="whole_words_only">Kata penuh sahaja</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">Terakhir dibaca</string>
@@ -539,6 +541,10 @@
     <string name="cleaning_manga_cache">Mengosongkan manga offline…</string>
     <string name="manga_cache_cleaned">Manga offline dikosongkan</string>
     <string name="manga_cache_clean_failed">Gagal mengosongkan manga offline</string>
+    <string name="clean_offline_video">Padam video offline</string>
+    <string name="clean_offline_video_confirmation">Ini akan memadamkan video yang dimuat turun. Untuk menonton secara offline, video perlu dimuat turun semula.</string>
+    <string name="cleaning_offline_video">Memadamkan video offline…</string>
+    <string name="offline_video_clean_failed">Gagal memadamkan video offline</string>
     <string name="all_sources">Semua sumber</string>
     <string name="reset_filters">Set semula</string>
 
@@ -833,4 +839,55 @@
     <string name="github_repository">Repositori GitHub</string>
     <string name="report_issue">Laporkan masalah</string>
     <string name="report_issue_description">Cipta laporan bug di GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Mendapatkan sumber…</string>
+    <string name="video_open_in_other">Buka dalam aplikasi lain</string>
+    <string name="video_no_app_to_play">Tiada aplikasi untuk memainkan video ini</string>
+    <string name="video_playback_error">Ralat pemutaran</string>
+    <string name="video_playback_error_codec">Codec peranti tidak dapat mentafsir strim ini</string>
+    <string name="video_playback_error_source">Sumber tidak tersedia: masalah pelayan atau fail rosak</string>
+    <string name="video_variant_badge_dead">Tidak tersedia</string>
+    <string name="video_quality">Kualiti</string>
+    <string name="video_sources_not_found">Sumber tidak dijumpai</string>
+    <string name="video_source_not_found">Sumber tidak dijumpai</string>
+    <string name="video_source_no_video">Sumber tidak menyokong video</string>
+    <string name="video_translate_unavailable">Terjemahan tidak tersedia untuk video</string>
+    <string name="video_resolution">Resolusi</string>
+    <string name="video_voiceover">Suara latar</string>
+    <string name="video_variant_title">Pilih varian</string>
+    <string name="video_variant_fallback">Varian %1$d</string>
+    <string name="video_settings_title">Tetapan</string>
+    <string name="video_playback_speed">Kelajuan</string>
+    <string name="video_audio_track">Trek audio</string>
+    <string name="video_subtitles">Sarikata</string>
+    <string name="video_subtitles_none">Tiada sarikata</string>
+    <string name="video_subtitles_off">Mati</string>
+    <string name="video_keep_screen_on">Kekalkan skrin menyala</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Pemutaran</string>
+    <string name="video_section_video">Video</string>
+    <string name="video_section_gestures">Gerakan</string>
+    <string name="video_section_audio">Audio</string>
+    <string name="video_section_subtitles">Sarikata</string>
+    <string name="video_section_screen">Skrin</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Langkah lompat</string>
+    <string name="video_seconds_value">%1$d saat</string>
+    <string name="video_controller_auto_hide">Sembunyi kawalan secara automatik</string>
+    <string name="video_auto_hide_never">Tidak pernah</string>
+    <string name="video_variant">Varian</string>
+    <string name="video_gesture_double_tap">Ketik dua kali untuk melangkah</string>
+    <string name="video_gesture_vertical_swipe">Geser menegak: volume dan kecerahan</string>
+    <string name="video_gesture_long_press">Tekan lama untuk kelajuan 2×</string>
+    <string name="video_gesture_swap_sides">Tukar bahagian skrin</string>
+    <string name="video_gesture_sensitivity">Sensitiviti geser</string>
+    <string name="video_subtitle_track">Trek sarikata</string>
+    <string name="failed_to_restore_backup_incomplete">Fail sandaran tidak lengkap atau rosak</string>
+    <string name="failed_to_restore_backup_too_short">Fail sandaran kosong atau terlalu pendek</string>
+    <string name="failed_to_restore_backup_empty_archive">Arkib sandaran kosong</string>
+    <string name="failed_to_restore_backup_missing_database">Arkib sandaran tiada pangkalan data</string>
+    <string name="failed_to_restore_error">Ralat pemulihan: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Format fail sandaran tidak sah. Dijangka fail ZIP</string>
+    <string name="failed_to_restore_read_error">Gagal membaca fail sandaran: %1$s</string>
 </resources>

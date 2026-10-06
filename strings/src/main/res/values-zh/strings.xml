@@ -79,6 +79,7 @@
     <string name="filter">筛选</string>
     <string name="content_type_manga">漫画</string>
     <string name="content_type_novel">小说</string>
+    <string name="content_type_video">视频</string>
     <string name="filter_all">全部</string>
     <string name="read">阅读</string>
     <string name="sort">排序</string>
@@ -410,6 +411,7 @@
     <string name="invalid_regex_pattern_with">无效的正则表达式模式：%s</string>
     <string name="regex_cleanup_title">正则表达式</string>
     <string name="enabled">已启用</string>
+    <string name="whole_words_only">仅匹配完整单词</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">上次阅读</string>
@@ -539,6 +541,10 @@
     <string name="cleaning_manga_cache">正在清除离线漫画…</string>
     <string name="manga_cache_cleaned">离线漫画已清除</string>
     <string name="manga_cache_clean_failed">清除离线漫画失败</string>
+    <string name="clean_offline_video">删除离线视频</string>
+    <string name="clean_offline_video_confirmation">将删除已下载的视频。离线观看需要重新下载。</string>
+    <string name="cleaning_offline_video">正在删除离线视频…</string>
+    <string name="offline_video_clean_failed">删除离线视频失败</string>
     <string name="all_sources">所有来源</string>
     <string name="reset_filters">重置</string>
 
@@ -845,4 +851,55 @@
     <string name="github_repository">GitHub 仓库</string>
     <string name="report_issue">报告问题</string>
     <string name="report_issue_description">在 GitHub 上创建错误报告</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">正在获取来源…</string>
+    <string name="video_open_in_other">在其他应用中打开</string>
+    <string name="video_no_app_to_play">没有可播放此视频的应用</string>
+    <string name="video_playback_error">播放错误</string>
+    <string name="video_playback_error_codec">设备编解码器无法解码此流</string>
+    <string name="video_playback_error_source">来源不可用：服务器问题或文件损坏</string>
+    <string name="video_variant_badge_dead">不可用</string>
+    <string name="video_quality">画质</string>
+    <string name="video_sources_not_found">未找到来源</string>
+    <string name="video_source_not_found">未找到来源</string>
+    <string name="video_source_no_video">来源不支持视频</string>
+    <string name="video_translate_unavailable">视频不支持翻译</string>
+    <string name="video_resolution">分辨率</string>
+    <string name="video_voiceover">配音</string>
+    <string name="video_variant_title">选择版本</string>
+    <string name="video_variant_fallback">版本 %1$d</string>
+    <string name="video_settings_title">设置</string>
+    <string name="video_playback_speed">速度</string>
+    <string name="video_audio_track">音轨</string>
+    <string name="video_subtitles">字幕</string>
+    <string name="video_subtitles_none">无字幕</string>
+    <string name="video_subtitles_off">关闭</string>
+    <string name="video_keep_screen_on">保持屏幕常亮</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">播放</string>
+    <string name="video_section_video">视频</string>
+    <string name="video_section_gestures">手势</string>
+    <string name="video_section_audio">音频</string>
+    <string name="video_section_subtitles">字幕</string>
+    <string name="video_section_screen">屏幕</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">拖动步长</string>
+    <string name="video_seconds_value">%1$d 秒</string>
+    <string name="video_controller_auto_hide">自动隐藏控制栏</string>
+    <string name="video_auto_hide_never">从不</string>
+    <string name="video_variant">版本</string>
+    <string name="video_gesture_double_tap">双击快进</string>
+    <string name="video_gesture_vertical_swipe">上下滑动：音量和亮度</string>
+    <string name="video_gesture_long_press">长按 2 倍速</string>
+    <string name="video_gesture_swap_sides">交换屏幕左右两半</string>
+    <string name="video_gesture_sensitivity">滑动灵敏度</string>
+    <string name="video_subtitle_track">字幕轨道</string>
+    <string name="failed_to_restore_backup_incomplete">备份文件不完整或已损坏</string>
+    <string name="failed_to_restore_backup_too_short">备份文件为空或过短</string>
+    <string name="failed_to_restore_backup_empty_archive">备份压缩包为空</string>
+    <string name="failed_to_restore_backup_missing_database">备份压缩包中没有数据库</string>
+    <string name="failed_to_restore_error">恢复错误：%1$s</string>
+    <string name="failed_to_restore_invalid_format">备份文件格式无效。应为 ZIP 文件</string>
+    <string name="failed_to_restore_read_error">读取备份文件失败：%1$s</string>
 </resources>

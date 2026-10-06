@@ -2,6 +2,8 @@ package my.noveldokusha.scraper
 
 import android.content.Context
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.luaj.vm2.LuaTable
 import org.mockito.kotlin.mock
@@ -67,5 +69,25 @@ class LuaSourceAdapterContentTypeTest {
             it.set("url", "http://example.com/book")
         }
         assertEquals("", a.convertLuaTableToBookResult(bookTable).contentType)
+    }
+
+    @Test
+    fun `content_type video maps to video in metadata`() {
+        assertEquals("video", adapter("content_type = 'video'").extractMetadata().contentType)
+    }
+
+    @Test
+    fun `video required functions include getVideoList not getChapterText`() {
+        val required = adapter("content_type = 'video'").requiredLuaFunctions("video")
+        assertTrue("getVideoList" in required)
+        assertFalse("getChapterText" in required)
+        assertTrue("getChapterList" in required) // эпизоды — по-прежнему обязателен
+    }
+
+    @Test
+    fun `novel required functions keep getChapterText`() {
+        val required = adapter("").requiredLuaFunctions("")
+        assertTrue("getChapterText" in required)
+        assertFalse("getVideoList" in required)
     }
 }

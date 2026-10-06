@@ -57,6 +57,9 @@ interface ChapterDao {
     @Query("UPDATE Chapter SET read = :read WHERE url = :chapterUrl")
     suspend fun setAsRead(chapterUrl: String, read: Boolean)
 
+    @Query("UPDATE Chapter SET videoPositionMs = :positionMs, videoDurationMs = :durationMs WHERE url = :chapterUrl")
+    suspend fun updateVideoPosition(chapterUrl: String, positionMs: Long, durationMs: Long)
+
     @Query("UPDATE Chapter SET read = 1 WHERE bookUrl = :bookUrl")
     suspend fun setAllAsReadByBookUrl(bookUrl: String)
 

@@ -7,6 +7,7 @@ import my.noveldokusha.core.PagedList
 import my.noveldokusha.core.Response
 import my.noveldokusha.scraper.domain.BookResult
 import my.noveldokusha.scraper.domain.ChapterResult
+import my.noveldokusha.scraper.domain.VideoSource
 import org.jsoup.nodes.Document
 
 sealed interface SourceInterface {
@@ -34,6 +35,13 @@ sealed interface SourceInterface {
      */
     val contentType: String get() = ""
 
+    /**
+     * Готовое значение заголовка Referer для картинок (коверов) этого источника.
+     * Для Lua-плагинов — глобальная переменная referer в корне скрипта,
+     * например "https://site.com/". "" = не указано → авто-рефер от URL картинки.
+     */
+    val referer: String get() = ""
+
     fun resolveName(context: android.content.Context): String =
         name ?: if (nameStrId != 0) context.getString(nameStrId) else "Unknown"
     suspend fun transformChapterUrl(url: String): String = url
@@ -47,6 +55,13 @@ sealed interface SourceInterface {
      * fall back to the legacy HTML [getChapterText] path.
      */
     suspend fun getChapterPages(doc: Document): List<String>? = null
+
+    /**
+     * Видеопотоки эпизода (content_type = "video"). Реализуется Lua через
+     * getVideoList(episodeUrl). null → плагин не объявил метод (не видео-источник).
+     * Пустой список Success — объявил, но потоки не найдены (UI: «Источники не найдены»).
+     */
+    suspend fun getVideoList(episodeUrl: String): Response<List<VideoSource>>? = null
 
     interface Base : SourceInterface
     interface Catalog : SourceInterface {

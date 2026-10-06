@@ -35,6 +35,13 @@
     <string name="failed_to_make_backup">Failed to make backup</string>
     <string name="failed_to_restore_cant_access_file">Failed to restore, can\'t access file</string>
     <string name="failed_to_restore_invalid_backup_database">Failed to restore, invalid backup database</string>
+    <string name="failed_to_restore_backup_incomplete">Backup file is incomplete or corrupted</string>
+    <string name="failed_to_restore_backup_too_short">Backup file is empty or too short</string>
+    <string name="failed_to_restore_backup_empty_archive">Backup archive is empty</string>
+    <string name="failed_to_restore_backup_missing_database">Backup archive contains no database</string>
+    <string name="failed_to_restore_error">Restore error: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Invalid backup file format. Expected ZIP file</string>
+    <string name="failed_to_restore_read_error">Failed to read backup file: %1$s</string>
     <string name="database_restored">Database restored</string>
     <string name="web_view_not_available">Web view not available</string>
     <string name="invalid_URL">Invalid URL</string>
@@ -83,6 +90,7 @@
     <string name="filter">Filter</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Novel</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">All</string>
     <string name="read">Read</string>
     <string name="type">Type</string>
@@ -402,6 +410,7 @@
     <string name="notification_channel_name_import_epub">Import book</string>
     <string name="notification_channel_name_restore_backup">Restore backup</string>
     <string name="notification_channel_name_app_updates_checker">Updates checker</string>
+    <string name="notification_channel_name_video_downloads_paused">Video downloads paused</string>
     <string name="new_app_version_available">New app version available</string>
     <string name="backup_restored">Backup restored</string>
     <string name="keep_screen_on">Keep screen on</string>
@@ -426,6 +435,7 @@
     <string name="single_tap_to_open_settings">Single tap to open menu</string>
     <string name="source_name_local">Local EPUB/FB2</string>
     <string name="source_name_local_manga">Local CBZ</string>
+    <string name="source_not_found">Source not found</string>
 
     <string name="delete_novel">Delete novel</string>
     <string name="delete_book_translations">Delete all translations for this book</string>
@@ -483,6 +493,7 @@
     <string name="invalid_regex_pattern_with">Invalid regex pattern: %s</string>
     <string name="regex_cleanup_title">Regex</string>
     <string name="enabled">Enabled</string>
+    <string name="whole_words_only">Whole words only</string>
     <string name="regex_cleanup_novel_rules">Regex rules (this novel)</string>
     <string name="regex_cleanup_novel_title_format">Novel: %s</string>
     <string name="regex_cleanup_move_to_global">Move to global</string>
@@ -625,6 +636,10 @@
     <string name="cleaning_manga_cache">Clearing offline manga…</string>
     <string name="manga_cache_cleaned">Offline manga cleared</string>
     <string name="manga_cache_clean_failed">Failed to clear offline manga</string>
+    <string name="clean_offline_video">Delete offline videos</string>
+    <string name="clean_offline_video_confirmation">This will remove downloaded videos. You will need to download them again for offline viewing.</string>
+    <string name="cleaning_offline_video">Deleting offline videos…</string>
+    <string name="offline_video_clean_failed">Failed to delete offline videos</string>
     <string name="all_sources">All sources</string>
     <string name="reset_filters">Reset</string>
 
@@ -730,6 +745,7 @@
     <string name="retry">Retry</string>
     <string name="top">↑ Top</string>
     <string name="copy">Copy</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="paste">Paste</string>
     <string name="clear">Clear</string>
     <string name="no_extensions_available">No extensions available</string>
@@ -856,4 +872,47 @@
     <string name="report_issue">Report an issue</string>
     <string name="report_issue_description">Create a bug report on GitHub</string>
 
+    <!-- Video player -->
+    <string name="video_loading_sources">Getting sources…</string>
+    <string name="video_open_in_other">Open in another app</string>
+    <string name="video_no_app_to_play">No app available to play this video</string>
+    <string name="video_quality">Quality</string>
+    <string name="video_resolution">Resolution</string>
+    <string name="video_voiceover">Voiceover</string>
+    <string name="video_variant_title">Select variant</string>
+    <string name="video_variant_fallback">Variant %1$d</string>
+    <string name="video_sources_not_found">Sources not found</string>
+    <string name="video_source_not_found">Source not found</string>
+    <string name="video_source_no_video">Source does not support video</string>
+    <string name="video_translate_unavailable">Translation is not available for video</string>
+    <string name="video_settings_title">Settings</string>
+    <string name="video_playback_error">Playback error</string>
+    <string name="video_playback_error_codec">Device codecs cannot decode this stream</string>
+    <string name="video_playback_error_source">Source unavailable: server problem or damaged file</string>
+    <string name="video_variant_badge_dead">Unavailable</string>
+    <string name="video_playback_speed">Speed</string>
+    <string name="video_audio_track">Audio track</string>
+    <string name="video_subtitles">Subtitles</string>
+    <string name="video_subtitles_none">No subtitles</string>
+    <string name="video_subtitles_off">Off</string>
+    <string name="video_keep_screen_on">Keep screen on</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Playback</string>
+    <string name="video_section_video">Video</string>
+    <string name="video_section_gestures">Gestures</string>
+    <string name="video_section_audio">Audio</string>
+    <string name="video_section_subtitles">Subtitles</string>
+    <string name="video_section_screen">Screen</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Seek step</string>
+    <string name="video_seconds_value">%1$d s</string>
+    <string name="video_controller_auto_hide">Auto-hide controls</string>
+    <string name="video_auto_hide_never">Never</string>
+    <string name="video_variant">Variant</string>
+    <string name="video_gesture_double_tap">Double-tap to seek</string>
+    <string name="video_gesture_vertical_swipe">Vertical swipe: volume and brightness</string>
+    <string name="video_gesture_long_press">Long press for 2× speed</string>
+    <string name="video_gesture_swap_sides">Swap screen halves</string>
+    <string name="video_gesture_sensitivity">Swipe sensitivity</string>
+    <string name="video_subtitle_track">Subtitle track</string>
 </resources>

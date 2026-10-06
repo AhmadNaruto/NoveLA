@@ -9,10 +9,15 @@ import android.util.Log
 import androidx.work.Configuration as WorkConfiguration
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import coil3.annotation.ExperimentalCoilApi
+import coil3.network.CacheStrategy
+import coil3.network.NetworkRequest
+import coil3.network.NetworkResponse
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.Options
 import coil3.request.crossfade
 import coil3.request.allowHardware
 import coil3.request.allowRgb565
-import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import okio.Path.Companion.toPath
 import dagger.hilt.EntryPoints
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +26,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import dagger.hilt.android.HiltAndroidApp
+import my.noveldokusha.core.AppCacheConfig
 import my.noveldokusha.core.LocaleManager
 import my.noveldokusha.core.appPreferences.AppLanguage
 import my.noveldokusha.core.appPreferences.AppLanguageProvider
@@ -76,16 +82,38 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
         // File tree for log export — all build types
         val logFile = File(filesDir, "logs/app.log")
         Timber.plant(FileTree(logFile))
+
+        // Заголовок сессии: к какому билду относится лог.
+        // Пишем напрямую в файл — Timber.i вырезается R8 из релизного dex.
+        runCatching {
+            val buildType = if (BuildConfig.DEBUG) "debug" else "release"
+            logFile.appendText(
+                "=== ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())} " +
+                    "app start ${BuildConfig.VERSION_NAME}-$buildType (${BuildConfig.GIT_COMMIT_HASH}) " +
+                    "API${Build.VERSION.SDK_INT} ${Build.MANUFACTURER} ${Build.MODEL} ===\n"
+            )
+        }
+
+        // Ловим незахваченные исключения: пишем краш в app.log перед смертью процесса
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                Timber.e(throwable, "FATAL uncaught on ${thread.name}")
+            } catch (_: Exception) {
+                // логирование не должно помешать дефолтному обработчику
+            }
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
     }
 
     override fun newImageLoader(context: Context): ImageLoader {
         val diskCache = coil3.disk.DiskCache.Builder()
-            .directory("${context.cacheDir.absolutePath}/image_cache".toPath())
-            .maxSizeBytes(100 * 1024 * 1024) // 100 MB
+            .directory("${context.cacheDir.absolutePath}/${AppCacheConfig.IMAGE_DISK_CACHE_DIR}".toPath())
+            .maxSizeBytes(AppCacheConfig.IMAGE_DISK_CACHE_BYTES)
             .build()
 
         val memoryCache = coil3.memory.MemoryCache.Builder()
-            .maxSizePercent(context, 0.25) // ponytail: 25% — стандарт для сетевых грид-приложений (Mihon=20%, Coil Sample=25%)
+            .maxSizePercent(context, AppCacheConfig.IMAGE_MEMORY_CACHE_PERCENT) // ponytail: 25% — стандарт для сетевых грид-приложений (Mihon=20%, Coil Sample=25%)
             .build()
 
         val animatorDurationScale = Settings.System.getFloat(
@@ -101,14 +129,19 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
             .memoryCache(memoryCache)
             .diskCache(diskCache)
             .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
-            .crossfade((300 * animatorDurationScale).toInt())
-            .allowHardware(true)
-            .allowRgb565(true) // RGB_565: 2 байта/пиксель вместо 4 — вдвое больше обложек в кеше
+            .crossfade((AppCacheConfig.IMAGE_CROSSFADE_MS * animatorDurationScale).toInt())
+            .allowHardware(AppCacheConfig.IMAGE_HARDWARE_BITMAPS)
+            .allowRgb565(AppCacheConfig.IMAGE_RGB565) // RGB_565: 2 байта/пиксель вместо 4 — вдвое больше обложек в кеше
 
         return when (val networkClient = networkClient) {
             is ScraperNetworkClient -> sharedBuilder
                 .components {
-                    add(OkHttpNetworkFetcherFactory(callFactory = { networkClient.client }))
+                    add(
+                        OkHttpNetworkFetcherFactory(
+                            callFactory = { networkClient.client },
+                            cacheStrategy = { RevalidatingCacheStrategy },
+                        )
+                    )
                 }
                 .build()
 
@@ -149,5 +182,41 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
             .setMinimumLoggingLevel(if (BuildConfig.DEBUG) Log.DEBUG else Log.INFO)
             .setWorkerFactory(appWorkerFactory)
             .build()
+    }
+}
+
+// Стратегия дискового кэша Coil: не отдаём из кэша ошибки и не кэшируем их.
+// Дефолтная стратегия кэширует 404 по RFC и всегда читает кэш без проверки
+// свежести — «отравленная» запись живёт до LRU-эвикции, ретрай бесполезен.
+// Пригодность кода задаёт AppCacheConfig.isCacheableStatus (там же и правило).
+// Проверено на устройстве: 404 от 30.09 в image_cache для aniliberty.png.
+@OptIn(ExperimentalCoilApi::class)
+private object RevalidatingCacheStrategy : CacheStrategy {
+    override suspend fun read(
+        cacheResponse: NetworkResponse,
+        networkRequest: NetworkRequest,
+        options: Options,
+    ): CacheStrategy.ReadResult {
+        // Пригодный для кэша ответ отдаём как есть, ошибку — всегда в сеть.
+        return if (AppCacheConfig.isCacheableStatus(cacheResponse.code)) {
+            CacheStrategy.ReadResult(cacheResponse)
+        } else {
+            CacheStrategy.ReadResult(networkRequest)
+        }
+    }
+
+    override suspend fun write(
+        cacheResponse: NetworkResponse?,
+        networkRequest: NetworkRequest,
+        networkResponse: NetworkResponse,
+        options: Options,
+    ): CacheStrategy.WriteResult {
+        // Кэшируем только пригодные коды: тело «404: Not Found» не декодируется
+        // как картинка и только отравляет кэш.
+        return if (AppCacheConfig.isCacheableStatus(networkResponse.code)) {
+            CacheStrategy.WriteResult(networkResponse)
+        } else {
+            CacheStrategy.WriteResult.DISABLED
+        }
     }
 }

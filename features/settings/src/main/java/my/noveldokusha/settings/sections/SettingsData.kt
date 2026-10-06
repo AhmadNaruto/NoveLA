@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DataArray
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.VideoFile
 import androidx.compose.material.icons.automirrored.outlined.TextSnippet
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -26,14 +27,17 @@ internal fun SettingsData(
     imagesFolderSize: String,
     novelCacheSize: String,
     mangaCacheSize: String,
+    offlineVideoSize: String,
     isCleaningDatabase: Boolean,
     isCleaningImages: Boolean,
     isCleaningNovelCache: Boolean,
     isCleaningMangaCache: Boolean,
+    isCleaningOfflineVideo: Boolean,
     onRequestCleanDatabase: () -> Unit,
     onRequestCleanImageFolder: () -> Unit,
     onRequestCleanNovelCache: () -> Unit,
     onRequestCleanMangaCache: () -> Unit,
+    onRequestCleanOfflineVideo: () -> Unit,
 ) {
     Column {
         Text(
@@ -125,6 +129,27 @@ internal fun SettingsData(
                 }
             },
             modifier = Modifier.clickable(enabled = !isCleaningMangaCache) { onRequestCleanMangaCache() }
+        )
+        SlimListItem(
+            headlineContent = {
+                Text(text = stringResource(R.string.clean_offline_video))
+            },
+            supportingContent = {
+                Column {
+                    Text(text = stringResource(id = R.string.size) + " " + offlineVideoSize)
+                }
+            },
+            leadingContent = {
+                if (isCleaningOfflineVideo) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(Icons.Outlined.VideoFile, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            modifier = Modifier.clickable(enabled = !isCleaningOfflineVideo) { onRequestCleanOfflineVideo() }
         )
     }
 }

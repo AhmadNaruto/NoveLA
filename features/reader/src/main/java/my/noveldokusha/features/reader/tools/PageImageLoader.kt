@@ -16,6 +16,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import my.noveldokusha.core.AppCacheConfig
 import my.noveldokusha.core.addLocalUriPrefix
 import my.noveldokusha.core.utils.refererFor
 import my.noveldokusha.data.DownloadedPageChaptersStore
@@ -51,8 +52,8 @@ class PageImageLoader @Inject constructor(
     private val downloadedPageChaptersStore: DownloadedPageChaptersStore,
 ) {
     companion object {
-        private const val MAX_CACHE_BYTES = 256L * 1024 * 1024 // 256 MB
-        private const val CACHE_DIR = "page_images"
+        private const val MAX_CACHE_BYTES = AppCacheConfig.PAGE_IMAGES_CACHE_BYTES
+        private const val CACHE_DIR = AppCacheConfig.PAGE_IMAGES_CACHE_DIR
         private const val CBZ_SCHEME = "cbz://"
         private const val PREFETCH_PARALLELISM = 6
         private const val MAX_OPEN_ZIP_FILES = 3

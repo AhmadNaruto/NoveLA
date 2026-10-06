@@ -11,14 +11,18 @@ import my.noveldokusha.data.ScraperRepository
 enum class ReaderType {
     NOVEL,
     MANGA,
+    VIDEO,
 }
 
 /**
  * Чистая функция маршрутизации по метке contentType.
- * Единственная метка манги — "manga"; всё остальное (включая null и "") — новелла.
+ * "manga" → MANGA, "video" → VIDEO; всё остальное (включая null и "") — новелла.
  */
-fun resolveReaderType(contentType: String?): ReaderType =
-    if (contentType == "manga") ReaderType.MANGA else ReaderType.NOVEL
+fun resolveReaderType(contentType: String?): ReaderType = when (contentType) {
+    "manga" -> ReaderType.MANGA
+    "video" -> ReaderType.VIDEO
+    else -> ReaderType.NOVEL
+}
 
 /**
  * Решение гейта ридера по сохранённому в БД contentType книги — БЕЗ сетевого probe.

@@ -25,6 +25,7 @@ class CoverRepository @Inject constructor(
     suspend fun ensureCover(
         coverFile: File,
         remoteUrl: String?,
+        referer: String? = null,
     ): Boolean = withContext(Dispatchers.IO) {
         if (remoteUrl.isNullOrBlank() || !remoteUrl.isHttpsUrl) return@withContext false
         if (isCoverValid(coverFile)) return@withContext true
@@ -36,9 +37,12 @@ class CoverRepository @Inject constructor(
             val maxAttempts = 3
             for (attempt in 1..maxAttempts) {
                 val bytes = try {
-                    // Пустой Referer недопустим: isHttpsUrl — лишь префиксная проверка,
-                    // поэтому для некорректного URL (например "https://") refererFor вернёт "".
-                    val headers = refererFor(remoteUrl).takeIf { it.isNotEmpty() }
+                    // Явно переданный referer (со страницы книги) важнее same-origin
+                    // от URL картинки. Пустой Referer недопустим: isHttpsUrl — лишь
+                    // префиксная проверка, поэтому для некорректного URL (например
+                    // "https://") refererFor вернёт "" — заголовок не добавляем.
+                    val headers = (referer?.takeIf { it.isNotBlank() } ?: refererFor(remoteUrl))
+                        .takeIf { it.isNotEmpty() }
                         ?.let { mapOf("Referer" to it) } ?: emptyMap()
                     networkClient.getWithHeaders(remoteUrl, headers).use { response ->
                         if (!response.isSuccessful) {

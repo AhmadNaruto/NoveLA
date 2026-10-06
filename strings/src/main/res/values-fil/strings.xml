@@ -79,6 +79,7 @@
     <string name="filter">Salain</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Nobela</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">Lahat</string>
     <string name="read">Basahin</string>
     <string name="sort">Ayusin</string>
@@ -410,6 +411,7 @@
     <string name="invalid_regex_pattern_with">Hindi wastong regex pattern: %s</string>
     <string name="regex_cleanup_title">Regex</string>
     <string name="enabled">Naka-enable</string>
+    <string name="whole_words_only">Buong mga salita lamang</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">Huling nabasa</string>
@@ -539,6 +541,10 @@
     <string name="cleaning_manga_cache">Nililinis ang offline na manga…</string>
     <string name="manga_cache_cleaned">Na-clear ang offline na manga</string>
     <string name="manga_cache_clean_failed">Nabigo ang pag-clear ng offline na manga</string>
+    <string name="clean_offline_video">I-delete ang mga offline na video</string>
+    <string name="clean_offline_video_confirmation">Aalisin nito ang mga na-download na video. Kailangan mong i-download muli ang mga ito para sa offline na panonood.</string>
+    <string name="cleaning_offline_video">Dine-delete ang mga offline na video…</string>
+    <string name="offline_video_clean_failed">Nabigo ang pag-delete ng mga offline na video</string>
     <string name="all_sources">Lahat ng pinagmulan</string>
     <string name="reset_filters">I-reset</string>
 
@@ -833,4 +839,56 @@
     <string name="github_repository">GitHub repository</string>
     <string name="report_issue">Mag-report ng isyu</string>
     <string name="report_issue_description">Gumawa ng bug report sa GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Kinukuha ang mga source…</string>
+    <string name="video_open_in_other">Buksan sa ibang app</string>
+    <string name="video_no_app_to_play">Walang available na app para i-play ang video na ito</string>
+    <string name="video_playback_error">Error sa playback</string>
+    <string name="video_playback_error_codec">Hindi kayang i-decode ng mga codec ng device ang stream na ito</string>
+    <string name="video_playback_error_source">Hindi available ang source: problema sa server o nasirang file</string>
+    <string name="video_variant_badge_dead">Hindi available</string>
+    <string name="video_quality">Kalidad</string>
+    <string name="video_sources_not_found">Hindi nahanap ang mga source</string>
+    <string name="video_source_not_found">Hindi nahanap ang source</string>
+    <string name="video_source_no_video">Hindi sinusuportahan ng source ang video</string>
+    <string name="video_translate_unavailable">Hindi available ang pagsasalin para sa video</string>
+    <string name="video_resolution">Resolusyon</string>
+    <string name="video_voiceover">Voiceover</string>
+    <string name="video_variant_title">Pumili ng variant</string>
+    <string name="video_variant_fallback">Variant %1$d</string>
+    <string name="video_settings_title">Mga setting</string>
+    <string name="video_playback_speed">Bilis</string>
+    <string name="video_audio_track">Audio track</string>
+    <string name="video_subtitles">Mga subtitle</string>
+    <string name="video_subtitles_none">Walang subtitle</string>
+    <string name="video_subtitles_off">Naka-off</string>
+    <string name="video_keep_screen_on">Panatilihing naka-on ang screen</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Playback</string>
+    <string name="video_section_video">Video</string>
+    <string name="video_section_gestures">Mga gesture</string>
+    <string name="video_section_audio">Audio</string>
+    <string name="video_section_subtitles">Mga subtitle</string>
+    <string name="video_section_screen">Screen</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Hakbang sa pag-skip</string>
+    <string name="video_seconds_value">%1$d s</string>
+    <string name="video_controller_auto_hide">Awtomatikong itago ang mga control</string>
+    <string name="video_auto_hide_never">Hindi kailanman</string>
+    <string name="video_variant">Variant</string>
+    <string name="video_gesture_double_tap">Doble-tap para mag-skip</string>
+    <string name="video_gesture_vertical_swipe">Patayik na swipe: volume at brightness</string>
+    <string name="video_gesture_long_press">Matagal na pindut para sa 2× na bilis</string>
+    <string name="video_gesture_swap_sides">Palitan ang mga kalahati ng screen</string>
+    <string name="video_gesture_sensitivity">Sensitivity ng swipe</string>
+    <string name="video_subtitle_track">Subtitle track</string>
+
+    <string name="failed_to_restore_backup_incomplete">Hindi kumpleto o nasira ang backup file</string>
+    <string name="failed_to_restore_backup_too_short">Walang laman o masyadong maikli ang backup file</string>
+    <string name="failed_to_restore_backup_empty_archive">Walang laman ang backup archive</string>
+    <string name="failed_to_restore_backup_missing_database">Walang database sa backup archive</string>
+    <string name="failed_to_restore_error">Error sa restore: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Hindi wasto ang format ng backup file. Inaasahan ang ZIP file</string>
+    <string name="failed_to_restore_read_error">Nabigo ang pagbasa ng backup file: %1$s</string>
 </resources>

@@ -22,6 +22,9 @@ class BookChaptersRepository @Inject constructor(
             lastReadOffset = lastReadOffset
         )
 
+    suspend fun updateVideoPosition(chapterUrl: String, positionMs: Long, durationMs: Long) =
+        chapterDao.updateVideoPosition(chapterUrl, positionMs, durationMs)
+
     suspend fun setAsRead(chapterUrl: String, read: Boolean) =
         chapterDao.setAsRead(chapterUrl, read)
 
@@ -66,7 +69,7 @@ class BookChaptersRepository @Inject constructor(
             current.merge(
                 chapter.url,
                 chapter
-            ) { old, new -> old.copy(title = new.title.ifBlank { old.title }, position = new.position, uploaded = new.uploaded ?: old.uploaded) }
+            ) { old, new -> old.copy(title = new.title.ifBlank { old.title }, position = new.position, uploaded = new.uploaded ?: old.uploaded, volume = new.volume ?: old.volume) }
         appDatabase.transaction {
             insertReplace(current.values.toList())
 

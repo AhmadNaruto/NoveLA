@@ -24,6 +24,7 @@ import my.noveldokusha.core.AppCoroutineScope
 import my.noveldokusha.core.AppFileResolver
 import my.noveldokusha.core.isCoverValid
 import my.noveldokusha.core.Toasty
+import my.noveldokusha.core.OfflineVideoCleaner
 import my.noveldokusha.core.appPreferences.AppPreferences
 import my.noveldokusha.tooling.application_workers.AppWorkersInteractions
 import android.net.Uri
@@ -44,6 +45,7 @@ internal class SettingsViewModel @Inject constructor(
     private val appRemoteRepository: AppRemoteRepository,
     private val toasty: Toasty,
     private val appWorkersInteractions: AppWorkersInteractions,
+    private val offlineVideoCleaner: OfflineVideoCleaner,
 ) : ViewModel() {
 
     var onRestartApp: (() -> Unit)? = null
@@ -52,6 +54,7 @@ internal class SettingsViewModel @Inject constructor(
     var isCleaningImages = mutableStateOf(false)
     var isCleaningNovelCache = mutableStateOf(false)
     var isCleaningMangaCache = mutableStateOf(false)
+    var isCleaningOfflineVideo = mutableStateOf(false)
 
     private val cloudflareBypassEnabled by appPreferences.CLOUDFLARE_BYPASS_ENABLED.state(viewModelScope)
 
@@ -124,8 +127,10 @@ internal class SettingsViewModel @Inject constructor(
         autoBackupLastTimestamp = appPreferences.BACKUP_AUTO_LAST_TIMESTAMP.state(viewModelScope),
         novelCacheSize = mutableStateOf("…"),
         mangaCacheSize = mutableStateOf("…"),
+        offlineVideoSize = mutableStateOf("…"),
         isCleaningNovelCache = isCleaningNovelCache,
         isCleaningMangaCache = isCleaningMangaCache,
+        isCleaningOfflineVideo = isCleaningOfflineVideo,
         cleanConfirmationType = mutableStateOf(null),
         appVersion = appRemoteRepository.getDisplayVersion(),
     )
@@ -135,6 +140,7 @@ internal class SettingsViewModel @Inject constructor(
         updateImagesFolderSize()
         updateNovelCacheSize()
         updateMangaCacheSize()
+        updateOfflineVideoSize()
         viewModelScope.launch {
             appRepository.eventDataRestored.collect {
                 updateDatabaseSize()
@@ -379,12 +385,33 @@ internal class SettingsViewModel @Inject constructor(
         }
     }
 
+    private suspend fun updateOfflineVideoSizeAndWait() {
+        // Папка видео-загрузок (filesDir/video_downloads) считается рекурсивно
+        val size = withContext(Dispatchers.IO) {
+            File(context.filesDir, "video_downloads")
+                .walk()
+                .filter { it.isFile }
+                .sumOf { it.length() }
+        }
+        withContext(Dispatchers.Main) {
+            state.offlineVideoSize.value = Formatter.formatFileSize(appPreferences.context, size)
+        }
+    }
+
+    private fun updateOfflineVideoSize() = viewModelScope.launch {
+        updateOfflineVideoSizeAndWait()
+    }
+
     fun requestCleanNovelCache() {
         state.cleanConfirmationType.value = CleanConfirmationType.NOVEL_CACHE
     }
 
     fun requestCleanMangaCache() {
         state.cleanConfirmationType.value = CleanConfirmationType.MANGA_CACHE
+    }
+
+    fun requestCleanOfflineVideo() {
+        state.cleanConfirmationType.value = CleanConfirmationType.OFFLINE_VIDEO
     }
 
     private fun cleanNovelCache() = appScope.launch(Dispatchers.IO) {
@@ -427,6 +454,25 @@ internal class SettingsViewModel @Inject constructor(
         }
     }
 
+    private fun cleanOfflineVideo() = appScope.launch(Dispatchers.IO) {
+        if (isCleaningOfflineVideo.value) return@launch
+
+        try {
+            isCleaningOfflineVideo.value = true
+            toasty.show(R.string.cleaning_offline_video)
+
+            // media3 удаляет асинхронно и сериализованно (один remove-task за
+            // раз), поэтому не подтверждаем «удалено» и не ждём по таймеру —
+            // тост выше сообщает о запуске, размер обновится на ON_RESUME.
+            offlineVideoCleaner.removeAll()
+        } catch (e: Exception) {
+            toasty.show(R.string.offline_video_clean_failed)
+            Timber.e(e)
+        } finally {
+            isCleaningOfflineVideo.value = false
+        }
+    }
+
     fun dumpDebugInfo() = appScope.launch(Dispatchers.IO) {
         if (BuildConfig.DEBUG) {
             MemoryDiagnostics.logMemoryStats("SettingsViewModel")
@@ -463,6 +509,7 @@ internal class SettingsViewModel @Inject constructor(
             CleanConfirmationType.IMAGES_FOLDER -> cleanImagesFolder()
             CleanConfirmationType.NOVEL_CACHE -> cleanNovelCache()
             CleanConfirmationType.MANGA_CACHE -> cleanMangaCache()
+            CleanConfirmationType.OFFLINE_VIDEO -> cleanOfflineVideo()
             null -> return
         }
         state.cleanConfirmationType.value = null
@@ -491,7 +538,8 @@ internal class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * Refresh all size displays (database, images, novel cache, manga cache).
+     * Refresh all size displays (database, images, novel cache, manga cache,
+     * offline videos).
      * Called every time the settings screen becomes visible.
      */
     fun refreshSizes() {
@@ -499,6 +547,7 @@ internal class SettingsViewModel @Inject constructor(
         updateImagesFolderSize()
         updateNovelCacheSize()
         updateMangaCacheSize()
+        updateOfflineVideoSize()
     }
 
     fun onMassAddDelayChange(newDelayMs: Long) {

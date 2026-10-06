@@ -283,7 +283,8 @@ internal class MangaReaderViewModel @Inject constructor(
         if (state !is MangaReaderUiState.Ready) return
         readerRepository.saveBookLastReadPositionState(
             bookUrl = state.bookUrl,
-            newChapter = ChapterState(state.chapter.url, state.currentPage, 0),
+            // Нумерация манги — по страницам: гранулярность сплита не кодируем.
+            newChapter = ChapterState(state.chapter.url, state.currentPage, 0, savedWithSplit = false),
         )
     }
 

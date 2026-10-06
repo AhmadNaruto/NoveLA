@@ -10,6 +10,9 @@ class ContentTypeBadgeTest {
     fun manga() = assertEquals(R.drawable.ic_content_type_manga, "manga".toContentTypeBadgeIcon())
 
     @Test
+    fun video() = assertEquals(R.drawable.ic_content_type_video, "video".toContentTypeBadgeIcon())
+
+    @Test
     fun emptyStringIsNovel() = assertEquals(R.drawable.ic_content_type_novel, "".toContentTypeBadgeIcon())
 
     @Test

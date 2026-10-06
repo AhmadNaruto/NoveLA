@@ -51,12 +51,18 @@ fun BooksVerticalView(
     // Позиция полосы источника: кромка обложки / плашка под обложкой / InfoPanel
     sourceStripPosition: SourceStripPosition = SourceStripPosition.BelowCover,
     innerPadding: PaddingValues = PaddingValues(),
+    // Готовый заголовок Referer для загрузки обложек; null → из хоста картинки.
+    referer: String? = null,
 
     // Переводы названий книг (url -> translatedTitle). Читается внутри каждого
     // item'а: SnapshotStateMap гарантированно триггерит recomposition конкретного
     // item'а при изменении его названия (list[i] = copy() при key={it.url} этого
     // не делает).
     translatedTitles: Map<String, String> = emptyMap(),
+    // Дозапрошенные обложки (url -> resolved cover URL) для элементов, у которых
+    // источник пришёл с пустым coverImageUrl. Читается внутри item'а по тому же
+    // принципу, что и translatedTitles.
+    coverOverrides: Map<String, String> = emptyMap(),
     topLeftBadge: (@Composable (BookMetadata) -> Unit)? = null,
 ) {
 
@@ -102,13 +108,14 @@ fun BooksVerticalView(
                     title = title,
                     coverImageModel = rememberResolvedBookImagePath(
                         bookUrl = it.url,
-                        imagePath = it.coverImageUrl
+                        imagePath = coverOverrides[it.url] ?: it.coverImageUrl
                     ),
                     onClick = { onBookClicked(it) },
                     onLongClick = { onBookLongClicked(it) },
                     topRightBadge = { BookRatingBadge(rating = it.rating) },
                     topLeftBadge = topLeftBadge?.let { badge -> { badge(it) } },
                     sourceStripPosition = sourceStripPosition,
+                    referer = referer,
                 )
             }
         }

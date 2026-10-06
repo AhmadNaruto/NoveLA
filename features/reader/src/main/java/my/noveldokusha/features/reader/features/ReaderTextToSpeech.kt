@@ -100,6 +100,7 @@ internal class ReaderTextToSpeech(
     private val getPreferredVoiceIdForOriginal: () -> String,
     private val setPreferredVoiceIdForOriginal: (voiceId: String) -> Unit,
     private val onBufferLow: (() -> Unit)? = null,
+    private val onSpeakerPaused: (ReaderItem.Position) -> Unit = {},
     private val getParallelEnabled: () -> Boolean,
     private val getParallelOrder: () -> String,
 ) {
@@ -485,16 +486,31 @@ internal class ReaderTextToSpeech(
         }
     }
 
-    fun shutdownTts() {
-        runCatching { manager.shutdown() }
-    }
-
+    /**
+     * Сбрасывает активную позицию TTS на указанный элемент, не запуская воспроизведение.
+     * Используется авто-остановкой при уходе пользователя на ≥1 главу вперёд: без сброса
+     * последующий «Старт» продолжал бы чтение со старой далёкой позиции.
+     * isThereActiveItem остаётся true (валидный chapterIndex) → уведомление живо.
+     */
     fun forceResetState(itemPos: ReaderItem.Position?) {
         if (itemPos == null) return
         state.isPlaying.value = false
         manager.setCurrentSpeakState(
             TextSynthesis(itemPos, Utterance.PlayState.FINISHED)
         )
+    }
+
+    fun shutdownTts() {
+        runCatching { manager.shutdown() }
+    }
+
+    /**
+     * Сбрасывает активную позицию TTS-подсветки к пустому состоянию.
+     * Вызывается после перестройки списка (reload), чтобы подсветка
+     * не указывала на абзац, которого больше нет в списке.
+     */
+    fun clearActiveItemState() {
+        manager.clearActiveItemState()
     }
 
     suspend fun readChapterStartingFromStart(
@@ -656,6 +672,14 @@ internal class ReaderTextToSpeech(
                     ReaderTextToSpeech.userPaused = true
                 }
                 stop()
+                // Сохраняем позицию остановленной озвучки: пауза из наушников / медиа-
+                // уведомления / системная пауза при погашенном экране не проходит через
+                // onPause Activity, поэтому без записи здесь БД осталась бы на позиции
+                // «экран погас», а не на позиции паузы звука.
+                val itemPos = state.currentActiveItemState.value.itemPos
+                if (isChapterIndexValid(itemPos.chapterIndex)) {
+                    onSpeakerPaused(itemPos)
+                }
                 return
             }
             ReaderTextToSpeech.pausedBySystem = false

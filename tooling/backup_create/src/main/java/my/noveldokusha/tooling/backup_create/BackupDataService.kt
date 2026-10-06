@@ -17,7 +17,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import my.noveldokusha.coreui.states.NotificationsCenter
-import my.noveldokusha.coreui.states.removeProgressBar
 import my.noveldokusha.coreui.states.text
 import my.noveldokusha.coreui.states.title
 import my.noveldokusha.core.appPreferences.AppPreferences
@@ -34,12 +33,14 @@ import my.noveldokusha.core.utils.isServiceRunning
 import my.noveldokusha.feature.local_database.AppDatabase
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
 import org.json.JSONObject
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.zip.ZipEntry
+import java.util.zip.ZipException
 import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 
@@ -194,14 +195,22 @@ class BackupDataService : Service() {
                 backupData(intentData.uri, intentData.backupImages, intentData.backupSettings, intentData.backupPlugins)
             }.onError {
                 Timber.e(it.exception)
-            }
-
-            // If auto-backup, run rotation after successful backup
-            if (intentData.isAutoBackup && intentData.directoryUri.isNotEmpty()) {
-                try {
-                    rotateAutoBackups(intentData.directoryUri, intentData.maxCount)
-                } catch (e: Exception) {
-                    Timber.e(e, "BackupDataService: Failed to rotate auto backups")
+                notificationsCenter.showNotification(
+                    notificationId = "Backup failed".hashCode(),
+                    channelId = channelId,
+                    channelName = channelName
+                ) {
+                    title = getString(R.string.backup)
+                    text = getString(R.string.failed_to_make_backup)
+                }
+            }.onSuccess {
+                // If auto-backup, run rotation only after a successful backup
+                if (intentData.isAutoBackup && intentData.directoryUri.isNotEmpty()) {
+                    try {
+                        rotateAutoBackups(intentData.directoryUri, intentData.maxCount)
+                    } catch (e: Exception) {
+                        Timber.e(e, "BackupDataService: Failed to rotate auto backups")
+                    }
                 }
             }
 
@@ -273,6 +282,26 @@ class BackupDataService : Service() {
     }
 
     /**
+     * Verifies the finished backup archive at [uri]. Throws
+     * [BackupValidationException] or [java.util.zip.ZipException] when the
+     * archive is rejected and the document must be deleted; any other
+     * exception is an infrastructure failure and the document must be kept.
+     */
+    private fun validateBackupArchive(uri: Uri) {
+        val input = contentResolver.openInputStream(uri)
+            ?: throw IOException("Cannot open backup document for validation")
+        input.use { stream -> BackupArchiveValidator.validate(stream) }
+    }
+
+    private fun deleteBackupDocument(uri: Uri) {
+        try {
+            contentResolver.delete(uri, null, null)
+        } catch (e: Exception) {
+            Timber.e(e, "BackupDataService: Failed to delete backup document")
+        }
+    }
+
+    /**
      * Backup data function. Backups the library and images data given an uri.
      *
      * IMPORTANT: Before backing up, we:
@@ -283,56 +312,56 @@ class BackupDataService : Service() {
      */
     private suspend fun backupData(uri: Uri, backupImages: Boolean, backupSettings: Boolean = true, backupPlugins: Boolean = true) = withContext(Dispatchers.IO) {
 
-        notificationsCenter.showNotification(
-            notificationId = notificationId,
-            channelName = channelName,
-            channelId = channelId
-        ) {
-            title = getString(R.string.backup)
-            text = getString(R.string.creating_backup)
-            setProgress(100, 0, true)
-        }
-
-        // Step 1: Clean up non-library data before backup
-        notificationsCenter.modifyNotification(
-            notificationBuilder,
-            notificationId = notificationId
-        ) {
-            text = getString(R.string.cleaning_database)
-        }
-
-        // Step 1: clean non-library data
-        Timber.d("BackupDataService: Cleaning non-library data before backup")
-        appRepository.settings.clearNonLibraryData()
-        Timber.d("BackupDataService: Non-library data cleaned")
-
-        // Step 2: verify source database integrity
-        val sourceIntegrity = appDatabase.integrityCheck()
-        if (sourceIntegrity != "ok") {
-            throw Exception("Source database integrity check failed: $sourceIntegrity")
-        }
-        Timber.d("BackupDataService: Source database integrity OK")
-
-        // Step 3: VACUUM INTO temporary file (creates a clean snapshot without touching the original)
         val tempDbFile = File(this@BackupDataService.cacheDir, "backup_vacuum_into_${System.currentTimeMillis()}.db")
         try {
-            appDatabase.vacuumInto(tempDbFile.absolutePath)
-            Timber.d("BackupDataService: VACUUM INTO completed, temp file size: ${tempDbFile.length()}")
-        } catch (e: Exception) {
-            tempDbFile.delete()
-            throw e
-        }
+            notificationsCenter.showNotification(
+                notificationId = notificationId,
+                channelName = channelName,
+                channelId = channelId
+            ) {
+                title = getString(R.string.backup)
+                text = getString(R.string.creating_backup)
+                setProgress(100, 0, true)
+            }
 
-        // Step 4: verify the snapshot integrity
-        val snapshotIntegrity = AppDatabase.checkFileIntegrity(this@BackupDataService, tempDbFile.absolutePath)
-        if (snapshotIntegrity != "ok") {
-            tempDbFile.delete()
-            throw Exception("Backup snapshot integrity check failed: $snapshotIntegrity")
-        }
-        Timber.d("BackupDataService: Snapshot integrity OK")
+            // Step 1: Clean up non-library data before backup
+            notificationsCenter.modifyNotification(
+                notificationBuilder,
+                notificationId = notificationId
+            ) {
+                text = getString(R.string.cleaning_database)
+            }
 
-        try {
-            contentResolver.openOutputStream(uri)?.use { outputStream ->
+            // Step 1: clean non-library data
+            Timber.d("BackupDataService: Cleaning non-library data before backup")
+            appRepository.settings.clearNonLibraryData()
+            Timber.d("BackupDataService: Non-library data cleaned")
+
+            // Step 2: verify source database integrity
+            val sourceIntegrity = appDatabase.integrityCheck()
+            if (sourceIntegrity != "ok") {
+                throw Exception("Source database integrity check failed: $sourceIntegrity")
+            }
+            Timber.d("BackupDataService: Source integrity OK")
+
+            // Step 3: VACUUM INTO temporary file (creates a clean snapshot without touching the original)
+            try {
+                appDatabase.vacuumInto(tempDbFile.absolutePath)
+                Timber.d("BackupDataService: VACUUM INTO completed, temp file size: ${tempDbFile.length()}")
+            } catch (e: Exception) {
+                tempDbFile.delete()
+                throw e
+            }
+
+            // Step 4: verify the snapshot integrity
+            val snapshotIntegrity = AppDatabase.checkFileIntegrity(this@BackupDataService, tempDbFile.absolutePath)
+            if (snapshotIntegrity != "ok") {
+                tempDbFile.delete()
+                throw Exception("Backup snapshot integrity check failed: $snapshotIntegrity")
+            }
+            Timber.d("BackupDataService: Snapshot integrity OK")
+
+            contentResolver.openOutputStream(uri, "wt")?.use { outputStream ->
             val zip = ZipOutputStream(outputStream)
 
             notificationsCenter.modifyNotification(
@@ -454,6 +483,7 @@ class BackupDataService : Service() {
                                     put("replacement", rule.replacement)
                                     put("isEnabled", rule.isEnabled)
                                     put("description", rule.description)
+                                    put("wholeWordsOnly", rule.wholeWordsOnly)
                                 }
                             }
                         ))
@@ -465,6 +495,7 @@ class BackupDataService : Service() {
                                         put("replacement", rule.replacement)
                                         put("isEnabled", rule.isEnabled)
                                         put("description", rule.description)
+                                        put("wholeWordsOnly", rule.wholeWordsOnly)
                                     }
                                 }))
                             }
@@ -561,25 +592,37 @@ class BackupDataService : Service() {
             }
 
             zip.close()
-            notificationsCenter.showNotification(
-                notificationId = "Backup saved success".hashCode(),
-                channelId = channelId,
-                channelName = channelName
-            ) {
-                title = getString(R.string.backup_saved)
-            }
-
-            // Update last auto-backup timestamp
-            appPreferences.BACKUP_AUTO_LAST_TIMESTAMP.value = System.currentTimeMillis()
-        } ?: notificationsCenter.modifyNotification(
-            notificationBuilder,
-            notificationId = notificationId
-        ) {
-            removeProgressBar()
-            text = getString(R.string.failed_to_make_backup)
-        }
+        } ?: throw Exception("BackupDataService: failed to open output stream")
+        } catch (e: Exception) {
+            // The document is empty or incomplete at this point: safe to remove
+            Timber.e(e, "BackupDataService: Backup failed, deleting incomplete document")
+            deleteBackupDocument(uri)
+            throw e
         } finally {
             tempDbFile.delete()
         }
+
+        try {
+            validateBackupArchive(uri)
+        } catch (e: Exception) {
+            if (e is BackupValidationException || e is ZipException) {
+                Timber.e(e, "BackupDataService: Backup archive rejected, deleting document")
+                deleteBackupDocument(uri)
+            } else {
+                Timber.e(e, "BackupDataService: Verification failed with infrastructure error, keeping document")
+            }
+            throw e
+        }
+
+        notificationsCenter.showNotification(
+            notificationId = "Backup saved success".hashCode(),
+            channelId = channelId,
+            channelName = channelName
+        ) {
+            title = getString(R.string.backup_saved)
+        }
+
+        // Update last auto-backup timestamp
+        appPreferences.BACKUP_AUTO_LAST_TIMESTAMP.value = System.currentTimeMillis()
     }
 }

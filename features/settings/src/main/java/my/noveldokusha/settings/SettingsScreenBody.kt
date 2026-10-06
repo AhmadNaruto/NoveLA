@@ -72,6 +72,7 @@ internal fun SettingsScreenBody(
     onRequestCleanImageFolder: () -> Unit,
     onRequestCleanNovelCache: () -> Unit,
     onRequestCleanMangaCache: () -> Unit,
+    onRequestCleanOfflineVideo: () -> Unit,
     onConfirmClean: () -> Unit,
     onDismissClean: () -> Unit,
     onMassAddDelayChange: (Long) -> Unit,
@@ -146,14 +147,17 @@ internal fun SettingsScreenBody(
             imagesFolderSize = state.imageFolderSize.value,
             novelCacheSize = state.novelCacheSize.value,
             mangaCacheSize = state.mangaCacheSize.value,
+            offlineVideoSize = state.offlineVideoSize.value,
             isCleaningDatabase = state.isCleaningDatabase.value,
             isCleaningImages = state.isCleaningImages.value,
             isCleaningNovelCache = state.isCleaningNovelCache.value,
             isCleaningMangaCache = state.isCleaningMangaCache.value,
+            isCleaningOfflineVideo = state.isCleaningOfflineVideo.value,
             onRequestCleanDatabase = onRequestCleanDatabase,
             onRequestCleanImageFolder = onRequestCleanImageFolder,
             onRequestCleanNovelCache = onRequestCleanNovelCache,
             onRequestCleanMangaCache = onRequestCleanMangaCache,
+            onRequestCleanOfflineVideo = onRequestCleanOfflineVideo,
         )
         HorizontalDivider()
         val context = LocalContext.current
@@ -267,12 +271,14 @@ internal fun SettingsScreenBody(
             CleanConfirmationType.IMAGES_FOLDER -> R.string.clean_images_folder
             CleanConfirmationType.NOVEL_CACHE -> R.string.clean_novel_cache
             CleanConfirmationType.MANGA_CACHE -> R.string.clean_manga_cache
+            CleanConfirmationType.OFFLINE_VIDEO -> R.string.clean_offline_video
         }
         val textRes = when (confirmationType) {
             CleanConfirmationType.DATABASE -> R.string.clean_database_confirmation
             CleanConfirmationType.IMAGES_FOLDER -> R.string.clean_images_folder_confirmation
             CleanConfirmationType.NOVEL_CACHE -> R.string.clean_novel_cache_confirmation
             CleanConfirmationType.MANGA_CACHE -> R.string.clean_manga_cache_confirmation
+            CleanConfirmationType.OFFLINE_VIDEO -> R.string.clean_offline_video_confirmation
         }
         AlertDialog(
             onDismissRequest = onDismissClean,
@@ -332,8 +338,10 @@ private fun Preview() {
                     isCleaningImages = remember { mutableStateOf(false) },
                     novelCacheSize = remember { mutableStateOf("3 MB") },
                     mangaCacheSize = remember { mutableStateOf("2 MB") },
+                    offlineVideoSize = remember { mutableStateOf("500 MB") },
                     isCleaningNovelCache = remember { mutableStateOf(false) },
                     isCleaningMangaCache = remember { mutableStateOf(false) },
+                    isCleaningOfflineVideo = remember { mutableStateOf(false) },
                     updateAppSetting = SettingsScreenState.UpdateApp(
                         currentAppVersion = "1.0.0",
                         appUpdateCheckerEnabled = remember { mutableStateOf(true) },
@@ -380,6 +388,7 @@ private fun Preview() {
                 onRequestCleanImageFolder = { },
                 onRequestCleanNovelCache = { },
                 onRequestCleanMangaCache = { },
+                onRequestCleanOfflineVideo = { },
                 onConfirmClean = { },
                 onDismissClean = { },
                 onMassAddDelayChange = { },

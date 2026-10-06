@@ -79,6 +79,7 @@
     <string name="filter">Filtro</string>
     <string name="content_type_manga">Mangá</string>
     <string name="content_type_novel">Romance</string>
+    <string name="content_type_video">Vídeo</string>
     <string name="filter_all">Tudo</string>
     <string name="read">Ler</string>
     <string name="sort">Ordenar</string>
@@ -410,6 +411,7 @@
     <string name="invalid_regex_pattern_with">Padrão de regex inválido: %s</string>
     <string name="regex_cleanup_title">Regex</string>
     <string name="enabled">Ativado</string>
+    <string name="whole_words_only">Somente palavras inteiras</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">Última leitura</string>
@@ -539,6 +541,10 @@
     <string name="cleaning_manga_cache">A limpar mangá offline…</string>
     <string name="manga_cache_cleaned">Mangá offline limpo</string>
     <string name="manga_cache_clean_failed">Falha ao limpar mangá offline</string>
+    <string name="clean_offline_video">Excluir vídeos offline</string>
+    <string name="clean_offline_video_confirmation">Isso removerá os vídeos transferidos. Para assistir offline, será necessário transferi-los novamente.</string>
+    <string name="cleaning_offline_video">A excluir vídeos offline…</string>
+    <string name="offline_video_clean_failed">Falha ao excluir vídeos offline</string>
     <string name="all_sources">Todas as fontes</string>
     <string name="reset_filters">Repor</string>
 
@@ -843,4 +849,55 @@
     <string name="github_repository">Repositório no GitHub</string>
     <string name="report_issue">Reportar um problema</string>
     <string name="report_issue_description">Criar um relatório de bug no GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Obtendo fontes…</string>
+    <string name="video_open_in_other">Abrir em outro aplicativo</string>
+    <string name="video_no_app_to_play">Nenhum aplicativo disponível para reproduzir este vídeo</string>
+    <string name="video_playback_error">Erro de reprodução</string>
+    <string name="video_playback_error_codec">Os codecs do dispositivo não podem decodificar este fluxo</string>
+    <string name="video_playback_error_source">Fonte indisponível: problema no servidor ou arquivo corrompido</string>
+    <string name="video_variant_badge_dead">Indisponível</string>
+    <string name="video_quality">Qualidade</string>
+    <string name="video_sources_not_found">Fontes não encontradas</string>
+    <string name="video_source_not_found">Fonte não encontrada</string>
+    <string name="video_source_no_video">A fonte não suporta vídeo</string>
+    <string name="video_translate_unavailable">A tradução não está disponível para o vídeo</string>
+    <string name="video_resolution">Resolução</string>
+    <string name="video_voiceover">Narração</string>
+    <string name="video_variant_title">Selecionar variante</string>
+    <string name="video_variant_fallback">Variante %1$d</string>
+    <string name="video_settings_title">Configurações</string>
+    <string name="video_playback_speed">Velocidade</string>
+    <string name="video_audio_track">Faixa de áudio</string>
+    <string name="video_subtitles">Legendas</string>
+    <string name="video_subtitles_none">Sem legendas</string>
+    <string name="video_subtitles_off">Desativadas</string>
+    <string name="video_keep_screen_on">Manter a tela ligada</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Reprodução</string>
+    <string name="video_section_video">Vídeo</string>
+    <string name="video_section_gestures">Gestos</string>
+    <string name="video_section_audio">Áudio</string>
+    <string name="video_section_subtitles">Legendas</string>
+    <string name="video_section_screen">Tela</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Passo de salto</string>
+    <string name="video_seconds_value">%1$d s</string>
+    <string name="video_controller_auto_hide">Ocultar controles automaticamente</string>
+    <string name="video_auto_hide_never">Nunca</string>
+    <string name="video_variant">Variante</string>
+    <string name="video_gesture_double_tap">Toque duas vezes para pular</string>
+    <string name="video_gesture_vertical_swipe">Deslize vertical: volume e brilho</string>
+    <string name="video_gesture_long_press">Pressione longo para velocidade 2×</string>
+    <string name="video_gesture_swap_sides">Trocar metades da tela</string>
+    <string name="video_gesture_sensitivity">Sensibilidade do deslize</string>
+    <string name="video_subtitle_track">Faixa de legendas</string>
+    <string name="failed_to_restore_backup_incomplete">O ficheiro de backup está incompleto ou corrompido</string>
+    <string name="failed_to_restore_backup_too_short">O ficheiro de backup está vazio ou demasiado curto</string>
+    <string name="failed_to_restore_backup_empty_archive">O arquivo de backup está vazio</string>
+    <string name="failed_to_restore_backup_missing_database">O arquivo de backup não contém base de dados</string>
+    <string name="failed_to_restore_error">Erro ao restaurar: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Formato de ficheiro de backup inválido. Era esperado um ficheiro ZIP</string>
+    <string name="failed_to_restore_read_error">Falha ao ler o ficheiro de backup: %1$s</string>
 </resources>

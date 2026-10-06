@@ -14,12 +14,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -55,6 +55,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
@@ -70,6 +71,7 @@ import my.noveldokusha.coreui.components.BookRatingChip
 import my.noveldokusha.core.appPreferences.SourceStripPosition
 import my.noveldokusha.coreui.components.ExpandableText
 import my.noveldokusha.coreui.components.ImageView
+import my.noveldokusha.coreui.theme.ImageBorderShape
 import my.noveldokusha.coreui.theme.clickableNoIndicator
 import my.noveldokusha.chapterslist.R
 import my.noveldokusha.core.rememberResolvedBookImagePath
@@ -89,16 +91,18 @@ internal fun ChaptersScreenHeader(
     translatedTitle: String?,
     translatedDescription: String?,
     isTranslating: Boolean,
+    showTranslateButton: Boolean,
     onTranslateClick: () -> Unit,
     onClearTranslationClick: () -> Unit,
     modifier: Modifier = Modifier,
     onCoverLongClick: () -> Unit,
-    onGlobalSearchClick: (input: String) -> Unit,
+    onGlobalSearchClick: (input: String, contentType: String) -> Unit,
     onScrollToLastRead: (() -> Unit)?,
     onScrollToChapter: () -> Unit,
     bookCategory: String,
     categories: () -> List<String>,
     onCategoryClick: () -> Unit,
+    coverReferer: String? = null,
 ) {
     val coverImageModel = bookState.coverImageUrl?.let {
         rememberResolvedBookImagePath(
@@ -111,6 +115,7 @@ internal fun ChaptersScreenHeader(
         Box(Modifier.matchParentSize()) {
             ImageView(
                 imageModel = coverImageModel,
+                referer = coverReferer,
                 contentScale = ContentScale.FillWidth,
                 modifier = Modifier
                     .alpha(0.2f)
@@ -140,6 +145,7 @@ internal fun ChaptersScreenHeader(
                 BookImageButtonView(
                     title = "",
                     coverImageModel = coverImageModel,
+                    referer = coverReferer,
                     onClick = { showImageFullScreen = true },
                     onLongClick = onCoverLongClick,
                     sourceStripPosition = SourceStripPosition.BelowCover,
@@ -153,13 +159,30 @@ internal fun ChaptersScreenHeader(
                         dismissOnClickOutside = true
                     )
                 ) {
-                    ImageView(
-                        imageModel = coverImageModel,
+                    // Фон не закрываем: окно диалога прозрачно, полупрозрачное
+                    // затемнение даёт platform dim (FLAG_DIM_BEHIND), как в
+                    // исходной версии. Клик по экрану закрывает.
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxSize()
                             .clickableNoIndicator { showImageFullScreen = false },
-                        contentScale = ContentScale.Fit
-                    )
+                        contentAlignment = Alignment.Center
+                    ) {
+                        ImageView(
+                            imageModel = coverImageModel,
+                            referer = coverReferer,
+                            // Как у коверов в каталоге: скругление ImageBorderShape + отступы
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .clip(ImageBorderShape)
+                                .fillMaxWidth()
+                                .aspectRatio(1f / 1.45f)
+                                .clickableNoIndicator { showImageFullScreen = false },
+                            // Crop, как у коверов в каталоге: картинка заполняет
+                            // рамку и скругление углов реально видно.
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
 
                 Column(
@@ -169,13 +192,14 @@ internal fun ChaptersScreenHeader(
                         .weight(1f),
                 ) {
                     SelectionContainer {
+                        // Главное название книги: без ограничения строк,
+                        // чтобы длинные названия отображались полностью.
                         Text(
                             text = translatedTitle ?: bookState.title,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 5,
                             modifier = Modifier.clickableNoIndicator {
-                                onGlobalSearchClick(bookState.title)
+                                onGlobalSearchClick(bookState.title, bookState.contentType)
                             }
                         )
                     }
@@ -422,35 +446,38 @@ internal fun ChaptersScreenHeader(
                     Spacer(modifier = Modifier.weight(1f))
                 }
 
-                // Кнопка "Перевод"
-                Button(
-                    onClick = {
-                        if (translatedTitle != null || translatedDescription != null) {
-                            onClearTranslationClick()
+                // Кнопка "Перевод" — только для новелл: на страницах
+                // видео- и манга-книг переводчик не используется.
+                if (showTranslateButton) {
+                    Button(
+                        onClick = {
+                            if (translatedTitle != null || translatedDescription != null) {
+                                onClearTranslationClick()
+                            } else {
+                                onTranslateClick()
+                            }
+                        },
+                        shape = my.noveldokusha.coreui.theme.shapes.large,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier,
+                    ) {
+                        if (isTranslating) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         } else {
-                            onTranslateClick()
+                            Icon(
+                                imageVector = if (translatedTitle != null || translatedDescription != null) Icons.Outlined.Close else Icons.Outlined.GTranslate,
+                                contentDescription = if (translatedTitle != null || translatedDescription != null) stringResource(R.string.clear_translation) else stringResource(R.string.translate),
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
-                    },
-                    shape = my.noveldokusha.coreui.theme.shapes.large,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                    modifier = Modifier,
-                ) {
-                    if (isTranslating) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    } else {
-                        Icon(
-                            imageVector = if (translatedTitle != null || translatedDescription != null) Icons.Outlined.Close else Icons.Outlined.GTranslate,
-                            contentDescription = if (translatedTitle != null || translatedDescription != null) stringResource(R.string.clear_translation) else stringResource(R.string.translate),
-                            modifier = Modifier.size(16.dp)
-                        )
                     }
                 }
 

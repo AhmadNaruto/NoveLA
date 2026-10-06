@@ -197,4 +197,77 @@ class MigrationsTest {
             }
         }
     }
+
+    @Test
+    fun `v33 to v34 adds video position columns with zero default`() {
+        dbFile.parentFile?.mkdirs()
+        dbFile.delete()
+
+        helper.createDatabase(33).use { connection ->
+            val db = (connection as SupportSQLiteConnection).db
+            // Данные, обязанные пережить миграцию (manga-позиция главы тоже)
+            db.execSQL(
+                "INSERT INTO Chapter (title, url, bookUrl, position, read, lastReadPosition, lastReadOffset) " +
+                    "VALUES ('Ep1', 'https://book/1/ep/1', 'https://book/1', 0, 0, 7, 11)"
+            )
+        }
+
+        val migrated = helper.runMigrationsAndValidate(
+            34,
+            databaseMigrations().toList()
+        )
+        migrated.use { connection ->
+            val db = (connection as SupportSQLiteConnection).db
+            // Наличие колонок + значения по умолчанию для старых записей
+            db.query(
+                "SELECT url, lastReadPosition, lastReadOffset, videoPositionMs, videoDurationMs " +
+                    "FROM Chapter LIMIT 1"
+            ).use { c ->
+                c.moveToFirst()
+                assertTrue("chapter row lost", c.getString(0) == "https://book/1/ep/1")
+                assertTrue("lastReadPosition damaged", c.getInt(1) == 7)
+                assertTrue("lastReadOffset damaged", c.getInt(2) == 11)
+                assertTrue("videoPositionMs missing or not 0", c.getInt(3) == 0)
+                assertTrue("videoDurationMs missing or not 0", c.getInt(4) == 0)
+            }
+        }
+    }
+
+    @Test
+    fun `v34 to v35 adds volume column`() {
+        dbFile.parentFile?.mkdirs()
+        dbFile.delete()
+
+        helper.createDatabase(34).use { connection ->
+            val db = (connection as SupportSQLiteConnection).db
+            // Данные, обязанные пережить миграцию (в т.ч. видео-позиция главы)
+            db.execSQL(
+                "INSERT INTO Chapter (title, url, bookUrl, position, read, lastReadPosition, lastReadOffset, " +
+                    "videoPositionMs, videoDurationMs) " +
+                    "VALUES ('Ep1', 'https://book/1/ep/1', 'https://book/1', 0, 0, 7, 11, 5, 9)"
+            )
+        }
+
+        val migrated = helper.runMigrationsAndValidate(
+            35,
+            databaseMigrations().toList()
+        )
+        migrated.use { connection ->
+            val db = (connection as SupportSQLiteConnection).db
+            // Старые данные на месте, volume — NULL для существующих записей
+            db.query(
+                "SELECT url, lastReadPosition, lastReadOffset, videoPositionMs, videoDurationMs, volume " +
+                    "FROM Chapter LIMIT 1"
+            ).use { c ->
+                c.moveToFirst()
+                assertTrue("chapter row lost", c.getString(0) == "https://book/1/ep/1")
+                assertTrue("lastReadPosition damaged", c.getInt(1) == 7)
+                assertTrue("lastReadOffset damaged", c.getInt(2) == 11)
+                assertTrue("videoPositionMs damaged", c.getInt(3) == 5)
+                assertTrue("videoDurationMs damaged", c.getInt(4) == 9)
+                assertTrue("volume column missing", c.getColumnIndex("volume") != -1)
+                assertTrue("volume not NULL by default", c.isNull(5))
+            }
+        }
+    }
 }

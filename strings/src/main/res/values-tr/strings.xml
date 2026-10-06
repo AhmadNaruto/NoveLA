@@ -79,6 +79,7 @@
     <string name="filter">Filtrele</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Roman</string>
+    <string name="content_type_video">Video</string>
     <string name="filter_all">Tümü</string>
     <string name="read">Okundu</string>
     <string name="sort">Sırala</string>
@@ -410,6 +411,7 @@
     <string name="invalid_regex_pattern_with">Geçersiz regex kalıbı: %s</string>
     <string name="regex_cleanup_title">Regex</string>
     <string name="enabled">Etkin</string>
+    <string name="whole_words_only">Sadece tam kelimeler</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">Son okunan</string>
@@ -539,6 +541,10 @@
     <string name="cleaning_manga_cache">Çevrimdışı manga temizleniyor…</string>
     <string name="manga_cache_cleaned">Çevrimdışı manga temizlendi</string>
     <string name="manga_cache_clean_failed">Çevrimdışı manga temizlenemedi</string>
+    <string name="clean_offline_video">Çevrimdışı videoları sil</string>
+    <string name="clean_offline_video_confirmation">İndirilmiş videoları silecektir. Çevrimdışı izlemek için tekrar indirmeniz gerekecektir.</string>
+    <string name="cleaning_offline_video">Çevrimdışı videolar siliniyor…</string>
+    <string name="offline_video_clean_failed">Çevrimdışı videolar silinemedi</string>
     <string name="all_sources">Tüm kaynaklar</string>
     <string name="reset_filters">Sıfırla</string>
 
@@ -833,4 +839,55 @@
     <string name="github_repository">GitHub deposu</string>
     <string name="report_issue">Hata bildir</string>
     <string name="report_issue_description">GitHub\'da hata raporu oluştur</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Kaynaklar alınıyor…</string>
+    <string name="video_open_in_other">Diğer uygulamada aç</string>
+    <string name="video_no_app_to_play">Bu videoyu oynatmak için uygulama yok</string>
+    <string name="video_playback_error">Oynatma hatası</string>
+    <string name="video_playback_error_codec">Cihazın kodekleri bu akışı çözemez</string>
+    <string name="video_playback_error_source">Kaynak kullanılamıyor: sunucu sorunu veya bozuk dosya</string>
+    <string name="video_variant_badge_dead">Kullanılamıyor</string>
+    <string name="video_quality">Kalite</string>
+    <string name="video_sources_not_found">Kaynaklar bulunamadı</string>
+    <string name="video_source_not_found">Kaynak bulunamadı</string>
+    <string name="video_source_no_video">Kaynak videoyu desteklemiyor</string>
+    <string name="video_translate_unavailable">Video için çeviri kullanılamıyor</string>
+    <string name="video_resolution">Çözünürlük</string>
+    <string name="video_voiceover">Seslendirme</string>
+    <string name="video_variant_title">Varyant seç</string>
+    <string name="video_variant_fallback">Varyant %1$d</string>
+    <string name="video_settings_title">Ayarlar</string>
+    <string name="video_playback_speed">Hız</string>
+    <string name="video_audio_track">Ses parçası</string>
+    <string name="video_subtitles">Altyazılar</string>
+    <string name="video_subtitles_none">Altyazı yok</string>
+    <string name="video_subtitles_off">Kapalı</string>
+    <string name="video_keep_screen_on">Ekranı açık tut</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Oynatma</string>
+    <string name="video_section_video">Video</string>
+    <string name="video_section_gestures">Hareketler</string>
+    <string name="video_section_audio">Ses</string>
+    <string name="video_section_subtitles">Altyazılar</string>
+    <string name="video_section_screen">Ekran</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Atlama adımı</string>
+    <string name="video_seconds_value">%1$d sn</string>
+    <string name="video_controller_auto_hide">Kontrolleri otomatik gizle</string>
+    <string name="video_auto_hide_never">Asla</string>
+    <string name="video_variant">Varyant</string>
+    <string name="video_gesture_double_tap">Atlamak için çift dokun</string>
+    <string name="video_gesture_vertical_swipe">Dikey kaydırma: ses ve parlaklık</string>
+    <string name="video_gesture_long_press">2× hız için uzun bas</string>
+    <string name="video_gesture_swap_sides">Ekran yarısını değiştir</string>
+    <string name="video_gesture_sensitivity">Kaydırma hassasiyeti</string>
+    <string name="video_subtitle_track">Altyazı parçası</string>
+    <string name="failed_to_restore_backup_incomplete">Yedek dosyası eksik veya bozuk</string>
+    <string name="failed_to_restore_backup_too_short">Yedek dosyası boş veya çok kısa</string>
+    <string name="failed_to_restore_backup_empty_archive">Yedek arşivi boş</string>
+    <string name="failed_to_restore_backup_missing_database">Yedek arşivinde veritabanı yok</string>
+    <string name="failed_to_restore_error">Geri yükleme hatası: %1$s</string>
+    <string name="failed_to_restore_invalid_format">Geçersiz yedek dosyası biçimi. ZIP dosyası bekleniyor</string>
+    <string name="failed_to_restore_read_error">Yedek dosyası okunamadı: %1$s</string>
 </resources>

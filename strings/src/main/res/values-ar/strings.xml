@@ -79,6 +79,7 @@
     <string name="filter">فلتر</string>
     <string name="content_type_manga">مانجا</string>
     <string name="content_type_novel">رواية</string>
+    <string name="content_type_video">فيديو</string>
     <string name="filter_all">الكل</string>
     <string name="read">قراءة</string>
     <string name="sort">ترتيب</string>
@@ -410,6 +411,7 @@
     <string name="invalid_regex_pattern_with">نمط تعبير نمطي غير صالح: %s</string>
     <string name="regex_cleanup_title">تعبير نمطي</string>
     <string name="enabled">مفعل</string>
+    <string name="whole_words_only">الكلمات الكاملة فقط</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">آخر مقروء</string>
@@ -539,6 +541,10 @@
     <string name="cleaning_manga_cache">جاري مسح المانجا المحفوظة…</string>
     <string name="manga_cache_cleaned">تم مسح المانجا المحفوظة</string>
     <string name="manga_cache_clean_failed">فشل مسح المانجا المحفوظة</string>
+    <string name="clean_offline_video">حذف الفيديو بدون إنترنت</string>
+    <string name="clean_offline_video_confirmation">سيؤدي هذا إلى إزالة الفيديوهات المحمّلة. ستحتاج إلى تنزيلها مجددًا لمشاهدتها بدون إنترنت.</string>
+    <string name="cleaning_offline_video">جاري حذف الفيديو بدون إنترنت…</string>
+    <string name="offline_video_clean_failed">فشل حذف الفيديو بدون إنترنت</string>
     <string name="all_sources">جميع المصادر</string>
     <string name="reset_filters">إعادة تعيين</string>
 
@@ -833,4 +839,56 @@
     <string name="github_repository">مستودع GitHub</string>
     <string name="report_issue">الإبلاغ عن مشكلة</string>
     <string name="report_issue_description">إنشاء تقرير خطأ على GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">جارٍ جلب المصادر…</string>
+    <string name="video_open_in_other">فتح في تطبيق آخر</string>
+    <string name="video_no_app_to_play">لا يوجد تطبيق متاح لتشغيل هذا الفيديو</string>
+    <string name="video_playback_error">خطأ في التشغيل</string>
+    <string name="video_playback_error_codec">لا تستطيع كوديكات الجهاز فك ترميز هذا البث</string>
+    <string name="video_playback_error_source">المصدر غير متاح: مشكلة في الخادم أو ملف تالف</string>
+    <string name="video_variant_badge_dead">غير متاح</string>
+    <string name="video_quality">الجودة</string>
+    <string name="video_sources_not_found">المصادر غير موجودة</string>
+    <string name="video_source_not_found">المصدر غير موجود</string>
+    <string name="video_source_no_video">المصدر لا يدعم الفيديو</string>
+    <string name="video_translate_unavailable">الترجمة غير متاحة للفيديو</string>
+    <string name="video_resolution">الدقة</string>
+    <string name="video_voiceover">تعليق صوتي</string>
+    <string name="video_variant_title">اختيار النسخة</string>
+    <string name="video_variant_fallback">النسخة %1$d</string>
+    <string name="video_settings_title">الإعدادات</string>
+    <string name="video_playback_speed">السرعة</string>
+    <string name="video_audio_track">مسار الصوت</string>
+    <string name="video_subtitles">الترجمة الفرعية</string>
+    <string name="video_subtitles_none">بدون ترجمة فرعية</string>
+    <string name="video_subtitles_off">إيقاف</string>
+    <string name="video_keep_screen_on">إبقاء الشاشة مضاءة</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">التشغيل</string>
+    <string name="video_section_video">الفيديو</string>
+    <string name="video_section_gestures">الإيماءات</string>
+    <string name="video_section_audio">الصوت</string>
+    <string name="video_section_subtitles">الترجمة الفرعية</string>
+    <string name="video_section_screen">الشاشة</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">خطوة التقدّم</string>
+    <string name="video_seconds_value">%1$d ث</string>
+    <string name="video_controller_auto_hide">إخفاء عناصر التحكم تلقائيًا</string>
+    <string name="video_auto_hide_never">أبدًا</string>
+    <string name="video_variant">النسخة</string>
+    <string name="video_gesture_double_tap">النقر المزدوج للتقديم</string>
+    <string name="video_gesture_vertical_swipe">السحب العمودي: الصوت والسطوع</string>
+    <string name="video_gesture_long_press">الضغط المطوّل لسرعة 2×</string>
+    <string name="video_gesture_swap_sides">تبديل نصفي الشاشة</string>
+    <string name="video_gesture_sensitivity">حساسية السحب</string>
+    <string name="video_subtitle_track">مسار الترجمة الفرعية</string>
+
+    <string name="failed_to_restore_backup_incomplete">ملف النسخ الاحتياطي غير مكتمل أو تالف</string>
+    <string name="failed_to_restore_backup_too_short">ملف النسخ الاحتياطي فارغ أو قصير جدًا</string>
+    <string name="failed_to_restore_backup_empty_archive">أرشيف النسخ الاحتياطي فارغ</string>
+    <string name="failed_to_restore_backup_missing_database">أرشيف النسخ الاحتياطي لا يحتوي على قاعدة بيانات</string>
+    <string name="failed_to_restore_error">خطأ في الاستعادة: %1$s</string>
+    <string name="failed_to_restore_invalid_format">صيغة ملف النسخ الاحتياطي غير صالحة. يُتوقع ملف ZIP</string>
+    <string name="failed_to_restore_read_error">فشلت قراءة ملف النسخ الاحتياطي: %1$s</string>
 </resources>

@@ -4,6 +4,7 @@ import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import my.noveldokusha.core.AppCacheConfig
 import my.noveldokusha.core.utils.decodePages
 import my.noveldokusha.core.utils.encodePages
 import my.noveldokusha.core.utils.refererFor
@@ -54,7 +55,7 @@ class DownloadedPageChaptersStore @Inject constructor(
      * остаются в локальном хранилище.
      */
     private val pageImagesDir: File
-        get() = File(context.cacheDir, "page_images")
+        get() = File(context.cacheDir, AppCacheConfig.PAGE_IMAGES_CACHE_DIR)
 
     private fun pageImageFileFor(pageUrl: String): File =
         File(pageImagesDir, sha256(pageUrl) + ".img")
@@ -102,15 +103,21 @@ class DownloadedPageChaptersStore @Inject constructor(
      * не качают заново). Возвращает СУММАРНЫЙ РАЗМЕР СОХРАНЁННЫХ байт —
      * точное значение, отображаемое в списке глав. Кидает IOException при
      * сетевой ошибке — DownloadManager ретраит главу целиком.
+     *
+     * [onProgress] вызывается на каждой итерации с числом УЖЕ ГОТОВЫХ страниц
+     * и общим числом (в конце — pages.size из pages.size): считает и те файлы,
+     * что уже лежали на диске или пришли из кэша ридера.
      */
     suspend fun downloadChapter(
         chapterUrl: String,
-        pages: List<String>
+        pages: List<String>,
+        onProgress: suspend (Int, Int) -> Unit = { _, _ -> },
     ): Long = withContext(Dispatchers.IO) {
         val dir = chapterDir(chapterUrl)
         dir.mkdirs()
         var total = 0L
         pages.forEachIndexed { index, pageUrl ->
+            onProgress(index, pages.size)
             val file = pageFile(chapterUrl, index, pageUrl)
             if (file.exists() && file.length() > 0) {
                 total += file.length()
@@ -143,6 +150,9 @@ class DownloadedPageChaptersStore @Inject constructor(
             }
             if (index % 5 == 4) Timber.d("downloaded pages ${index + 1}/${pages.size} for $chapterUrl")
         }
+        // Все страницы готовы — закрываем счётчик, чтобы бейдж не ушёл в
+        // следующую главу со значением на одну страницу меньше.
+        onProgress(pages.size, pages.size)
         dao.insertReplace(
             DownloadedPageChapter(
                 url = chapterUrl,

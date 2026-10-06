@@ -258,6 +258,7 @@ fun CatalogExplorerScreen(
                                 "" to stringResource(StringsR.string.all_categories),
                                 "manga" to stringResource(StringsR.string.content_type_manga),
                                 "novel" to stringResource(StringsR.string.content_type_novel),
+                                "video" to stringResource(StringsR.string.content_type_video),
                             )
                             contentTypeOptions.forEach { (value, label) ->
                                 FilterChip(

@@ -112,6 +112,7 @@ class MigrationRepository @Inject constructor(
                     val newChapter = Chapter(
                         title = newResult.title, url = newResult.url, bookUrl = newBookUrl,
                         position = idx,
+                        volume = newResult.volume,
                         read = if (options.transferProgress) (oldChapter?.read ?: false) else false,
                         lastReadPosition = if (options.transferProgress) (oldChapter?.lastReadPosition ?: 0) else 0,
                         lastReadOffset = if (options.transferProgress) (oldChapter?.lastReadOffset ?: 0) else 0,

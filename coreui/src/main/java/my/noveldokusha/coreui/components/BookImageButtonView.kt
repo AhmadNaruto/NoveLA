@@ -64,6 +64,8 @@ fun BookImageButtonView(
     sourceStripSourceName: String? = null,
     sourceStripPosition: SourceStripPosition = SourceStripPosition.BelowCover,
     forceCache: Boolean = false,
+    // Готовый заголовок Referer для загрузки обложки; null → из хоста картинки.
+    referer: String? = null,
     fadeInDurationMillis: Int = 250,
     onClick: () -> Unit,
     onLongClick: () -> Unit = { },
@@ -105,6 +107,7 @@ fun BookImageButtonView(
                     fadeInDurationMillis = fadeInDurationMillis,
                     error = R.drawable.default_book_cover,
                     forceCache = forceCache,
+                    referer = referer,
                 )
             }
 
@@ -336,8 +339,11 @@ private fun SourceStrip(
 }
 
 /** Иконка типа контента */
-fun String?.toContentTypeBadgeIcon(): Int =
-    if (this == "manga") R.drawable.ic_content_type_manga else R.drawable.ic_content_type_novel
+fun String?.toContentTypeBadgeIcon(): Int = when (this) {
+    "manga" -> R.drawable.ic_content_type_manga
+    "video" -> R.drawable.ic_content_type_video
+    else -> R.drawable.ic_content_type_novel
+}
 
 @PreviewThemes
 @Composable

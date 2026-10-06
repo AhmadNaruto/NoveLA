@@ -14,8 +14,13 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.withContext
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import dagger.hilt.android.qualifiers.ApplicationContext
 import my.noveldokusha.data.AppRepository
 import my.noveldokusha.data.DownloaderRepository
+import my.noveldokusha.data.backfillCovers
 import my.noveldokusha.core.AppFileResolver
 import my.noveldokusha.core.domain.ChapterPagination
 import my.noveldokusha.core.isHttpsUrl
@@ -32,6 +37,7 @@ import my.noveldokusha.feature.local_database.DAOs.LibraryDao
 import my.noveldokusha.feature.local_database.tables.Book
 import my.noveldokusha.feature.local_database.tables.Chapter
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import my.noveldokusha.scraper.Scraper
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -42,10 +48,13 @@ class LibraryUpdatesInteractions @Inject constructor(
     private val libraryDao: LibraryDao,
     private val coverRepository: CoverRepository,
     private val appFileResolver: AppFileResolver,
+    private val scraper: Scraper,
+    @ApplicationContext private val context: Context,
 ) {
     companion object {
         private val hostGroupSemaphore = Semaphore(4)
         private val isUpdating = AtomicBoolean(false)
+        private val isBackfilling = AtomicBoolean(false)
     }
 
     data class NewUpdate(
@@ -283,7 +292,7 @@ class LibraryUpdatesInteractions @Inject constructor(
 
         // Добавляем главы первой страницы
         firstPage.chapters.forEachIndexed { idx, ch ->
-            allChapters.add(Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = idx, uploaded = ch.uploaded))
+            allChapters.add(Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = idx, uploaded = ch.uploaded, volume = ch.volume))
         }
 
         // Загружаем оставшиеся страницы 2..totalPages
@@ -299,7 +308,7 @@ class LibraryUpdatesInteractions @Inject constructor(
             val offset = allChapters.size
             pageData.chapters.forEachIndexed { idx, ch ->
                 allChapters.add(
-                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx, uploaded = ch.uploaded)
+                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx, uploaded = ch.uploaded, volume = ch.volume)
                 )
             }
         }
@@ -350,7 +359,7 @@ class LibraryUpdatesInteractions @Inject constructor(
         Timber.d("[parsePage incremental] \"${book.title}\" — new chapters from lastPage=$lastKnownPage: ${newFromLastPage.size}")
         newFromLastPage.forEachIndexed { idx, ch ->
             chaptersToAdd.add(
-                Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = positionOffset + idx, uploaded = ch.uploaded)
+                Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = positionOffset + idx, uploaded = ch.uploaded, volume = ch.volume)
             )
         }
         positionOffset += chaptersToAdd.size
@@ -370,7 +379,7 @@ class LibraryUpdatesInteractions @Inject constructor(
             val offset = positionOffset
             pageData.chapters.forEachIndexed { idx, ch ->
                 chaptersToAdd.add(
-                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx, uploaded = ch.uploaded)
+                    Chapter(title = ch.title, url = ch.url, bookUrl = book.url, position = offset + idx, uploaded = ch.uploaded, volume = ch.volume)
                 )
             }
             positionOffset += pageData.chapters.size
@@ -512,10 +521,38 @@ class LibraryUpdatesInteractions @Inject constructor(
 
     private val updatesInProgress = mutableSetOf<String>()
 
-    private suspend fun syncCover(bookUrl: String, remoteCoverUrl: String) {
+    suspend fun syncCover(bookUrl: String, remoteCoverUrl: String) {
         val coverFile = appFileResolver.getStorageBookCoverImageFile(appFileResolver.getLocalBookFolderName(bookUrl))
-        if (!coverRepository.ensureCover(coverFile, remoteCoverUrl)) {
+        if (!coverRepository.ensureCover(coverFile, remoteCoverUrl, referer = scraper.coverReferer(bookUrl))) {
             Timber.w("Failed to download cover for $bookUrl")
+        }
+    }
+
+    /**
+     * Докачивает обложки книг, у которых нет локального файла на диске.
+     * Вызывается при открытии библиблиотеки, пропускает параллельные запуски
+     * и выходит сразу, если сети нет.
+     */
+    suspend fun backfillMissingCovers(): Unit = withContext(Dispatchers.IO) {
+        if (!isBackfilling.compareAndSet(false, true)) return@withContext
+        try {
+            if (!isNetworkAvailable()) return@withContext
+            backfillCovers(appRepository.libraryBooks.getAllInLibrary(), appFileResolver, coverRepository, scraper)
+        } finally {
+            isBackfilling.set(false)
+        }
+    }
+
+    // ponytail: локальная копия isNetworkAvailable из DownloadManager
+    private fun isNetworkAvailable(): Boolean {
+        return try {
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                ?: return true // если не можем проверить — считаем что сеть есть
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        } catch (_: Exception) {
+            true // fallback — пробуем сделать запрос
         }
     }
 

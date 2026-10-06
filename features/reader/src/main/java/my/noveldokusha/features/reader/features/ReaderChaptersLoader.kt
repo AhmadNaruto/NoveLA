@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import my.noveldokusha.core.Response
-import my.noveldokusha.core.isValidChapterContent
+import my.noveldokusha.core.chapterContentIssue
 import my.noveldokusha.features.reader.ReaderRepository
 import my.noveldokusha.features.reader.domain.ChapterLoaded
 import my.noveldokusha.features.reader.domain.ChapterState
@@ -24,7 +24,12 @@ import my.noveldokusha.features.reader.domain.ReaderItem
 import my.noveldokusha.features.reader.domain.ReaderState
 import my.noveldokusha.features.reader.domain.ReadingChapterPosStats
 import my.noveldokusha.features.reader.domain.indexOfReaderItem
+import my.noveldokusha.features.reader.tools.ResolveResult
+import my.noveldokusha.features.reader.tools.SentenceSplitter
 import my.noveldokusha.features.reader.tools.applyUserRegexRules
+import my.noveldokusha.features.reader.tools.expandParagraphPairs
+import my.noveldokusha.features.reader.tools.resolveParagraphTranslations
+import my.noveldokusha.features.reader.tools.splitParagraphPair
 import my.noveldokusha.features.reader.tools.textToItemsConverter
 import my.noveldokusha.features.reader.ui.ReaderViewHandlersActions
 import my.noveldokusha.feature.local_database.DAOs.ChapterTranslationDao
@@ -65,6 +70,9 @@ internal class ReaderChaptersLoader(
     }
 
     val chaptersStats = mutableMapOf<ChapterUrl, ChapterStats>()
+    // Paragraph-level items per chapter (list as inserted, before sentence expansion).
+    // Used to remap a saved reading position when the split setting has changed.
+    private val paragraphStructureByUrl = mutableMapOf<ChapterUrl, List<ReaderItem>>()
     val loadedChapters = mutableSetOf<ChapterUrl>()
     val chapterLoadedFlow = MutableSharedFlow<ChapterLoaded>()
     private val items: MutableList<ReaderItem> = ArrayList()
@@ -333,8 +341,13 @@ internal class ReaderChaptersLoader(
         readerViewHandlersActions.doSetInitialPosition(
             InitialPositionChapter(
                 chapterIndex = index,
-                chapterItemPosition = chapterLastState.chapterItemPosition,
-                chapterItemOffset = chapterLastState.offset
+                chapterItemPosition = mapRestoredPosition(
+                    structureUrl = chapterLastState.chapterUrl,
+                    savedWithSplit = chapterLastState.savedWithSplit,
+                    savedPos = chapterLastState.chapterItemPosition,
+                ),
+                chapterItemOffset = chapterLastState.offset,
+                savedWithSplit = chapterLastState.savedWithSplit
             )
         )
         readerState = ReaderState.IDLE
@@ -377,8 +390,15 @@ internal class ReaderChaptersLoader(
             chapterIndex = chapter.position,
             chapter = chapter,
         )
+        val restoredPosition = initialPosition.copy(
+            chapterItemPosition = mapRestoredPosition(
+                structureUrl = chapter.url,
+                savedWithSplit = initialPosition.savedWithSplit,
+                savedPos = initialPosition.chapterItemPosition,
+            )
+        )
         readerViewHandlersActions.doForceUpdateListViewState()
-        readerViewHandlersActions.doSetInitialPosition(initialPosition)
+        readerViewHandlersActions.doSetInitialPosition(restoredPosition)
         chapterLoadedFlow.emit(ChapterLoaded(chapterIndex = chapterIndex, type = ChapterLoaded.Type.Initial))
         readerState = ReaderState.IDLE
         Timber.d("ReaderLoad: loadInitialChapter DONE chapterIndex=$chapterIndex")
@@ -567,11 +587,12 @@ internal class ReaderChaptersLoader(
         when (val res = readerRepository.downloadChapter(chapter.url)) {
             is Response.Success -> {
                 Timber.d("ReaderLoad: chapter body OK idx=$chapterIndex len=${res.data.length}")
-                if (!isValidChapterContent(res.data)) {
+                val contentIssue = chapterContentIssue(res.data)
+                if (contentIssue != null) {
                     failedChapterIndex = chapterIndex
                     withContext(Dispatchers.Main.immediate) {
                         hasLoadingError = true
-                        Timber.w("Chapter content invalid (possibly Cloudflare or Login), stopping auto-loading. Preview: ${res.data.take(160)}")
+                        Timber.w("Chapter content invalid issue=$contentIssue, stopping auto-loading. Preview: ${res.data.take(160)}")
                     }
                     readerRepository.deleteChapterBody(chapter.url)
                     maintainPosition {
@@ -595,15 +616,17 @@ internal class ReaderChaptersLoader(
                 }
 
                 val regexRules = regexRulesProvider()
+                // Enumeration is always paragraph-level here: sentence splitting is a
+                // separate post-step, so item positions stay stable regardless of it.
+                val bodyStartPosition = chapterItemPosition
                 val itemsOriginal = textToItemsConverter(
                     chapterUrl = chapter.url,
                     chapterIndex = chapterIndex,
-                    chapterItemPositionDisplacement = chapterItemPosition,
+                    chapterItemPositionDisplacement = bodyStartPosition,
                     text = res.data,
                     userRegexRules = regexRules,
-                    sentenceSplittingEnabled = sentenceSplittingEnabledProvider(),
+                    sentenceSplittingEnabled = false,
                 )
-                chapterItemPosition += itemsOriginal.size
 
                 val itemTranslationAttribution = if (translatorIsActive()) {
                     ReaderItem.TranslateAttribution(chapterIndex = chapterIndex, provider = translatorProvider())
@@ -644,56 +667,64 @@ internal class ReaderChaptersLoader(
                                     )
                                 }
 
-                                // Parse cached body translations
-                                val cachedBody: Map<Int, String> = if (existingEntry != null) {
+                                // Parse cached paragraph translations (positional, paragraph granularity)
+                                val cachedEntries: List<String> = if (existingEntry != null) {
                                     try {
                                         val arr = org.json.JSONArray(existingEntry.translatedParagraphs)
-                                        (0 until arr.length()).associate { it to arr.getString(it) }
+                                        (0 until arr.length()).map { arr.getString(it) }
                                     } catch (e: org.json.JSONException) {
-                                        emptyMap()
+                                        emptyList()
                                     }
                                 } else {
-                                    emptyMap()
+                                    emptyList()
                                 }
 
                                 var needsSave = false
                                 var translatedParagraphsJson = existingEntry?.translatedParagraphs ?: "[]"
                                 var titleSaved = existingEntry?.titleTranslation ?: ""
 
-                                val translatedItems = if (cachedBody.isNotEmpty()) {
-                                    val missingIndices = bodyTexts.indices.filter { it !in cachedBody }
-
-                                    if (missingIndices.isEmpty()) {
-                                        Timber.d("Using full DB cache for chapter ${chapter.title} (${cachedBody.size} body translations)")
-                                        itemsOriginal.map { item ->
-                                            if (item is ReaderItem.Body) {
-                                                val indices = textToIndices[item.text] ?: return@map item
-                                                item.copy(textTranslated = indices.firstNotNullOfOrNull { cachedBody[it] } ?: item.text)
-                                            } else item
-                                        }
-                                    } else {
-                                        val missingTexts = missingIndices.map { bodyTexts[it] }.distinct()
-                                        Timber.d("DB cache partial: ${cachedBody.size}/${bodyTexts.size}, translating ${missingTexts.size} missing body paragraphs")
-                                        val extraTranslations = withContext(Dispatchers.IO) {
-                                            kotlinx.coroutines.withTimeout(60_000L) {
-                                                batchTranslator.invoke(missingTexts)
+                                val translatedItems = if (cachedEntries.isNotEmpty()) {
+                                    when (val resolved = resolveParagraphTranslations(cachedEntries, bodyTexts)) {
+                                        is ResolveResult.Complete -> {
+                                            Timber.d("DB cache resolved for chapter ${chapter.title}: ${resolved.translations.size}/${bodyTexts.size} paragraphs, rewrite=${resolved.rewriteNeeded}")
+                                            // Alignment is already guaranteed by the resolver,
+                                            // so attach translations positionally by body order.
+                                            if (resolved.rewriteNeeded) {
+                                                translatedParagraphsJson = org.json.JSONArray(resolved.translations).toString()
+                                                needsSave = true
+                                            }
+                                            var bodyIndex = 0
+                                            itemsOriginal.map { item ->
+                                                if (item is ReaderItem.Body) item.copy(textTranslated = resolved.translations[bodyIndex++])
+                                                else item
                                             }
                                         }
+                                        is ResolveResult.Partial -> {
+                                            val cachedBody = cachedEntries.withIndex().associate { (i, v) -> i to v }
+                                            val missingIndices = bodyTexts.indices.filter { it !in cachedBody }
+                                            val missingTexts = missingIndices.map { bodyTexts[it] }.distinct()
+                                            Timber.d("DB cache partial: ${cachedBody.size}/${bodyTexts.size}, translating ${missingTexts.size} missing body paragraphs")
+                                            val extraTranslations = withContext(Dispatchers.IO) {
+                                                kotlinx.coroutines.withTimeout(60_000L) {
+                                                    batchTranslator.invoke(missingTexts)
+                                                }
+                                            }
 
-                                        val fullBody = cachedBody.toMutableMap()
-                                        missingIndices.forEach { idx ->
-                                            fullBody[idx] = extraTranslations[bodyTexts[idx]] ?: bodyTexts[idx]
-                                        }
-                                        translatedParagraphsJson = org.json.JSONArray(
-                                            bodyTexts.indices.map { fullBody[it] ?: bodyTexts[it] }
-                                        ).toString()
-                                        needsSave = true
+                                            val fullBody = cachedBody.toMutableMap()
+                                            missingIndices.forEach { idx ->
+                                                fullBody[idx] = extraTranslations[bodyTexts[idx]] ?: bodyTexts[idx]
+                                            }
+                                            translatedParagraphsJson = org.json.JSONArray(
+                                                bodyTexts.indices.map { fullBody[it] ?: bodyTexts[it] }
+                                            ).toString()
+                                            needsSave = true
 
-                                        itemsOriginal.map { item ->
-                                            if (item is ReaderItem.Body) {
-                                                val indices = textToIndices[item.text] ?: return@map item
-                                                item.copy(textTranslated = indices.firstNotNullOfOrNull { fullBody[it] } ?: item.text)
-                                            } else item
+                                            itemsOriginal.map { item ->
+                                                if (item is ReaderItem.Body) {
+                                                    val indices = textToIndices[item.text] ?: return@map item
+                                                    item.copy(textTranslated = indices.firstNotNullOfOrNull { fullBody[it] } ?: item.text)
+                                                } else item
+                                            }
                                         }
                                     }
                                 } else {
@@ -788,14 +819,6 @@ internal class ReaderChaptersLoader(
                     return@_addChapterInternal false
                 }
 
-                withContext(Dispatchers.Main.immediate) {
-                    chaptersStats[chapter.url] = ChapterStats(
-                        chapter = chapter,
-                        itemsCount = items.size,
-                        orderedChaptersIndex = chapterIndex
-                    )
-                }
-
                 val finalItemTitle = itemTitle.copy(textTranslated = titleTranslated)
 
                 // Apply regex cleanup to the translated text too, just like the
@@ -809,6 +832,23 @@ internal class ReaderChaptersLoader(
                             item.copy(textTranslated = applyUserRegexRules(translated, regexRules))
                         } else item
                     } else item
+                }
+
+                // Sentence splitting runs AFTER translations are attached, so both
+                // sides of a pair are cut together. Applies to every successful branch.
+                val itemsFinal = if (sentenceSplittingEnabledProvider()) {
+                    expandParagraphPairs(itemsCleaned, startPosition = bodyStartPosition)
+                } else itemsCleaned
+
+                withContext(Dispatchers.Main.immediate) {
+                    // The paragraph-level list is the granularity used to remap a
+                    // saved position when the split setting changes.
+                    paragraphStructureByUrl[chapter.url] = itemsCleaned
+                    chaptersStats[chapter.url] = ChapterStats(
+                        chapter = chapter,
+                        itemsCount = itemsFinal.size,
+                        orderedChaptersIndex = chapterIndex
+                    )
                 }
 
                 // Do NOT use maintainPosition for success block — it would call
@@ -825,7 +865,7 @@ internal class ReaderChaptersLoader(
                             if (idx != -1) this@ReaderChaptersLoader.items[idx] = finalItemTitle
                         }
                         itemTranslationAttribution?.let { insert(it) }
-                        insertAll(itemsCleaned)
+                        insertAll(itemsFinal)
                         insert(ReaderItem.Divider(chapterIndex = chapterIndex))
                         readerViewHandlersActions.doForceUpdateListViewState()
                     }
@@ -837,7 +877,7 @@ internal class ReaderChaptersLoader(
                         val idx = backingList.indexOf(itemTitle)
                         if (idx != -1) backingList[idx] = finalItemTitle
                         itemTranslationAttribution?.let { backingList.add(it) }
-                        backingList.addAll(itemsCleaned)
+                        backingList.addAll(itemsFinal)
                         backingList.add(ReaderItem.Divider(chapterIndex = chapterIndex))
                         readerViewHandlersActions.forceUpdateListViewState?.invoke()
                     }
@@ -929,7 +969,29 @@ internal class ReaderChaptersLoader(
             val url = orderedChapters.getOrNull(chapterIndex)?.url ?: continue
             loadedChapters.remove(url)
             chaptersStats.remove(url)
+            paragraphStructureByUrl.remove(url)
         }
+    }
+
+    /**
+     * Converts a saved chapter item position into the granularity of the current
+     * sentence-splitting setting. Falls back to the raw value when the flag
+     * already matches, the paragraph structure is unknown (pruned/not loaded yet)
+     * or the item cannot be identified.
+     */
+    private fun mapRestoredPosition(
+        structureUrl: String,
+        savedWithSplit: Boolean,
+        savedPos: Int,
+    ): Int {
+        val currentSplit = sentenceSplittingEnabledProvider()
+        if (savedWithSplit == currentSplit) return savedPos
+        return mapPosition(
+            paragraphLevel = paragraphStructureByUrl[structureUrl].orEmpty(),
+            savedWithSplit = savedWithSplit,
+            currentSplit = currentSplit,
+            savedPos = savedPos,
+        )
     }
 
     private suspend fun translateAndCacheBodiesOnly(
@@ -998,4 +1060,92 @@ internal class ReaderChaptersLoader(
         private const val WINDOW_BEHIND = 10
         private val ERROR_DETAIL_PATTERN = Regex(""":\d+\s+(\[?\w.*?)$""", RegexOption.DOT_MATCHES_ALL)
     }
+}
+
+/**
+ * Identity of a paragraph-level item: its ordinal among the Body items and,
+ * separately, among the Image items of the same chapter list.
+ */
+private sealed interface ParagraphRef {
+    data class Body(val ordinal: Int) : ParagraphRef
+    data class Image(val ordinal: Int) : ParagraphRef
+}
+
+/**
+ * Number of position slots an item occupies at the given granularity.
+ * Mirrors the item/position rules of expandParagraphPairs — keep both in sync.
+ */
+private fun ReaderItem.slotCount(split: Boolean): Int = when {
+    !split -> 1
+    this is ReaderItem.Body -> {
+        val translation = textTranslated
+        if (translation != null) splitParagraphPair(text, translation).size
+        else SentenceSplitter.splitParagraph(text).size
+    }
+    else -> 1
+}
+
+/** The chapter item sequence at [split] granularity, numbered from 1. */
+private fun sequenceAt(paragraphLevel: List<ReaderItem>, split: Boolean): List<ReaderItem> =
+    if (split) expandParagraphPairs(paragraphLevel, startPosition = 1)
+    else paragraphLevel.filter { it is ReaderItem.Position }
+
+/**
+ * One ref per output slot, aligned with sequenceAt(paragraphLevel, split).
+ * paragraphLevel comes from textToItemsConverter (Body and Image only), so the
+ * ordinal counters follow the same order as the expansion.
+ */
+private fun paragraphSlotRefs(paragraphLevel: List<ReaderItem>, split: Boolean): List<ParagraphRef> {
+    val refs = ArrayList<ParagraphRef>(paragraphLevel.size)
+    var bodyOrdinal = 0
+    var imageOrdinal = 0
+    for (item in paragraphLevel) {
+        when (item) {
+            is ReaderItem.Body -> {
+                repeat(item.slotCount(split)) { refs.add(ParagraphRef.Body(bodyOrdinal)) }
+                bodyOrdinal++
+            }
+            is ReaderItem.Image -> {
+                repeat(item.slotCount(split)) { refs.add(ParagraphRef.Image(imageOrdinal)) }
+                imageOrdinal++
+            }
+            else -> {}
+        }
+    }
+    return refs
+}
+
+/**
+ * Maps a saved chapter item position from the [savedWithSplit] granularity to
+ * the [currentSplit] one, using the chapter's paragraph-level item list.
+ *
+ * - savedPos == 0 (chapter title) stays 0.
+ * - Matching flags keep the numbering untouched.
+ * - The saved slot is resolved to its paragraph identity, then the first slot of
+ *   that paragraph in the current granularity is returned (a split paragraph
+ *   maps to its first piece).
+ * - Any mismatch (unknown structure, size drift, out-of-range position) returns
+ *   [savedPos] unchanged — the legacy behaviour.
+ */
+internal fun mapPosition(
+    paragraphLevel: List<ReaderItem>,
+    savedWithSplit: Boolean,
+    currentSplit: Boolean,
+    savedPos: Int,
+): Int {
+    if (savedPos == 0) return 0
+    if (savedWithSplit == currentSplit) return savedPos
+
+    val savedSequence = sequenceAt(paragraphLevel, savedWithSplit)
+    val savedRefs = paragraphSlotRefs(paragraphLevel, savedWithSplit)
+    if (savedSequence.size != savedRefs.size) return savedPos
+    val target = savedRefs.getOrNull(savedPos - 1) ?: return savedPos
+
+    val currentSequence = sequenceAt(paragraphLevel, currentSplit)
+    val currentRefs = paragraphSlotRefs(paragraphLevel, currentSplit)
+    if (currentSequence.size != currentRefs.size) return savedPos
+
+    val targetIndex = currentRefs.indexOf(target)
+    if (targetIndex == -1) return savedPos
+    return (currentSequence[targetIndex] as? ReaderItem.Position)?.chapterItemPosition ?: savedPos
 }

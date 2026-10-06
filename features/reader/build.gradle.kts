@@ -25,6 +25,12 @@ dependencies {
 
     implementation(libs.material)
     implementation(libs.androidx.media)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.exoplayer.hls)
+    implementation(libs.media3.exoplayer.dash)
+    implementation(libs.media3.ui)
+    implementation(libs.media3.datasource.okhttp)
+    implementation(libs.media3.session)
     implementation(libs.compose.androidx.material.icons.extended)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.compose.androidx.activity)

@@ -14,6 +14,8 @@ import my.noveldokusha.scraper.configs.SourceMetadata
 import my.noveldokusha.scraper.domain.BookResult
 import my.noveldokusha.scraper.domain.ChapterResult
 import my.noveldokusha.scraper.domain.PluginShowErrorException
+import my.noveldokusha.scraper.domain.VideoSource
+import my.noveldokusha.scraper.domain.VideoSubtitle
 import org.luaj.vm2.LuaValue
 import org.luaj.vm2.LuaTable
 import org.jsoup.nodes.Document
@@ -91,6 +93,10 @@ open class LuaSourceAdapter(
     override val catalogUrl: String = baseUrl
     override val charset: String = metadata.charset ?: "UTF-8"
     override val contentType: String get() = metadata.contentType
+
+    // Готовый Referer для картинок (коверов) — глобал referer из скрипта.
+    // "" = не указано → авто-рефер от URL картинки.
+    override val referer: String = readReferer()
 
     override val language: LanguageCode? = when (metadata.language.lowercase().trim()) {
         "mtl", "multi" -> LanguageCode.MTL
@@ -179,7 +185,14 @@ open class LuaSourceAdapter(
     // "" = не указано/новелла; валидация на границе чтения.
     private fun readContentType(): String {
         val raw = try { luaScript.get("content_type").optjstring("") } catch (_: Exception) { "" }
-        return raw.lowercase().takeIf { it == "manga" || it == "novel" } ?: ""
+        return raw.lowercase().takeIf { it == "manga" || it == "novel" || it == "video" } ?: ""
+    }
+
+    // Чтение глобального Referer для картинок (коверов) из Lua-скрипта плагина.
+    // "" = не указано; валидация на границе чтения.
+    private fun readReferer(): String {
+        val raw = try { luaScript.get("referer").optjstring("") } catch (_: Exception) { "" }
+        return raw.trim()
     }
 
     internal fun extractMetadata(): SourceMetadata {
@@ -200,17 +213,19 @@ open class LuaSourceAdapter(
         )
     }
 
-    private fun validateLuaScript() {
+    internal fun requiredLuaFunctions(contentType: String): List<String> {
         val required = mutableListOf(
             "getCatalogList", "getCatalogSearch", "getBookTitle",
             "getBookCoverImageUrl", "getBookDescription",
-            "getChapterText"
+            if (contentType == "video") "getVideoList" else "getChapterText"
         )
-        // parsePage может заменять getChapterList
-        if (luaScript.get("parsePage").isnil()) {
-            required.add("getChapterList")
-        }
-        required.forEach { fn ->
+        // parsePage может заменять getChapterList (для video — тоже про эпизоды)
+        if (luaScript.get("parsePage").isnil()) required.add("getChapterList")
+        return required
+    }
+
+    private fun validateLuaScript() {
+        requiredLuaFunctions(metadata.contentType).forEach { fn ->
             if (luaScript.get(fn).isnil())
                 Timber.w("LuaSourceAdapter [${metadata.id}]: missing '$fn'")
         }
@@ -236,7 +251,12 @@ open class LuaSourceAdapter(
                 withSourceContext {
                     luaEngine.resetShowError()
                     try {
-                        val result = luaScript.get("getCatalogList").call(LuaValue.valueOf(index))
+                        // Fresh-network scope: lua http_* go with no-cache, past both the
+                        // memory TTL cache and the OkHttp disk cache. Set/restore happens
+                        // on this very thread — the lua call below is synchronous.
+                        val result = luaEngine.withForceNetwork {
+                            luaScript.get("getCatalogList").call(LuaValue.valueOf(index))
+                        }
                         checkShowError() ?: convertLuaResultToPagedList(result)
                     } catch (e: Exception) {
                         checkShowError() ?: run {
@@ -545,6 +565,26 @@ open class LuaSourceAdapter(
             }
         }
 
+    override suspend fun getVideoList(episodeUrl: String): Response<List<VideoSource>>? =
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                withSourceContext {
+                    luaEngine.resetShowError()
+                    val fn = luaScript.get("getVideoList")
+                    if (fn.isnil()) return@withSourceContext null
+                    try {
+                        val result = fn.call(LuaValue.valueOf(episodeUrl))
+                        checkShowError() ?: convertLuaVideoList(result)
+                    } catch (e: Exception) {
+                        checkShowError() ?: run {
+                            Timber.e(e, "Lua getVideoList [${metadata.id}]")
+                            Response.Error(e.message ?: "Unknown Lua error", e)
+                        }
+                    }
+                }
+            }
+        }
+
     override suspend fun getChapterListHash(bookUrl: String): Response<String?> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
@@ -607,6 +647,99 @@ open class LuaSourceAdapter(
         volume = table.get("volume").optjstring(null),
         uploaded = table.get("uploaded").takeIf { it.isnumber() }?.tolong()
     )
+
+    /**
+     * Необязательный хинт `mime` таблицы потока → каноничный mime для меди3
+     * либо null.
+     *
+     * Util.inferContentTypeForUriAndMimeType сравнивает строки точно, поэтому
+     * HLS обязан прийти как `application/x-mpegURL`; распространённый алиас
+     * `application/vnd.apple.mpegurl` меди3 не знает и ушёл бы в прогрессивный
+     * источник.
+     *
+     * Неизвестные значения → null: непустой mime, который меди3 не распознаёт,
+     * отправляет поток в прогрессивный источник БЕЗ возврата к определению по
+     * расширению URL (например `application/octet-stream` сломал бы `.m3u8`),
+     * а null даёт штатный URI-фоллбэк. Пропускаются только строки, понятные
+     * меди3: `video/…` (прогрессив) и точный application-набор из
+     * inferContentTypeForUriAndMimeType. Не-строковые значения игнорируются
+     * (debug-лог, без ошибки) — плагины без поля работают как раньше.
+     */
+    private fun normalizeVideoMime(value: LuaValue, itemIndex: Int): String? {
+        if (value.isnil()) return null
+        if (!value.isstring()) {
+            Timber.d("getVideoList [$id]: item $itemIndex mime не строка, пропущено")
+            return null
+        }
+        val raw = value.tojstring().trim()
+        if (raw.isEmpty()) return null
+        val mime = raw.lowercase()
+        val canonical = when (mime) {
+            "hls", "m3u8",
+            "application/x-mpegurl",
+            "application/vnd.apple.mpegurl" -> "application/x-mpegURL"
+            "mp4", "video/mp4" -> "video/mp4"
+            "mpd", "application/dash+xml" -> "application/dash+xml"
+            // Белый список: video/* (прогрессив) + точный application/*-set меди3
+            // (dash/x-mpegURL уже нормализованы выше). Прочное — null → URL-фоллбэк.
+            else -> mime.takeIf {
+                it.startsWith("video/") ||
+                    it == "application/vnd.ms-sstr+xml" ||
+                    it == "application/x-rtsp"
+            }
+        }
+        if (canonical == null) {
+            Timber.d("getVideoList [$id]: item $itemIndex неизвестный mime '$raw', пропущено")
+        }
+        return canonical
+    }
+
+    // Три-состояния контракта (спека §3.3): nil → Success(empty) — плагин объявил
+    // метод, но источники не найдены; не-таблица → Error;
+    // пустая таблица → Success(empty) — «Источники не найдены».
+    internal fun convertLuaVideoList(luaResult: LuaValue): Response<List<VideoSource>> {
+        if (luaResult.isnil()) return Response.Success(emptyList())
+        if (!luaResult.istable()) return Response.Error(
+            "getVideoList returned non-table", IllegalStateException("non-table result")
+        )
+        val table = luaResult.checktable()
+        val videos = mutableListOf<VideoSource>()
+        for (i in 1..table.length()) {
+            val item = table.get(LuaValue.valueOf(i))
+            if (!item.istable()) continue
+            val t = item.checktable()
+            val url = t.get("url").optjstring("")
+            if (url.isBlank()) { Timber.w("getVideoList [$id]: item $i without url, skipped"); continue }
+            val headers = mutableMapOf<String, String>()
+            t.get("headers").opttable(null)?.let { ht ->
+                for (k in ht.keys()) headers[k.tojstring()] = ht.get(k).tojstring()
+            }
+            val subtitles = mutableListOf<VideoSubtitle>()
+            t.get("subtitles").opttable(null)?.let { st ->
+                for (j in 1..st.length()) {
+                    val s = st.get(LuaValue.valueOf(j)).opttable(null) ?: continue
+                    val sUrl = s.get("url").optjstring("")
+                    if (sUrl.isNotBlank()) subtitles.add(
+                        VideoSubtitle(
+                            url = sUrl,
+                            label = s.get("label").optjstring(""),
+                            lang = s.get("lang").optjstring("")
+                        )
+                    )
+                }
+            }
+            videos.add(
+                VideoSource(
+                    url = url,
+                    quality = t.get("quality").optjstring(""),
+                    headers = headers,
+                    subtitles = subtitles,
+                    mime = normalizeVideoMime(t.get("mime"), i)
+                )
+            )
+        }
+        return Response.Success(videos)
+    }
 }
 
 // ── Подклассы ─────────────────────────────────────────────────────────────────
@@ -676,10 +809,14 @@ class LuaSourceAdapterFilterable(
                 luaEngine.resetShowError()
                 try {
                     val luaFilters = filters.toLuaTable(luaEngine)
-                    val result = luaScript.get("getCatalogFiltered").call(
-                        LuaValue.valueOf(index),
-                        luaFilters
-                    )
+                    // Fresh-network scope: see getCatalogList — lua http_* run on this
+                    // thread, so the ThreadLocal set here is visible to them.
+                    val result = luaEngine.withForceNetwork {
+                        luaScript.get("getCatalogFiltered").call(
+                            LuaValue.valueOf(index),
+                            luaFilters
+                        )
+                    }
                     checkShowError() ?: convertLuaResultToPagedList(result)
                 } catch (e: Exception) {
                     checkShowError() ?: run {
@@ -736,10 +873,14 @@ class LuaSourceAdapterFull(
                 luaEngine.resetShowError()
                 try {
                     val luaFilters = filters.toLuaTable(luaEngine)
-                    val result = luaScript.get("getCatalogFiltered").call(
-                        LuaValue.valueOf(index),
-                        luaFilters
-                    )
+                    // Fresh-network scope: see getCatalogList — lua http_* run on this
+                    // thread, so the ThreadLocal set here is visible to them.
+                    val result = luaEngine.withForceNetwork {
+                        luaScript.get("getCatalogFiltered").call(
+                            LuaValue.valueOf(index),
+                            luaFilters
+                        )
+                    }
                     checkShowError() ?: convertLuaResultToPagedList(result)
                 } catch (e: Exception) {
                     checkShowError() ?: run {

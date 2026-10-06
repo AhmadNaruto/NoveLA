@@ -79,6 +79,7 @@
     <string name="filter">Filtrer</string>
     <string name="content_type_manga">Manga</string>
     <string name="content_type_novel">Roman</string>
+    <string name="content_type_video">Vidéo</string>
     <string name="filter_all">Tout</string>
     <string name="read">Lu</string>
     <string name="sort">Trier</string>
@@ -410,6 +411,7 @@
     <string name="invalid_regex_pattern_with">Motif regex invalide : %s</string>
     <string name="regex_cleanup_title">Regex</string>
     <string name="enabled">Activé</string>
+    <string name="whole_words_only">Mots entiers uniquement</string>
     <string name="wtr_lab_no_translation_hint">Translation disabled — content will load in English (or Chinese in RAW mode).</string>
     <string name="wtr_lab_lang_none">None</string>
     <string name="scroll_to_last_read_chapter">Dernière lecture</string>
@@ -539,6 +541,10 @@
     <string name="cleaning_manga_cache">Vidage du manga hors ligne…</string>
     <string name="manga_cache_cleaned">Manga hors ligne vidé</string>
     <string name="manga_cache_clean_failed">Échec du vidage du manga hors ligne</string>
+    <string name="clean_offline_video">Supprimer les vidéos hors ligne</string>
+    <string name="clean_offline_video_confirmation">Cela supprimera les vidéos téléchargées. Pour la lecture hors ligne, il faudra les re-télécharger.</string>
+    <string name="cleaning_offline_video">Suppression des vidéos hors ligne…</string>
+    <string name="offline_video_clean_failed">Échec de la suppression des vidéos hors ligne</string>
     <string name="all_sources">Toutes les sources</string>
     <string name="reset_filters">Réinitialiser</string>
 
@@ -843,4 +849,56 @@
     <string name="github_repository">Dépôt GitHub</string>
     <string name="report_issue">Signaler un problème</string>
     <string name="report_issue_description">Créer un rapport de bug sur GitHub</string>
+
+    <!-- Video player -->
+    <string name="video_loading_sources">Récupération des sources…</string>
+    <string name="video_open_in_other">Ouvrir dans une autre application</string>
+    <string name="video_no_app_to_play">Aucune application disponible pour lire cette vidéo</string>
+    <string name="video_playback_error">Erreur de lecture</string>
+    <string name="video_playback_error_codec">Les codecs de l\'appareil ne peuvent pas décoder ce flux</string>
+    <string name="video_playback_error_source">Source indisponible : problème de serveur ou fichier endommagé</string>
+    <string name="video_variant_badge_dead">Indisponible</string>
+    <string name="video_quality">Qualité</string>
+    <string name="video_sources_not_found">Sources introuvables</string>
+    <string name="video_source_not_found">Source introuvable</string>
+    <string name="video_source_no_video">La source ne prend pas en charge la vidéo</string>
+    <string name="video_translate_unavailable">La traduction n\'est pas disponible pour la vidéo</string>
+    <string name="video_resolution">Résolution</string>
+    <string name="video_voiceover">Voix off</string>
+    <string name="video_variant_title">Sélectionner une variante</string>
+    <string name="video_variant_fallback">Variante %1$d</string>
+    <string name="video_settings_title">Paramètres</string>
+    <string name="video_playback_speed">Vitesse</string>
+    <string name="video_audio_track">Piste audio</string>
+    <string name="video_subtitles">Sous-titres</string>
+    <string name="video_subtitles_none">Pas de sous-titres</string>
+    <string name="video_subtitles_off">Désactivés</string>
+    <string name="video_keep_screen_on">Garder l\'écran allumé</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Lecture</string>
+    <string name="video_section_video">Vidéo</string>
+    <string name="video_section_gestures">Gestes</string>
+    <string name="video_section_audio">Audio</string>
+    <string name="video_section_subtitles">Sous-titres</string>
+    <string name="video_section_screen">Écran</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Pas de saut</string>
+    <string name="video_seconds_value">%1$d s</string>
+    <string name="video_controller_auto_hide">Masquer automatiquement les commandes</string>
+    <string name="video_auto_hide_never">Jamais</string>
+    <string name="video_variant">Variante</string>
+    <string name="video_gesture_double_tap">Double-tap pour sauter</string>
+    <string name="video_gesture_vertical_swipe">Glissement vertical : volume et luminosité</string>
+    <string name="video_gesture_long_press">Appui long pour la vitesse 2×</string>
+    <string name="video_gesture_swap_sides">Inverser les moitiés de l\'écran</string>
+    <string name="video_gesture_sensitivity">Sensibilité du glissement</string>
+    <string name="video_subtitle_track">Piste de sous-titres</string>
+
+    <string name="failed_to_restore_backup_incomplete">Le fichier de sauvegarde est incomplet ou endommagé</string>
+    <string name="failed_to_restore_backup_too_short">Le fichier de sauvegarde est vide ou trop court</string>
+    <string name="failed_to_restore_backup_empty_archive">L\'archive de sauvegarde est vide</string>
+    <string name="failed_to_restore_backup_missing_database">L\'archive de sauvegarde ne contient aucune base de données</string>
+    <string name="failed_to_restore_error">Erreur de restauration : %1$s</string>
+    <string name="failed_to_restore_invalid_format">Format de fichier de sauvegarde invalide. Fichier ZIP attendu</string>
+    <string name="failed_to_restore_read_error">Impossible de lire le fichier de sauvegarde : %1$s</string>
 </resources>

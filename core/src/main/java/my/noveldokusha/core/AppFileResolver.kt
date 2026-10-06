@@ -20,6 +20,7 @@ class AppFileResolver @Inject constructor(
         const val COVER_PATH_RELATIVE_TO_BOOK = "__cover_image"
         private const val MAX_FOLDER_NAME_LENGTH = 200
         private const val HASH_BYTE_COUNT = 16
+        private const val MAX_FS_FOLDER_NAME_LENGTH = 255
     }
 
     val folderBooks = File(context.filesDir, "books")
@@ -92,13 +93,18 @@ class AppFileResolver @Inject constructor(
         else -> bookUrl
     }
 
+    // ponytail: legacy-папки до 1263574c (base64 без лимита); апгрейд — разовая миграция файлов в h_-папку
+    private fun legacyBookFolderName(bookUrl: String): String =
+        Base64.getEncoder().encodeToString(bookUrl.encodeToByteArray())
+
     /**
      * Возвращает путь к изображению: локальный File если обложка есть на диске,
      * иначе remote URL (для загрузки из сети).
      *
      * Для обложек (isCover=true) с HTTPS-URL проверяем наличие файла на диске.
      * Если файл существует — возвращаем его (Coil грузит локально, без сети).
-     * Если файла нет — возвращаем remote URL (Coil скачает).
+     * Если файла нет в актуальной папке — смотрим в легаси base64-папке (до 1263574c).
+     * Если файла нет нигде — возвращаем remote URL (Coil скачает).
      * Повреждённые файлы Coil обработает сам (placeholder), что лучше 4-6 сек
      * DNS timeout при обращении к мёртвому домену.
      *
@@ -116,8 +122,25 @@ class AppFileResolver @Inject constructor(
             resolved.isContentUri -> resolved
             bookUrl.isContentUri -> resolved
             resolved.isHttpsUrl && isCover -> {
-                val coverFile = getStorageBookCoverImageFile(getLocalBookFolderName(bookUrl))
-                if (isCoverValid(coverFile)) coverFile else resolved
+                val folderName = getLocalBookFolderName(bookUrl)
+                val coverFile = getStorageBookCoverImageFile(folderName)
+                if (isCoverValid(coverFile)) {
+                    coverFile
+                } else {
+                    val legacyFolderName = legacyBookFolderName(bookUrl)
+                    // Имя компонента > 255 байт на Android невалидно: canonicalFile
+                    // бросает IOException (File name too long) прямо в композиции.
+                    // Такая легаси-папка не могла быть создана — пропускаем проверку.
+                    val legacyCoverFile = if (
+                        legacyFolderName != folderName &&
+                        legacyFolderName.length <= MAX_FS_FOLDER_NAME_LENGTH
+                    ) {
+                        getStorageBookCoverImageFile(legacyFolderName)
+                    } else {
+                        null
+                    }
+                    if (legacyCoverFile != null && isCoverValid(legacyCoverFile)) legacyCoverFile else resolved
+                }
             }
             resolved.isHttpsUrl -> resolved
             else -> getStorageBookImageFile(bookUrl, resolved)

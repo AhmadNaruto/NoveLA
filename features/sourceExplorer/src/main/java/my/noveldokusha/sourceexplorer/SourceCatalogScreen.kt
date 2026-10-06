@@ -96,6 +96,7 @@ internal fun SourceCatalogScreen(
                                             else ""
                                         val (contentTypeLabel, contentTypeColor) = when (state.sourceContentType) {
                                             "manga" -> stringResource(StringsR.string.content_type_manga) to MaterialTheme.colorScheme.primary
+                                            "video" -> stringResource(StringsR.string.content_type_video) to MaterialTheme.colorScheme.secondary
                                             else -> stringResource(StringsR.string.content_type_novel) to MaterialTheme.colorScheme.tertiary
                                         }
                                         Text(
@@ -185,6 +186,8 @@ internal fun SourceCatalogScreen(
                     onWebViewOpen = onOpenSourceWebPage,
                     innerPadding = innerPadding,
                     translatedTitles = state.translatedTitles,
+                    coverOverrides = viewModel.covers,
+                    referer = viewModel.coverReferer,
                     topLeftBadge = { bookMeta ->
                         val badge = getLibraryBadge(bookMeta.url, bookMeta.title)
                         if (badge != null) {

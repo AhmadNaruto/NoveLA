@@ -44,20 +44,29 @@ import my.noveldokusha.scraper.SourceInterface
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
-// Фильтр библиотеки по типу контента. «Новелла» = всё, что не помечено как "manga"
-// (включая пустую метку "" — дефолт для источников без content_type).
+// Фильтр библиотеки по типу контента. «Новелла» = всё, что не помечено как
+// "manga"/"video" (включая пустую метку "" — дефолт для источников без content_type).
 enum class ContentTypeFilter(@StringRes val labelRes: Int) {
     ALL(R.string.filter_all),
     MANGA(R.string.content_type_manga),
     NOVEL(R.string.content_type_novel),
+    VIDEO(R.string.content_type_video),
+}
+
+// Явный маппинг метки contentType на фильтр: video больше не «утекает» в NOVEL.
+private fun contentTypeFilterOf(raw: String): ContentTypeFilter = when (raw) {
+    "manga" -> ContentTypeFilter.MANGA
+    "video" -> ContentTypeFilter.VIDEO
+    else -> ContentTypeFilter.NOVEL
 }
 
 // Чистая функция фильтрации — вынесена отдельно для юнит-тестирования.
 fun List<BookWithContext>.filterByType(type: ContentTypeFilter): List<BookWithContext> =
     when (type) {
         ContentTypeFilter.ALL -> this
-        ContentTypeFilter.MANGA -> filter { it.book.contentType == "manga" }
-        ContentTypeFilter.NOVEL -> filter { it.book.contentType != "manga" }
+        ContentTypeFilter.MANGA,
+        ContentTypeFilter.VIDEO,
+        ContentTypeFilter.NOVEL -> filter { contentTypeFilterOf(it.book.contentType) == type }
     }
 
 // ponytail: single data class for all filter params — replaces 5 separate MutableStateFlows
@@ -119,8 +128,9 @@ private fun Sequence<BookWithContext>.applyContentTypeFilter(
     contentType: ContentTypeFilter
 ) = when (contentType) {
     ContentTypeFilter.ALL -> this
-    ContentTypeFilter.MANGA -> filter { it.book.contentType == "manga" }
-    ContentTypeFilter.NOVEL -> filter { it.book.contentType != "manga" }
+    ContentTypeFilter.MANGA,
+    ContentTypeFilter.VIDEO,
+    ContentTypeFilter.NOVEL -> filter { contentTypeFilterOf(it.book.contentType) == contentType }
 }
 
 private fun Sequence<BookWithContext>.applyCategoryFilter(

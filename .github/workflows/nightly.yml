@@ -63,10 +63,18 @@ jobs:
         run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
 
       - name: Collect APKs
+        env:
+          SHORT_SHA: ${{ env.SHORT_SHA }}
         run: |
           mkdir -p release-artifacts
           find app/build/outputs/apk/release -maxdepth 1 -name '*.apk' \
             -exec cp {} release-artifacts/ \;
+          # R8 mapping — нужен для деобфускации стекрейсов крашей.
+          # Имя уникально на коммит, чтобы nightly-сборки не затирали mapping друг друга.
+          # Пакуем в gzip — 132 МБ текста сжимаются ~10x
+          if [ -f app/build/outputs/mapping/release/mapping.txt ]; then
+            gzip -9 -c app/build/outputs/mapping/release/mapping.txt > "release-artifacts/mapping-${SHORT_SHA}.txt.gz"
+          fi
           ls -lah release-artifacts
 
       - name: Build changelog and move nightly tag
@@ -104,11 +112,13 @@ jobs:
           git tag -f nightly "$COMMIT_SHA"
           git push origin nightly --force
 
-      - name: Delete old nightly assets
+      - name: Delete old nightly APK assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view nightly --json assets --jq '.assets[].name' 2>/dev/null | \
+          # Удаляем только APK (он перезаливается каждым раном);
+          # mapping-<sha>.txt.gz сохраняем — по ним деобфускаются старые краши
+          gh release view nightly --json assets --jq '.assets[] | select(.name | endswith(".apk")) | .name' 2>/dev/null | \
             xargs -r -I{} gh release delete-asset nightly "{}" --yes || true
 
       - name: Create/update nightly release
@@ -120,4 +130,16 @@ jobs:
           prerelease: true
           draft: false
           body_path: release-body.md
-          files: release-artifacts/*.apk
+          files: release-artifacts/*
+          # mapping-<sha>.txt.gz (R8) лежит рядом с APK — для деобфускации крашей
+
+      - name: Prune old mapping assets (keep last 50)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Храним 50 последних mapping-<sha>.txt.gz, старые удаляем автоматически
+          gh release view nightly --json assets --jq \
+            '(.assets | map(select(.name | test("^mapping-.*\\.txt\\.gz$"))) | sort_by(.createdAt)) as $m
+             | ($m | length) as $n
+             | if $n > 50 then $m[0:($n - 50)][].name else empty end' 2>/dev/null | \
+            xargs -r -I{} gh release delete-asset nightly "{}" --yes || true

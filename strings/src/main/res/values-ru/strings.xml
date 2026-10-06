@@ -66,6 +66,20 @@
 
     <string name="failed_to_restore_invalid_backup_database">Не удалось восстановить, неверная база данных резервной копии</string>
 
+    <string name="failed_to_restore_backup_incomplete">Файл бэкапа неполный или повреждён</string>
+
+    <string name="failed_to_restore_backup_too_short">Файл бэкапа пуст или слишком короткий</string>
+
+    <string name="failed_to_restore_backup_empty_archive">Архив бэкапа пуст</string>
+
+    <string name="failed_to_restore_backup_missing_database">В архиве нет базы данных</string>
+
+    <string name="failed_to_restore_error">Ошибка восстановления: %1$s</string>
+
+    <string name="failed_to_restore_invalid_format">Неверный формат файла резервной копии. Ожидается ZIP-файл</string>
+
+    <string name="failed_to_restore_read_error">Не удалось прочитать файл резервной копии: %1$s</string>
+
     <string name="database_restored">База данных восстановлена</string>
 
     <string name="web_view_not_available">Веб-просмотр недоступен</string>
@@ -156,6 +170,7 @@
 
     <string name="content_type_manga">Манга</string>
     <string name="content_type_novel">Новелла</string>
+    <string name="content_type_video">Видео</string>
     <string name="filter_all">Все</string>
 
     <string name="read">Прочитано</string>
@@ -499,6 +514,7 @@
 
     <string name="source_name_local">Локальные EPUB/FB2</string>
     <string name="source_name_local_manga">Локальные CBZ</string>
+    <string name="source_not_found">Источник не найден</string>
 
     <string name="import_all_books">Импортировать все книги</string>
 
@@ -530,6 +546,8 @@
     <string name="notification_channel_name_restore_backup">Восстановление резервной копии</string>
 
     <string name="notification_channel_name_app_updates_checker">Проверка обновлений</string>
+
+    <string name="notification_channel_name_video_downloads_paused">Загрузки видео на паузе</string>
 
     <string name="new_app_version_available">Доступна новая версия приложения</string>
 
@@ -681,6 +699,8 @@
     <string name="invalid_regex_pattern_with">Неверное регулярное выражение: %s</string>
 
     <string name="enabled">Включено</string>
+
+    <string name="whole_words_only">Только целые слова</string>
 
     <string name="wtr_lab_no_translation_hint">Перевод отключён — контент будет загружаться на английском (или китайском в RAW-режиме).</string>
 
@@ -945,6 +965,10 @@
     <string name="cleaning_manga_cache">Очистка оффлайн-манги…</string>
     <string name="manga_cache_cleaned">Оффлайн-манга очищена</string>
     <string name="manga_cache_clean_failed">Не удалось очистить оффлайн-мангу</string>
+    <string name="clean_offline_video">Удалить офлайн-видео</string>
+    <string name="clean_offline_video_confirmation">Это удалит скачанные видео. Для оффлайн-просмотра их нужно будет скачать заново.</string>
+    <string name="cleaning_offline_video">Удаление оффлайн-видео…</string>
+    <string name="offline_video_clean_failed">Не удалось удалить оффлайн-видео</string>
 
     <string name="reset_filters">Сбросить</string>
 
@@ -977,6 +1001,10 @@
     <string name="download_already_queued">Уже в очереди</string>
 
     <string name="download_all_cached">Все главы уже скачаны</string>
+
+    <string name="download_paused_count">Загрузок на паузе: %1$d</string>
+
+    <string name="download_active_chapters_more">· ещё %1$d</string>
 
     <string name="download_next_100_chapters">Скачать следующие 100 глав</string>
     <string name="download_all_chapters">Скачать все главы</string>
@@ -1097,6 +1125,7 @@
     <string name="retry">Повторить</string>
     <string name="top">↑ Наверх</string>
     <string name="copy">Копировать</string>
+    <string name="copied_to_clipboard">Скопировано в буфер обмена</string>
     <string name="paste">Вставить</string>
     <string name="clear">Очистить</string>
     <string name="no_extensions_available">Нет доступных расширений</string>
@@ -1298,5 +1327,48 @@
     <string name="github_repository">Репозиторий на GitHub</string>
     <string name="report_issue">Сообщить об ошибке</string>
     <string name="report_issue_description">Создать отчёт об ошибке на GitHub</string>
+    <!-- Video player -->
+    <string name="video_loading_sources">Получение источников…</string>
+    <string name="video_open_in_other">Открыть в другом</string>
+    <string name="video_no_app_to_play">Нет приложения для воспроизведения</string>
+    <string name="video_playback_error">Ошибка воспроизведения</string>
+    <string name="video_playback_error_codec">Кодеки устройства не могут декодировать этот поток</string>
+    <string name="video_playback_error_source">Источник недоступен: проблема с сервером или файлом</string>
+    <string name="video_variant_badge_dead">Недоступен</string>
+    <string name="video_quality">Качество</string>
+    <string name="video_resolution">Разрешение</string>
+    <string name="video_voiceover">Озвучка</string>
+    <string name="video_variant_title">Выбор варианта</string>
+    <string name="video_variant_fallback">Вариант %1$d</string>
+    <string name="video_sources_not_found">Источники не найдены</string>
+    <string name="video_source_not_found">Источник не найден</string>
+    <string name="video_source_no_video">Источник не поддерживает видео</string>
+    <string name="video_translate_unavailable">Перевод для видео недоступен</string>
+    <string name="video_settings_title">Настройки</string>
+    <string name="video_playback_speed">Скорость</string>
+    <string name="video_audio_track">Аудио</string>
+    <string name="video_subtitles">Субтитры</string>
+    <string name="video_subtitles_none">Нет субтитров</string>
+    <string name="video_subtitles_off">Выкл</string>
+    <string name="video_keep_screen_on">Не выключать экран</string>
+    <!-- Video player: sections of the settings panel -->
+    <string name="video_section_playback">Воспроизведение</string>
+    <string name="video_section_video">Видео</string>
+    <string name="video_section_gestures">Жесты</string>
+    <string name="video_section_audio">Звук</string>
+    <string name="video_section_subtitles">Субтитры</string>
+    <string name="video_section_screen">Экран</string>
+    <!-- Video player: settings panel controls -->
+    <string name="video_seek_step">Шаг перемотки</string>
+    <string name="video_seconds_value">%1$d с</string>
+    <string name="video_controller_auto_hide">Автоскрытие панели</string>
+    <string name="video_auto_hide_never">Никогда</string>
+    <string name="video_variant">Вариант</string>
+    <string name="video_gesture_double_tap">Двойной тап — перемотка</string>
+    <string name="video_gesture_vertical_swipe">Вертикальный свайп: громкость и яркость</string>
+    <string name="video_gesture_long_press">Долгое нажатие — 2×</string>
+    <string name="video_gesture_swap_sides">Поменять половинами экрана</string>
+    <string name="video_gesture_sensitivity">Чувствительность свайпа</string>
+    <string name="video_subtitle_track">Дорожка субтитров</string>
 </resources>
 

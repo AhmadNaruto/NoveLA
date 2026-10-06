@@ -3,9 +3,12 @@ package my.noveldokusha.network
 import android.content.Context
 import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
+import my.noveldokusha.core.AppCacheConfig
 import my.noveldokusha.core.AppInternalState
 import my.noveldokusha.core.appPreferences.AppPreferences
+import my.noveldokusha.network.interceptors.ChromeHeadersInterceptor
 import my.noveldokusha.network.interceptors.CloudFareVerificationInterceptor
+import my.noveldokusha.network.interceptors.BudgetedCall
 import my.noveldokusha.network.interceptors.DecodeResponseInterceptor
 import my.noveldokusha.network.interceptors.ServerErrorRetryInterceptor
 import my.noveldokusha.network.interceptors.UserAgentInterceptor
@@ -29,7 +32,19 @@ import javax.inject.Singleton
 
 interface NetworkClient {
     val cookieJar: okhttp3.CookieJar
-    suspend fun call(request: Request.Builder, followRedirects: Boolean = false): Response
+    suspend fun call(request: Request.Builder, followRedirects: Boolean = true): Response
+
+    /**
+     * Запрос с явным бюджетом в миллисекундах: ровно одна попытка (без цикла
+     * ретраев, который умножил бы бюджет на своё число), нативные таймауты
+     * OkHttp на фазы connect/read/write + общий callTimeout = timeoutMs.
+     * Отдельный метод, а не параметр call(): сигнатура call() не меняется
+     * для существующих вызывающих.
+     * Дефолтная реализация игнорирует бюджет и делегирует в call() —
+     * бюджет поддерживает ScraperNetworkClient.
+     */
+    suspend fun callWithTimeout(request: Request.Builder, timeoutMs: Long, followRedirects: Boolean): Response =
+        call(request, followRedirects)
     suspend fun get(url: String): Response
     suspend fun getWithHeaders(url: String, headers: Map<String, String>): Response
     suspend fun get(url: Uri.Builder): Response
@@ -42,8 +57,8 @@ class ScraperNetworkClient @Inject constructor(
     private val appPreferences: AppPreferences
 ) : NetworkClient {
 
-    private val cacheDir = File(appContext.cacheDir, "network_cache")
-    private val cacheSize = 50L * 1024 * 1024
+    private val cacheDir = File(appContext.cacheDir, AppCacheConfig.NETWORK_CACHE_DIR)
+    private val cacheSize = AppCacheConfig.NETWORK_CACHE_BYTES
 
     override val cookieJar = ScraperCookieJar()
 
@@ -104,6 +119,8 @@ class ScraperNetworkClient @Inject constructor(
                 if (appPreferences.CLOUDFLARE_BYPASS_ENABLED.value) {
                     addInterceptor(CloudFareVerificationInterceptor(appContext, appPreferences, cfConnectionPool))
                 }
+                // Chrome-like header set/order on the wire (runs after BridgeInterceptor)
+                addNetworkInterceptor(ChromeHeadersInterceptor())
                 dispatcher(Dispatcher().apply { maxRequestsPerHost = 16 })
                 cookieJar(cookieJar)
                 cache(Cache(cacheDir, cacheSize))
@@ -132,9 +149,20 @@ class ScraperNetworkClient @Inject constructor(
             .build()
     }
 
+    // Без follow-redirects: вызывающий обязан увидеть raw 3xx и его Location
+    // (Lua-плагины, резолвящие хостеров по редиректу). client/clientWithRedirects
+    // не трогаем — их поведение зависит от внешних потребителей (переводчики).
+    val clientNoRedirects: OkHttpClient by lazy {
+        baseBuilder()
+            .connectionPool(cfConnectionPool)
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .build()
+    }
+
     override suspend fun call(request: Request.Builder, followRedirects: Boolean): Response {
         val built = request.build()
-        val baseClient = if (followRedirects) clientWithRedirects else this.client
+        val baseClient = if (followRedirects) clientWithRedirects else clientNoRedirects
         // Тело отдаём сырым вызывающему — буферизация здесь удваивала бы память
         // на горячем пути загрузки картинок (caller читает body повторно). Ретрай
         // ловит сетевые/таймаут-сбои уровня соединения; сбой дочитки тела
@@ -184,6 +212,30 @@ class ScraperNetworkClient @Inject constructor(
             }
         }
         return result ?: throw lastException ?: IllegalStateException("Unreachable retry loop")
+    }
+
+    override suspend fun callWithTimeout(request: Request.Builder, timeoutMs: Long, followRedirects: Boolean): Response {
+        // Бюджет задан: одна попытка и нативные таймауты OkHttp = timeoutMs.
+        // Без ретраев — их серия (3+3+3+3+15с) умножила бы бюджет и провалила
+        // быструю пробу живости ссылки. Ретраи ServerErrorRetryInterceptor тоже
+        // выключены: запрос помечается тегом BudgetedCall, интерсептор отдаёт его
+        // одним chain.proceed — иначе Thread.sleep-бэкофф (500..4000мс × попытки)
+        // шёл уже после отмены вызова и растягивал вызов далеко за бюджет.
+        // callTimeout режет весь вызов целиком (DNS+connect+редиректы+чтение
+        // тела), а не только отдельные фазы.
+        if (timeoutMs <= 0) return call(request, followRedirects)
+        // Тег ставим ДО build(): он переживает built.newBuilder() внутри этого
+        // метода (OkHttp копирует tags) и доходит до интерсептора в сети.
+        request.tag(BudgetedCall::class.java, BudgetedCall)
+        val built = request.build()
+        val baseClient = if (followRedirects) clientWithRedirects else clientNoRedirects
+        val budgetClient = baseClient.newBuilder()
+            .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .callTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .build()
+        return budgetClient.call(built.newBuilder())
     }
 
     private fun isRetryable(e: Throwable): Boolean {

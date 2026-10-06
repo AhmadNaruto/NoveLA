@@ -19,6 +19,24 @@ import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/** Decoded [Chapter.lastReadPosition] together with the granularity it was saved with. */
+internal data class LastReadPosition(
+    val position: Int,
+    val savedWithSplit: Boolean
+)
+
+/**
+ * Sign encodes split granularity: non-negative = paragraph numbering (legacy),
+ * negative = sentence numbering (saved as -(pos+1)).
+ */
+internal fun encodeLastReadPosition(position: Int, savedWithSplit: Boolean): Int =
+    if (savedWithSplit) -(position + 1) else position
+
+/** Inverse of [encodeLastReadPosition]. Legacy (always non-negative) values decode as paragraphs. */
+internal fun decodeLastReadPosition(raw: Int): LastReadPosition =
+    if (raw < 0) LastReadPosition(position = -(raw + 1), savedWithSplit = true)
+    else LastReadPosition(position = raw, savedWithSplit = false)
+
 @Singleton
 internal class ReaderRepository @Inject constructor(
     private val scope: AppCoroutineScope,
@@ -43,17 +61,49 @@ internal class ReaderRepository @Inject constructor(
 
                 if (oldChapter?.chapterUrl != null) bookChaptersRepository.updatePosition(
                     chapterUrl = oldChapter.chapterUrl,
-                    lastReadPosition = oldChapter.chapterItemPosition,
+                    lastReadPosition = encodeLastReadPosition(
+                        oldChapter.chapterItemPosition,
+                        oldChapter.savedWithSplit
+                    ),
                     lastReadOffset = oldChapter.offset
                 )
 
                 bookChaptersRepository.updatePosition(
                     chapterUrl = newChapter.chapterUrl,
-                    lastReadPosition = newChapter.chapterItemPosition,
+                    lastReadPosition = encodeLastReadPosition(
+                        newChapter.chapterItemPosition,
+                        newChapter.savedWithSplit
+                    ),
                     lastReadOffset = newChapter.offset
                 )
 
                 upsertReadingHistory(bookUrl, newChapter.chapterUrl)
+            }
+        }
+    }
+
+    /**
+     * Video playback progress. Separate from saveBookLastReadPositionState:
+     * that one writes lastReadPosition/lastReadOffset (text/pages), which must
+     * stay 0 for video (spec §4.2).
+     */
+    fun saveVideoLastReadState(
+        bookUrl: String,
+        chapterUrl: String,
+        positionMs: Long,
+        durationMs: Long,
+        markRead: Boolean,
+    ) {
+        scope.launch(Dispatchers.IO) {
+            database.transaction {
+                libraryBooksRepository.updateLastReadChapter(
+                    bookUrl = bookUrl,
+                    lastReadChapterUrl = chapterUrl
+                )
+                bookChaptersRepository.updateVideoPosition(chapterUrl, positionMs, durationMs)
+                // read = true: markRead means "watched to the end" (chapter-list badge).
+                if (markRead) bookChaptersRepository.setAsRead(chapterUrl, read = true)
+                upsertReadingHistory(bookUrl, chapterUrl)
             }
         }
     }
@@ -87,10 +137,12 @@ internal class ReaderRepository @Inject constructor(
     ): InitialPositionChapter = coroutineScope {
         val titleChapterItemPosition = 0 // Hardcode or no?
         val book = async { appRepository.libraryBooks.get(bookUrl) }
+        val saved = decodeLastReadPosition(chapter.lastReadPosition)
         val position = InitialPositionChapter(
             chapterIndex = chapterIndex,
-            chapterItemPosition = chapter.lastReadPosition,
+            chapterItemPosition = saved.position,
             chapterItemOffset = chapter.lastReadOffset,
+            savedWithSplit = saved.savedWithSplit,
         )
 
         when {

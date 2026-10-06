@@ -9,6 +9,7 @@ import my.noveldokusha.core.appPreferences.TernaryState
 import my.noveldokusha.data.DownloadTaskState
 import my.noveldokusha.feature.local_database.ChapterWithContext
 import my.noveldokusha.feature.local_database.tables.Book
+import my.noveldokusha.features.reader.video.ChapterDownloadUi
 
 internal data class ChaptersScreenState(
     val book: State<BookState>,
@@ -27,6 +28,11 @@ internal data class ChaptersScreenState(
     val translatedChapterTitles: MutableState<Map<String, String>>,
     val chapterSizes: MutableState<Map<String, ChapterSize>>,
     val downloadTask: MutableState<DownloadTaskState?>,
+    // Видео-книга (media3): «X» отмены в строке главы имеет смысл только у неё —
+    // у текста/манги отмена снимает всю задачу книги, а не одну главу.
+    val isVideoBook: State<Boolean>,
+    // Статусы загрузок глав (видео media3 + текст/манга): chapterUrl → бейдж.
+    val chapterDownloads: MutableState<Map<String, ChapterDownloadUi>>,
 ) {
 
     val isInSelectionMode = derivedStateOf { selectedChaptersUrl.size != 0 }
@@ -40,6 +46,9 @@ internal data class ChaptersScreenState(
         val coverImageUrl: String? = null,
         val description: String = "",
         val category: String = "",
+        // Тип контента книги: "" — новелла (дефолт источников без content_type),
+        // иначе "novel"/"manga"/"video".
+        val contentType: String = "",
     ) {
         constructor(book: Book) : this(
             title = book.title,
@@ -50,6 +59,7 @@ internal data class ChaptersScreenState(
             coverImageUrl = book.coverImageUrl,
             description = book.description,
             category = book.category,
+            contentType = book.contentType,
         )
     }
 }
