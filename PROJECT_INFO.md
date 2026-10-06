@@ -113,15 +113,17 @@ NoveLA/
 
 ---
 
-## 🚀 Build & Development Commands
+## 🚀 Build & CI/CD Pipeline
 
-| Command | Usage |
+> [!IMPORTANT]
+> **Proses kompilasi dan build APK dijalankan via GitHub Actions / Workflows** (`.github/workflows/buildRelease.yml` & `build-test.yml`). Kompilasi **TIDAK** dilakukan di environment lokal (Termux).
+
+| Command / Workflow | Usage |
 |---|---|
-| `./gradlew assembleDebug` | Build APK Debug (`NoveLA_v1.6.1-debug.apk`) |
-| `./gradlew assembleRelease` | Build APK Release (membutuhkan signing configuration) |
-| `./gradlew test` | Jalankan seluruh unit tests di semua modul |
-| `./gradlew lint` | Jalankan static code analysis (Lint) |
-| `./gradlew -PsplitByAbi=true assembleDebug` | Build APK terpisah per ABI (`arm64-v8a`, `armeabi-v7a`) |
+| `GitHub Workflow: buildRelease.yml` | Automatic Release APK Build & Signing |
+| `GitHub Workflow: build-test.yml` | CI Test & Lint Verification |
+| `./gradlew test` | (CI Run Only) Unit tests |
+| `./gradlew lint` | (CI Run Only) Static code analysis |
 
 ---
 
