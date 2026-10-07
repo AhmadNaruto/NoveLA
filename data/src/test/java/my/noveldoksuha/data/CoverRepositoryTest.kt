@@ -34,7 +34,11 @@ class CoverRepositoryTest {
             private set
         var nextBytes: ByteArray = ByteArray(0)
         var nextSuccess = true
+        // Когда задан — код ответа берётся из него, иначе выводится из nextSuccess.
+        var nextCode: Int? = null
         var lastHeaders: Map<String, String> = emptyMap()
+
+        private fun responseCode(): Int = nextCode ?: if (nextSuccess) 200 else 404
 
         override val cookieJar: CookieJar = CookieJar.NO_COOKIES
 
@@ -46,7 +50,7 @@ class CoverRepositoryTest {
             return Response.Builder()
                 .request(Request.Builder().url(url).build())
                 .protocol(Protocol.HTTP_1_1)
-                .code(if (nextSuccess) 200 else 404)
+                .code(responseCode())
                 .message("")
                 .body(nextBytes.toResponseBody("image/jpeg".toMediaType()))
                 .build()
@@ -58,7 +62,7 @@ class CoverRepositoryTest {
             return Response.Builder()
                 .request(Request.Builder().url(url).build())
                 .protocol(Protocol.HTTP_1_1)
-                .code(if (nextSuccess) 200 else 404)
+                .code(responseCode())
                 .message("")
                 .body(nextBytes.toResponseBody("image/jpeg".toMediaType()))
                 .build()
@@ -175,6 +179,38 @@ class CoverRepositoryTest {
         val cover = File(tempDir.root, "cover.png")
 
         assertEquals(false, repo.ensureCover(cover, "https://example.com/c.png"))
+        assertFalse(cover.exists())
+    }
+
+    @Test
+    fun `ensureCover fast-fails on 404 with a single request`() = runBlocking {
+        val client = FakeNetworkClient().apply { nextCode = 404 }
+        val repo = CoverRepository(client)
+        val cover = File(tempDir.root, "cover.png")
+
+        assertEquals(false, repo.ensureCover(cover, "https://example.com/gone.png"))
+        assertEquals(1, client.calls)
+        assertFalse(cover.exists())
+    }
+
+    @Test
+    fun `ensureCover fast-fails on 410 with a single request`() = runBlocking {
+        val client = FakeNetworkClient().apply { nextCode = 410 }
+        val repo = CoverRepository(client)
+        val cover = File(tempDir.root, "cover.png")
+
+        assertEquals(false, repo.ensureCover(cover, "https://example.com/gone.png"))
+        assertEquals(1, client.calls)
+    }
+
+    @Test
+    fun `ensureCover retries server errors as before`() = runBlocking {
+        val client = FakeNetworkClient().apply { nextCode = 500 }
+        val repo = CoverRepository(client)
+        val cover = File(tempDir.root, "cover.png")
+
+        assertEquals(false, repo.ensureCover(cover, "https://example.com/c.png"))
+        assertEquals(3, client.calls)
         assertFalse(cover.exists())
     }
 

@@ -46,6 +46,10 @@ class CoverRepository @Inject constructor(
                         ?.let { mapOf("Referer" to it) } ?: emptyMap()
                     networkClient.getWithHeaders(remoteUrl, headers).use { response ->
                         if (!response.isSuccessful) {
+                            // 404/410 — URL мёртв, повторные запросы бессмысленны.
+                            if (response.code == 404 || response.code == 410) {
+                                return@withLock false
+                            }
                             if (attempt < maxAttempts) {
                                 delay(500L * attempt) // exponential backoff: 500ms, 1000ms
                                 continue
