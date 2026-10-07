@@ -92,9 +92,13 @@ class AppNavigationRoutes @Inject constructor() : NavigationRoutes {
         return MigrationActivity.IntentData(context, bookUrl = bookUrl, bookTitle = bookTitle)
     }
 
-    override fun massMigration(context: Context, sourceBaseUrl: String): Intent {
+    override fun massMigration(context: Context, sourceBaseUrl: String?): Intent {
         return Intent(context, MigrationActivity::class.java).apply {
-            putExtra("massMigrationSourceUrl", sourceBaseUrl)
+            if (sourceBaseUrl != null) {
+                putExtra("massMigrationSourceUrl", sourceBaseUrl)
+            } else {
+                putExtra("massMigrationUnknownSource", true)
+            }
         }
     }
 

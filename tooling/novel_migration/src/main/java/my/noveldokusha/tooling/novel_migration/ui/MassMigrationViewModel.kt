@@ -44,6 +44,7 @@ data class MigratingBook(
 
 data class MassMigrationUiState(
     val source: SourceInterface.Catalog? = null,
+    val isUnknownSource: Boolean = false,
     val books: List<Book> = emptyList(),
     val bookChapterCounts: Map<String, Int> = emptyMap(),
     val selectedBooks: Set<String> = emptySet(),
@@ -79,8 +80,22 @@ class MassMigrationViewModel @Inject constructor(
 
     fun setSource(source: SourceInterface.Catalog) {
         val otherSources = allSources.filter { it.baseUrl != source.baseUrl }
-        _uiState.update { it.copy(source = source, targetSources = otherSources) }
+        _uiState.update { it.copy(source = source, isUnknownSource = false, targetSources = otherSources) }
         loadBooks(source.baseUrl)
+    }
+
+    // Режим «неизвестный источник»: книги без установленного плагина,
+    // кандидаты для переселения — все установленные каталоги.
+    fun setUnknownSource() {
+        _uiState.update {
+            it.copy(source = null, isUnknownSource = true, targetSources = allSources, selectedBooks = emptySet())
+        }
+        viewModelScope.launch {
+            val books = withContext(Dispatchers.IO) {
+                migrationRepository.getUnknownSourceBooks(allSources.map { it.baseUrl })
+            }
+            applyBooks(books)
+        }
     }
 
     private fun loadBooks(sourceBaseUrl: String) {
@@ -88,14 +103,18 @@ class MassMigrationViewModel @Inject constructor(
             val books = withContext(Dispatchers.IO) {
                 migrationRepository.getLibraryBooksFromSource(sourceBaseUrl)
             }
-            val chapterCounts = withContext(Dispatchers.IO) {
-                books.associate { book ->
-                    val count = bookChapters.chapters(book.url).size
-                    book.url to count
-                }
-            }
-            _uiState.update { it.copy(books = books, bookChapterCounts = chapterCounts, selectedBooks = emptySet()) }
+            applyBooks(books)
         }
+    }
+
+    private suspend fun applyBooks(books: List<Book>) {
+        val chapterCounts = withContext(Dispatchers.IO) {
+            books.associate { book ->
+                val count = bookChapters.chapters(book.url).size
+                book.url to count
+            }
+        }
+        _uiState.update { it.copy(books = books, bookChapterCounts = chapterCounts, selectedBooks = emptySet()) }
     }
 
     fun setTargetSource(source: SourceInterface.Catalog?) {
@@ -124,7 +143,9 @@ class MassMigrationViewModel @Inject constructor(
         val selected = current.books.filter { it.url in current.selectedBooks }
         if (selected.isEmpty()) return
 
-        val sourceBaseUrl = current.source?.baseUrl ?: return
+        // Обычному режиму нужен выбранный источник; в режиме «неизвестный источник»
+        // кандидаты уже лежат в targetSources, поиск стартует без source.
+        if (current.source?.baseUrl == null && !current.isUnknownSource) return
         val candidates = current.targetSource?.let { listOf(it) }
             ?: current.targetSources
 

@@ -4,6 +4,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import my.noveldokusha.core.appPreferences.AppPreferences
+import my.noveldokusha.core.isLocalUri
 import my.noveldokusha.data.BookChaptersRepository
 import my.noveldokusha.data.ChapterBodyRepository
 import my.noveldokusha.data.DownloaderRepository
@@ -249,6 +250,18 @@ class MigrationRepository @Inject constructor(
         val allBooks = libraryBooks.getAllInLibrary()
         return allBooks.filter { book ->
             book.url.startsWith(sourceBaseUrl.trimEnd('/') + "/") || book.url.startsWith(sourceBaseUrl)
+        }
+    }
+
+    // Книги, чей источник не совпадает ни с одним из загруженных каталогов
+    // (плагин удалён либо не установлен), локальные книги не считаем.
+    suspend fun getUnknownSourceBooks(loadedBaseUrls: List<String>): List<Book> {
+        val allBooks = libraryBooks.getAllInLibrary()
+        return allBooks.filter { book ->
+            if (book.url.isLocalUri) return@filter false
+            loadedBaseUrls.none { sourceUrl ->
+                book.url.startsWith(sourceUrl.trimEnd('/') + "/") || book.url.startsWith(sourceUrl)
+            }
         }
     }
 

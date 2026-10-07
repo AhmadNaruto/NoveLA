@@ -18,6 +18,7 @@ import javax.inject.Inject
 
 data class MigrationTabState(
     val sourcesWithCounts: List<Pair<SourceInterface.Catalog, Int>> = emptyList(),
+    val unknownCount: Int = 0,
     val loading: Boolean = false,
 )
 
@@ -48,12 +49,14 @@ class MigrationTabViewModel @Inject constructor(
                 .filterIsInstance<SourceInterface.Catalog>()
 
             val sourceUrls = catalogs.map { it.baseUrl }
-            val counts = withContext(Dispatchers.IO) {
-                migrationRepository.getBookCountPerSource(sourceUrls)
+            val (counts, unknownCount) = withContext(Dispatchers.IO) {
+                migrationRepository.getBookCountPerSource(sourceUrls) to
+                    migrationRepository.getUnknownSourceBooks(sourceUrls).size
             }
 
             _uiState.value = MigrationTabState(
                 sourcesWithCounts = catalogs.map { it to (counts[it.baseUrl] ?: 0) },
+                unknownCount = unknownCount,
                 loading = false,
             )
         }

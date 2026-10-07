@@ -1093,6 +1093,8 @@
     <string name="migration_no_book_selected">Книга не выбрана</string>
     <string name="migration_chapter_matching_not_ready">Сопоставление глав ещё не готово</string>
     <string name="migration_no_sources_with_books">Нет источников с книгами в библиотеке</string>
+    <string name="migration_unknown_source">Неизвестный источник</string>
+    <string name="migration_unknown_source_hint">Плагин удалён или не установлен</string>
     <string name="migration_searching_progress">%1$d из %2$d: %3$s</string>
     <string name="migration_chapters_count">%1$d гл.</string>
     <string name="migration_source_with_chapters">%1$s (%2$d гл.)</string>

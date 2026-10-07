@@ -8,7 +8,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,6 +37,7 @@ import my.noveldokusha.strings.R
 fun MigrationTabContent(
     innerPadding: PaddingValues,
     onSourceClick: (SourceInterface.Catalog) -> Unit,
+    onUnknownSourceClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onGlobalSearchClick: () -> Unit,
 ) {
@@ -47,7 +51,7 @@ fun MigrationTabContent(
         ) {
             CircularProgressIndicator()
         }
-    } else if (state.sourcesWithCounts.isEmpty()) {
+    } else if (state.sourcesWithCounts.isEmpty() && state.unknownCount == 0) {
         Box(
             modifier = Modifier.fillMaxSize().padding(innerPadding),
             contentAlignment = Alignment.Center
@@ -111,6 +115,53 @@ fun MigrationTabContent(
                         }
                     },
                 )
+            }
+
+            if (state.unknownCount > 0) {
+                item(key = "unknown-source") {
+                    SlimListItem(
+                        onClick = onUnknownSourceClick,
+                        headlineContent = {
+                            Text(
+                                text = stringResource(R.string.migration_unknown_source),
+                                style = MaterialTheme.typography.titleSmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        supportingContent = {
+                            Text(
+                                text = stringResource(R.string.migration_unknown_source_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Outlined.LinkOff,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                            )
+                        },
+                        trailingContent = {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                            ) {
+                                Text(
+                                    text = "${state.unknownCount}",
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
+                        },
+                    )
+                }
             }
         }
     }

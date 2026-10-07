@@ -56,6 +56,7 @@ class MigrationActivity : BaseActivity() {
         var bookUrl by Extra_String()
         var bookTitle by Extra_String()
         var massMigrationSourceUrl by Extra_StringNullable()
+        var massMigrationUnknownSource by Extra_Boolean()
         var showHistory by Extra_Boolean()
 
         constructor(intent: Intent) : super(intent)
@@ -80,6 +81,7 @@ class MigrationActivity : BaseActivity() {
         val intentData = IntentData(intent)
 
         val isMassMigration = intentData.massMigrationSourceUrl?.isNotEmpty() == true
+                || intentData.massMigrationUnknownSource
         val isHistory = intentData.showHistory
 
         if (isHistory) {
@@ -303,6 +305,7 @@ class MigrationActivity : BaseActivity() {
 
     private fun initMassMigration(intentData: IntentData) {
         val sourceUrl = intentData.massMigrationSourceUrl
+        val isUnknownSource = intentData.massMigrationUnknownSource
 
         setContent {
             var step by remember { mutableStateOf(MigrationStep.BOOK_PICKER) }
@@ -311,20 +314,28 @@ class MigrationActivity : BaseActivity() {
             val massState by massViewModel.uiState.collectAsStateWithLifecycle()
 
             LaunchedEffect(sourceUrl) {
-                val source = scraperRepository.scraper.sourcesList
-                    .filterIsInstance<SourceInterface.Catalog>()
-                    .find { it.baseUrl == sourceUrl }
-                if (source != null) {
-                    selectedSource = source
-                    massViewModel.setSource(source)
+                if (isUnknownSource) {
+                    massViewModel.setUnknownSource()
+                } else {
+                    val source = scraperRepository.scraper.sourcesList
+                        .filterIsInstance<SourceInterface.Catalog>()
+                        .find { it.baseUrl == sourceUrl }
+                    if (source != null) {
+                        selectedSource = source
+                        massViewModel.setSource(source)
+                    }
                 }
             }
+
+            // Заголовок обоих шагов: имя выбранного источника либо подпись unknown-режима.
+            val sourceName = selectedSource?.let { it.resolveName(this@MigrationActivity) }
+                ?: if (isUnknownSource) stringResource(R.string.migration_unknown_source) else null
 
             Theme(themeProvider = themeProvider) {
                 when (step) {
                     MigrationStep.BOOK_PICKER -> {
                         MigrationBookPickerScreen(
-                            sourceName = selectedSource?.let { it.resolveName(this@MigrationActivity) }                         ?: stringResource(R.string.migration_select_source),
+                            sourceName = sourceName ?: stringResource(R.string.migration_select_source),
                             books = massState.books,
                             bookChapterCounts = massState.bookChapterCounts,
                             selectedBooks = massState.selectedBooks,
@@ -344,7 +355,7 @@ class MigrationActivity : BaseActivity() {
 
                     MigrationStep.RESULTS -> {
                         MigrationResultsScreen(
-                            title = selectedSource?.let { it.resolveName(this@MigrationActivity) }                         ?: stringResource(R.string.migration_title),
+                            title = sourceName ?: stringResource(R.string.migration_title),
                             migratingBooks = massState.migratingBooks,
                             isSearchingAll = massState.isSearchingAll,
                             isMigrating = massState.isMigrating,
@@ -359,6 +370,12 @@ class MigrationActivity : BaseActivity() {
                                     navigateToLibrary()
                                 } else {
                                     massViewModel.reset()
+                                    // reset() обнуляет UI-состояние (в т.ч. unknown-режим
+                                    // и выбранный источник), а LaunchedEffect(sourceUrl) не
+                                    // перезапускается — без переинициализации список
+                                    // останется пустым навсегда.
+                                    if (isUnknownSource) massViewModel.setUnknownSource()
+                                    else selectedSource?.let { massViewModel.setSource(it) }
                                     step = MigrationStep.BOOK_PICKER
                                 }
                             },
