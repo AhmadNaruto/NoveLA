@@ -62,6 +62,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -470,6 +471,8 @@ private fun ContentTypeBadge(contentType: String) {
         text = stringResource(textRes),
         style = MaterialTheme.typography.labelSmall,
         color = color,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         modifier = Modifier
             .padding(start = 6.dp)
             .background(color.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
@@ -489,6 +492,8 @@ private fun ExtensionListItem(
                 Text(
                     text = extension.name,
                     style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
                 ContentTypeBadge(contentType = extension.contentType)

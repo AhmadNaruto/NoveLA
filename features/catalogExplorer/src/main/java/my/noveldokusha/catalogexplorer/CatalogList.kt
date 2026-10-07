@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import my.noveldokusha.coreui.components.AnimatedTransition
@@ -135,6 +136,9 @@ internal fun CatalogList(
                         Text(
                             text = it.catalog.displayName(),
                             style = MaterialTheme.typography.titleSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
                         )
                         val contentType = it.catalog.contentType
                         val labelRes = when (contentType) {
@@ -156,6 +160,8 @@ internal fun CatalogList(
                             text = stringResource(labelRes),
                             style = MaterialTheme.typography.labelSmall,
                             color = fgColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
                                 .background(bgColor, RoundedCornerShape(4.dp))
                                 .padding(horizontal = 4.dp, vertical = 1.dp),
