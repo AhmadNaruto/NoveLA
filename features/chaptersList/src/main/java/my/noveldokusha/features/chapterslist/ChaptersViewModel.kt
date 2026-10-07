@@ -785,10 +785,18 @@ internal class ChaptersViewModel @Inject constructor(
 
     private fun updateDescription() = viewModelScope.launch {
         if (state.isLocalSource.value) return@launch
-        downloaderRepository.bookDescription(bookUrl = bookUrl).onSuccess {
-            if (it == null) return@onSuccess
-            appRepository.libraryBooks.updateDescription(bookUrl, it)
-        }
+        downloaderRepository.bookDescription(bookUrl = bookUrl)
+            .onSuccess {
+                // Диагностика guard-ретрая описания: логин-редирект/пустая страница
+                // приходят как null или пустая строка. Пустую строку не пишем:
+                // она перезаписала бы уже сохранённое описание (баг «пустого описания»).
+                if (it == null || it.isBlank()) {
+                    Timber.w("updateDescription: empty result for $bookUrl (value=$it)")
+                    return@onSuccess
+                }
+                appRepository.libraryBooks.updateDescription(bookUrl, it)
+            }
+            .onError { Timber.w("updateDescription: load error for $bookUrl: ${it.message}") }
     }
 
     private fun importUriContent() {
