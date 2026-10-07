@@ -4,8 +4,15 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.coroutineScope
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -14,9 +21,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import my.noveldokusha.core.Response
+import my.noveldokusha.core.isHttpsUrl
 import my.noveldokusha.data.BookChaptersRepository
 import my.noveldokusha.data.ScraperRepository
 import my.noveldokusha.feature.local_database.tables.Book
@@ -27,9 +36,15 @@ import my.noveldokusha.strings.R
 import my.noveldokusha.tooling.novel_migration.data.MigrationOptions
 import my.noveldokusha.tooling.novel_migration.data.MigrationRepository
 import timber.log.Timber
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 private val TAG = "MassMigration"
+
+// Лимиты поиска: жёсткий wall-clock бюджет на одну попытку и параллелизм между источниками одной книги.
+private const val ATTEMPT_TIMEOUT_MS = 15_000L
+private const val SOURCE_PARALLELISM = 10
 
 data class MigratingBook(
     val book: Book,
@@ -76,7 +91,12 @@ class MassMigrationViewModel @Inject constructor(
     private val chaptersMatcher = ChaptersMatcher()
     private var searchJob: Job? = null
     private var migrateJob: Job? = null
-    private val sourceFailures = mutableMapOf<String, Int>()
+    private val sourceFailures = ConcurrentHashMap<String, Int>()
+
+    // Скоуп abandon-попыток: ребёнок viewModelScope (SupervisorJob с явным parent),
+    // поэтому очистка VM отменяет стрэгглеры, а orchestration их не ждёт.
+    private val attemptJob = SupervisorJob(viewModelScope.coroutineContext[Job])
+    private val attemptScope = CoroutineScope(attemptJob + Dispatchers.IO)
 
     fun setSource(source: SourceInterface.Catalog) {
         val otherSources = allSources.filter { it.baseUrl != source.baseUrl }
@@ -146,8 +166,9 @@ class MassMigrationViewModel @Inject constructor(
         // Обычному режиму нужен выбранный источник; в режиме «неизвестный источник»
         // кандидаты уже лежат в targetSources, поиск стартует без source.
         if (current.source?.baseUrl == null && !current.isUnknownSource) return
-        val candidates = current.targetSource?.let { listOf(it) }
-            ?: current.targetSources
+        // Псевдо-источники (local://, local-manga://) не опрашиваем: это не сетевые кандидаты.
+        val candidates = (current.targetSource?.let { listOf(it) } ?: current.targetSources)
+            .filter { it.baseUrl.isHttpsUrl }
 
         Timber.e("startSearch: selected=${selected.size} books, candidates=${candidates.size} targetSource=${current.targetSource?.baseUrl}")
 
@@ -162,17 +183,22 @@ class MassMigrationViewModel @Inject constructor(
 
         sourceFailures.clear()
         searchJob?.cancel()
+        attemptJob.cancelChildren() // отменяем стрэгглеры прошлого запуска
         searchJob = viewModelScope.launch {
-            val books = _uiState.value.migratingBooks.toMutableList()
+            val books = _uiState.value.migratingBooks.toList()
             for ((index, mb) in books.withIndex()) {
                 ensureActive()
                 val oldChaptersCount = current.bookChapterCounts[mb.book.url] ?: 0
                 Timber.e("startSearch: book=${mb.book.title} oldChapters=$oldChaptersCount")
 
                 val result = searchBook(mb.book, candidates, oldChaptersCount)
-                books[index] = result
                 Timber.e("startSearch: book=${mb.book.title} result=${result.result?.book?.title} skipped=${result.result == null} error=${result.error}")
-                _uiState.update { it.copy(migratingBooks = books.toList()) }
+                // Мутация строго внутри update: read-modify-write по индексу, без гонок.
+                _uiState.update { s ->
+                    val updated = s.migratingBooks.toMutableList()
+                    if (index in updated.indices) updated[index] = result
+                    s.copy(migratingBooks = updated)
+                }
             }
             _uiState.update { it.copy(isSearchingAll = false) }
         }
@@ -183,35 +209,44 @@ class MassMigrationViewModel @Inject constructor(
         candidates: List<SourceInterface.Catalog>,
         oldChaptersCount: Int,
     ): MigratingBook {
-        val allResults = mutableListOf<ScoredSearchResult>()
-        var bestResult: ScoredSearchResult? = null
-        var lastError: String? = null
+        val semaphore = Semaphore(SOURCE_PARALLELISM)
+        val found = AtomicBoolean(false)
+        val resultsByIndex = ConcurrentHashMap<Int, ScoredSearchResult>()
 
-        for (source in candidates) {
-            if (sourceFailures.getOrDefault(source.baseUrl, 0) >= 3) {
-                Timber.e("searchBook: skipping ${source.baseUrl} (${sourceFailures[source.baseUrl]} failures)")
-                continue
-            }
+        coroutineScope {
+            candidates.mapIndexed { index, source ->
+                async {
+                    // Ранний выход: после найденного хита новые источники не запускаем.
+                    if (found.get()) return@async
+                    semaphore.acquire()
+                    try {
+                        if (found.get()) return@async
+                        if ((sourceFailures[source.baseUrl] ?: 0) >= 3) {
+                            Timber.e("searchBook: skipping ${source.baseUrl} (${sourceFailures[source.baseUrl]} failures)")
+                            return@async
+                        }
 
-            val searchResult = searchSource(source, book.title) ?: continue
-            val chapters = fetchChaptersWithRetry(source, searchResult.url) ?: continue
+                        val searchResult = searchSource(source, book.title) ?: return@async
+                        val chapters = fetchChaptersWithRetry(source, searchResult.url) ?: return@async
 
-            val scored = ScoredSearchResult(source = source, book = searchResult, chapters = chapters)
-            allResults.add(scored)
+                        val scored = ScoredSearchResult(source = source, book = searchResult, chapters = chapters)
+                        resultsByIndex[index] = scored
 
-            if (chapters.size >= oldChaptersCount) {
-                Timber.e("searchBook: FOUND at ${source.baseUrl} chapters=${chapters.size} >= old=$oldChaptersCount")
-                bestResult = scored
-                break
-            }
-
-            if (bestResult == null || chapters.size > bestResult.chapters.size) {
-                bestResult = scored
-            }
+                        if (chapters.size >= oldChaptersCount) {
+                            Timber.e("searchBook: FOUND at ${source.baseUrl} chapters=${chapters.size} >= old=$oldChaptersCount")
+                            found.set(true)
+                        }
+                    } finally {
+                        semaphore.release()
+                    }
+                }
+            }.awaitAll()
         }
 
-        val finalResult = bestResult
-        val bestIndex = allResults.indexOf(finalResult)
+        val allResults = resultsByIndex.entries.sortedBy { it.key }.map { it.value }
+        val finalResult = allResults.firstOrNull { it.chapters.size >= oldChaptersCount }
+            ?: allResults.maxByOrNull { it.chapters.size }
+        val bestIndex = if (finalResult == null) -1 else allResults.indexOf(finalResult)
         return MigratingBook(
             book = book,
             result = finalResult,
@@ -219,16 +254,15 @@ class MassMigrationViewModel @Inject constructor(
             selectedIndex = bestIndex,
             isSearching = false,
             isSkipped = finalResult == null,
-            error = if (finalResult == null) (lastError ?: application.getString(R.string.migration_no_matching_source)) else null,
+            error = if (finalResult == null) application.getString(R.string.migration_no_matching_source) else null,
         )
     }
 
     private suspend fun searchSource(source: SourceInterface.Catalog, title: String): my.noveldokusha.scraper.domain.BookResult? {
         for (attempt in 1..2) {
-            val resp = withTimeoutOrNull(20_000L) {
-                withContext(Dispatchers.IO) {
-                    source.getCatalogSearch(0, title)
-                }
+            // Каждая попытка ограничена wall-clock бюджетом (abandon при таймауте).
+            val resp = attemptBounded(ATTEMPT_TIMEOUT_MS) {
+                source.getCatalogSearch(0, title)
             }
             if (resp is Response.Success && resp.data.list.isNotEmpty()) {
                 sourceFailures.remove(source.baseUrl)
@@ -247,20 +281,48 @@ class MassMigrationViewModel @Inject constructor(
 
     private suspend fun fetchChaptersWithRetry(source: SourceInterface.Catalog, url: String): List<ChapterResult>? {
         for (attempt in 1..2) {
-            try {
-                val chapters = ChapterFetcher.fetchChapters(source, url)
-                if (chapters.isNotEmpty()) {
-                    sourceFailures.remove(source.baseUrl)
-                    return chapters
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "fetchChaptersWithRetry: attempt $attempt for ${source.baseUrl} $url")
+            val chapters = attemptBounded(ATTEMPT_TIMEOUT_MS) {
+                ChapterFetcher.fetchChapters(source, url)
             }
-            if (attempt < 2) delay(1000L)
+            if (!chapters.isNullOrEmpty()) {
+                sourceFailures.remove(source.baseUrl)
+                return chapters
+            }
+            if (attempt < 2) {
+                Timber.e("fetchChaptersWithRetry: retry $attempt for ${source.baseUrl} $url")
+                delay(1000L)
+            }
         }
         sourceFailures[source.baseUrl] = (sourceFailures[source.baseUrl] ?: 0) + 1
         Timber.e("fetchChaptersWithRetry: failed after 2 attempts ${source.baseUrl} $url")
         return null
+    }
+
+    /**
+     * Запускает [block] в [attemptScope] (Dispatchers.IO) и ждёт не дольше [timeoutMs] мс.
+     * По таймауту deferred отменяется, но НЕ дожидаемся его завершения (abandon-стратегия):
+     * очередь источников не блокируется стрэгглером.
+     *
+     * Потолок: отмена кооперативная — Lua/сеть внутри block могут доработать в фоне
+     * (до своих внутренних лимитов, например 90с), но это больше никого не ждёт;
+     * при отмене viewModelScope (очистка VM) стрэгглеры отменяются тоже.
+     */
+    private suspend fun <T : Any> attemptBounded(timeoutMs: Long, block: suspend () -> T): T? {
+        // deferred — ребёнок attemptScope, а НЕ текущего coroutineScope: иначе
+        // coroutineScope в searchBook ждал бы стрэгглера и abandon терял бы смысл.
+        val deferred = attemptScope.async { block() }
+        try {
+            val result = withTimeoutOrNull(timeoutMs) { deferred.await() }
+            if (result == null) deferred.cancel()
+            return result
+        } catch (e: CancellationException) {
+            deferred.cancel()
+            throw e
+        } catch (e: Exception) {
+            deferred.cancel()
+            Timber.e(e, "attemptBounded: exception within ${timeoutMs}ms")
+            return null
+        }
     }
 
     fun skipBook(index: Int) {
@@ -374,6 +436,7 @@ class MassMigrationViewModel @Inject constructor(
     fun reset() {
         searchJob?.cancel()
         migrateJob?.cancel()
+        attemptJob.cancelChildren() // отменяем стрэгглеры abandon-попыток
         sourceFailures.clear()
         _uiState.value = MassMigrationUiState()
     }
