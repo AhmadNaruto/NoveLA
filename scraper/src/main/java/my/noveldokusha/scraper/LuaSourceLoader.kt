@@ -144,6 +144,13 @@ class LuaEngine @Inject constructor(
     // In-memory LRU cache for compiled bytecodes to bypass disk read I/O on repeated loads
     private val inMemoryBytecodeCache = LruCache<String, ByteArray>(50)
 
+    // Thread-safe cache for compiled Jsoup CSS selectors to avoid repeated parsing in loops
+    private val cssSelectorCache = ConcurrentHashMap<String, org.jsoup.select.Evaluator>()
+
+    private fun parseCssSelector(selector: String): org.jsoup.select.Evaluator =
+        if (selector.isBlank()) org.jsoup.select.QueryParser.parse("*")
+        else cssSelectorCache.getOrPut(selector) { org.jsoup.select.QueryParser.parse(selector) }
+
     private fun createSandboxGlobals(): Globals = createLuaSandboxGlobals()
 
     suspend fun loadScript(luaCode: String): LuaValue = withContext(Dispatchers.IO) {
@@ -271,52 +278,49 @@ class LuaEngine @Inject constructor(
         return createLuaSourceAdapter(context, luaScript, this, iconUrl, fileName)
     }
 
+    private val sharedApiFunctions: Map<String, LuaValue> by lazy {
+        mapOf(
+            "http_get"               to HttpGetFunction(),
+            "http_post"              to HttpPostFunction(),
+            "get_cookies"            to GetCookiesFunction(),
+            "set_cookies"            to SetCookiesFunction(),
+            "get_preference"         to GetPreferenceFunction(),
+            "set_preference"         to SetPreferenceFunction(),
+            "get_localStorage"       to GetLocalStorageFunction(),
+            "aes_decrypt"            to AesDecryptFunction(),
+            "base64_decode"          to Base64DecodeFunction(),
+            "base64_encode"          to Base64EncodeFunction(),
+            "html_parse"             to HtmlParseFunction(),
+            "html_select"            to HtmlSelectFunction(),
+            "html_select_first"      to HtmlSelectFirstFunction(),
+            "html_attr"              to HtmlAttrFunction(),
+            "html_text"              to HtmlTextFunction(),
+            "html_remove"            to HtmlRemoveFunction(),
+            "http_get_batch"         to HttpGetBatchFunction(),
+            "url_encode"             to UrlEncodeFunction(),
+            "url_encode_charset"     to UrlEncodeCharsetFunction(),
+            "url_resolve"            to UrlResolveFunction(),
+            "regex_match"            to RegexMatchFunction(),
+            "regex_replace"          to RegexReplaceFunction(),
+            "string_normalize"       to StringNormalizeFunction(),
+            "string_split"           to StringSplitFunction(),
+            "string_trim"            to StringTrimFunction(),
+            "string_starts_with"     to StringStartsWithFunction(),
+            "string_ends_with"       to StringEndsWithFunction(),
+            "string_clean"           to StringCleanFunction(),
+            "unescape_unicode"       to UnescapeUnicodeFunction(),
+            "json_parse"             to JsonParseFunction(),
+            "json_stringify"         to JsonStringifyFunction(),
+            "detect_pagination"      to DetectPaginationFunction(),
+            "sleep"                  to SleepFunction(),
+            "log_info"               to LogInfoFunction(),
+            "log_error"              to LogErrorFunction(),
+            "os_time"                to OsTimeFunction(),
+        )
+    }
+
     private fun registerApi(g: Globals) {
-        // HTTP
-        g.set("http_get",               HttpGetFunction()              as LuaValue)
-        g.set("http_post",              HttpPostFunction()             as LuaValue)
-        // Cookies & Prefs
-        g.set("get_cookies",            GetCookiesFunction()           as LuaValue)
-        g.set("set_cookies",            SetCookiesFunction()           as LuaValue)
-        g.set("get_preference",         GetPreferenceFunction()        as LuaValue)
-        g.set("set_preference",         SetPreferenceFunction()        as LuaValue)
-        g.set("get_localStorage",       GetLocalStorageFunction()      as LuaValue)
-        // Crypto
-        g.set("aes_decrypt",            AesDecryptFunction()           as LuaValue)
-        g.set("base64_decode",          Base64DecodeFunction()         as LuaValue)
-        g.set("base64_encode",          Base64EncodeFunction()         as LuaValue)
-        // HTML
-        g.set("html_parse",             HtmlParseFunction()            as LuaValue)
-        g.set("html_select",            HtmlSelectFunction()           as LuaValue)
-        g.set("html_select_first",      HtmlSelectFirstFunction()      as LuaValue)
-        g.set("html_attr",              HtmlAttrFunction()             as LuaValue)
-        g.set("html_text",              HtmlTextFunction()             as LuaValue)
-        g.set("html_remove",            HtmlRemoveFunction()           as LuaValue)
-        g.set("http_get_batch",         HttpGetBatchFunction()         as LuaValue)
-        // URL
-        g.set("url_encode",             UrlEncodeFunction()            as LuaValue)
-        g.set("url_encode_charset",     UrlEncodeCharsetFunction()     as LuaValue)
-        g.set("url_resolve",            UrlResolveFunction()           as LuaValue)
-        // String utils
-        g.set("regex_match",            RegexMatchFunction()           as LuaValue)
-        g.set("regex_replace",          RegexReplaceFunction()         as LuaValue)
-        g.set("string_normalize",       StringNormalizeFunction()      as LuaValue)
-        g.set("string_split",           StringSplitFunction()          as LuaValue)
-        g.set("string_trim",            StringTrimFunction()           as LuaValue)
-        g.set("string_starts_with",     StringStartsWithFunction()     as LuaValue)
-        g.set("string_ends_with",       StringEndsWithFunction()       as LuaValue)
-        g.set("string_clean",           StringCleanFunction()          as LuaValue)
-        g.set("unescape_unicode",       UnescapeUnicodeFunction()      as LuaValue)
-        // JSON
-        g.set("json_parse",             JsonParseFunction()            as LuaValue)
-        g.set("json_stringify",         JsonStringifyFunction()        as LuaValue)
-        // Misc
-        g.set("detect_pagination",      DetectPaginationFunction()     as LuaValue)
-        g.set("sleep",                  SleepFunction()                as LuaValue)
-        g.set("log_info",               LogInfoFunction()              as LuaValue)
-        g.set("log_error",              LogErrorFunction()             as LuaValue)
-        g.set("base64_encode",          Base64EncodeFunction()         as LuaValue)
-        g.set("os_time",                OsTimeFunction()               as LuaValue)
+        sharedApiFunctions.forEach { (name, fn) -> g.set(name, fn) }
         // Plugin error signaling
         g.set("show_error", object : ThreeArgFunction() {
             override fun call(titleArg: LuaValue, messageArg: LuaValue, authArg: LuaValue): LuaValue {
@@ -892,10 +896,11 @@ class LuaEngine @Inject constructor(
     private inner class HtmlSelectFunction : TwoArgFunction() {
         override fun call(a1: LuaValue, a2: LuaValue): LuaValue = try {
             val el = elementFromValue(a1)
+            val evaluator = parseCssSelector(a2.checkjstring())
             val elems = if (el != null) {
-                el.select(a2.checkjstring())
+                el.select(evaluator)
             } else {
-                Jsoup.parse(a1.checkjstring()).select(a2.checkjstring())
+                Jsoup.parse(a1.checkjstring()).select(evaluator)
             }
             LuaTable().also { t -> elems.forEachIndexed { i, e -> t.set(i + 1, elementToTable(e)) } }
         } catch (e: Exception) { Timber.e(e, "html_select"); LuaTable() }
@@ -907,10 +912,11 @@ class LuaEngine @Inject constructor(
     private inner class HtmlSelectFirstFunction : TwoArgFunction() {
         override fun call(a1: LuaValue, a2: LuaValue): LuaValue = try {
             val el = elementFromValue(a1)
+            val evaluator = parseCssSelector(a2.checkjstring())
             val first = if (el != null) {
-                el.selectFirst(a2.checkjstring())
+                el.selectFirst(evaluator)
             } else {
-                Jsoup.parse(a1.checkjstring()).selectFirst(a2.checkjstring())
+                Jsoup.parse(a1.checkjstring()).selectFirst(evaluator)
             }
             if (first != null) elementToTable(first) else LuaValue.NIL
         } catch (e: Exception) { Timber.e(e, "html_select_first"); LuaValue.NIL }
@@ -923,10 +929,11 @@ class LuaEngine @Inject constructor(
     private inner class HtmlAttrFunction : ThreeArgFunction() {
         override fun call(a1: LuaValue, a2: LuaValue, a3: LuaValue): LuaValue = try {
             val el = elementFromValue(a1)
+            val evaluator = parseCssSelector(a2.checkjstring())
             val target = if (el != null) {
-                el.selectFirst(a2.checkjstring())
+                el.selectFirst(evaluator)
             } else {
-                Jsoup.parse(a1.checkjstring()).selectFirst(a2.checkjstring())
+                Jsoup.parse(a1.checkjstring()).selectFirst(evaluator)
             }
             if (target != null) LuaValue.valueOf(target.attr(a3.checkjstring())) else LuaValue.valueOf("")
         } catch (_: Exception) { LuaValue.valueOf("") }
@@ -963,7 +970,10 @@ class LuaEngine @Inject constructor(
                 if (el != null) {
                     for (i in 2..args.narg()) {
                         val selector = args.arg(i).optjstring(null) ?: continue
-                        if (selector.isNotBlank()) el.select(selector).remove()
+                        if (selector.isNotBlank()) {
+                            val evaluator = parseCssSelector(selector)
+                            el.select(evaluator).remove()
+                        }
                     }
                     LuaValue.valueOf(el.html())
                 } else {
@@ -971,7 +981,10 @@ class LuaEngine @Inject constructor(
                     val doc  = Jsoup.parse(html)
                     for (i in 2..args.narg()) {
                         val selector = args.arg(i).optjstring(null) ?: continue
-                        if (selector.isNotBlank()) doc.select(selector).remove()
+                        if (selector.isNotBlank()) {
+                            val evaluator = parseCssSelector(selector)
+                            doc.select(evaluator).remove()
+                        }
                     }
                     LuaValue.valueOf(doc.body().html())
                 }
@@ -1047,7 +1060,8 @@ class LuaEngine @Inject constructor(
                         override fun invoke(args: Varargs): Varargs {
                             val selector = if (args.narg() >= 2) args.arg(2) else args.arg(1)
                             return try {
-                                val elems = el.select(selector.checkjstring())
+                                val evaluator = parseCssSelector(selector.checkjstring())
+                                val elems = el.select(evaluator)
                                 LuaTable().also { t2 -> elems.forEachIndexed { i, e -> t2.set(i + 1, elementToTable(e)) } }
                             } catch (_: Exception) { LuaTable() }
                         }
@@ -1163,8 +1177,70 @@ class LuaEngine @Inject constructor(
 
     private inner class JsonParseFunction : OneArgFunction() {
         override fun call(arg: LuaValue): LuaValue = try {
-            convertToLua(gson.fromJson(arg.checkjstring(), Any::class.java))
+            val jsonStr = arg.checkjstring()
+            val element = JsonParser.parseString(jsonStr)
+            wrapJsonElement(element)
         } catch (e: Exception) { Timber.e(e, "json_parse"); LuaValue.NIL }
+    }
+
+    private fun wrapJsonElement(elem: com.google.gson.JsonElement?): LuaValue = when {
+        elem == null || elem.isJsonNull -> LuaValue.NIL
+        elem.isJsonObject -> wrapJsonObject(elem.asJsonObject)
+        elem.isJsonArray -> wrapJsonArray(elem.asJsonArray)
+        elem.isJsonPrimitive -> {
+            val prim = elem.asJsonPrimitive
+            when {
+                prim.isBoolean -> LuaValue.valueOf(prim.asBoolean)
+                prim.isNumber -> LuaValue.valueOf(prim.asDouble)
+                prim.isString -> LuaValue.valueOf(prim.asString)
+                else -> LuaValue.valueOf(prim.asString)
+            }
+        }
+        else -> LuaValue.NIL
+    }
+
+    private fun wrapJsonObject(obj: com.google.gson.JsonObject): LuaTable {
+        val t = LuaTable()
+        val mt = LuaTable()
+        mt.set(LuaValue.INDEX, object : TwoArgFunction() {
+            override fun call(table: LuaValue, key: LuaValue): LuaValue {
+                val keyStr = key.optjstring(null) ?: return LuaValue.NIL
+                val existing = table.rawget(key)
+                if (existing != LuaValue.NIL) return existing
+                if (!obj.has(keyStr)) return LuaValue.NIL
+                val luaVal = wrapJsonElement(obj.get(keyStr))
+                table.set(key, luaVal)
+                return luaVal
+            }
+        })
+        t.setmetatable(mt)
+        return t
+    }
+
+    private fun wrapJsonArray(arr: com.google.gson.JsonArray): LuaTable {
+        val t = LuaTable()
+        val len = arr.size()
+        val mt = LuaTable()
+        mt.set(LuaValue.INDEX, object : TwoArgFunction() {
+            override fun call(table: LuaValue, key: LuaValue): LuaValue {
+                if (key.isnumber()) {
+                    val idx = key.toint()
+                    if (idx in 1..len) {
+                        val existing = table.rawget(idx)
+                        if (existing != LuaValue.NIL) return existing
+                        val luaVal = wrapJsonElement(arr.get(idx - 1))
+                        table.set(idx, luaVal)
+                        return luaVal
+                    }
+                }
+                return LuaValue.NIL
+            }
+        })
+        mt.set(LuaValue.LEN, object : OneArgFunction() {
+            override fun call(arg: LuaValue): LuaValue = LuaValue.valueOf(len)
+        })
+        t.setmetatable(mt)
+        return t
     }
 
     private inner class JsonStringifyFunction : OneArgFunction() {

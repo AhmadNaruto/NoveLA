@@ -22,12 +22,15 @@ Berdasarkan audit kode pada modul `:scraper` ([`LuaSourceLoader.kt`](file:///dat
 - **Rekomendasi Optimasi**: Implementasikan **Lua VM Pool** (Instance Pooling) atau buat `Globals` per-coroutine context untuk sumber yang sering digunakan, sehingga panggilan baca dapat berjalan secara paralel tanpa saling mengunci.
 
 ### 3. Konversi Data JSON & Struct Rekursif yang Lambat
-- **Masalah**: Panggilan `json_parse` mengonversi JSON Java ke `LuaTable` secara rekursif via `convertToLua()` ([`LuaSourceLoader.kt:1193-1209`](file:///data/user/0/com.termux/files/home/projects/NoveLA/scraper/src/main/java/my/noveldokusha/scraper/LuaSourceLoader.kt#L1193-L1209)). Untuk respon JSON katalog yang besar (ratusan item), alokasi memori heap JVM melonjak.
-- **Rekomendasi Optimasi**: Gunakan lazy-proxy wrapper untuk objek JSON (serupa dengan `elementToTable` pada Jsoup) sehingga bidang JSON baru diparsing saat diakses oleh Lua.
+- **Masalah**: Panggilan `json_parse` mengonversi JSON Java ke `LuaTable` secara rekursif via `convertToLua()`. Untuk respon JSON katalog yang besar (ratusan item), alokasi memori heap JVM melonjak.
+- **Status Implementation**: **[SELESAI DITERAPKAN]** Menggunakan `wrapJsonElement` (lazy-proxy wrapper untuk `JsonObject` dan `JsonArray`) sehingga entri JSON diparsing secara *on-demand* saat diakses oleh Lua (`LuaSourceLoader.kt`).
 
 ### 4. Cache Prototype In-Memory Tambahan
-- **Masalah**: Saat ini caching bytecode (`.lbc`) dilakukan pada level disk file ([`LuaSourceLoader.kt:167-188`](file:///data/user/0/com.termux/files/home/projects/NoveLA/scraper/src/main/java/my/noveldokusha/scraper/LuaSourceLoader.kt#L167-L188)). Saat adapter dieviksi dari LRU cache `LuaSourceLoader`, file `.lbc` dibaca ulang dari storage disk dan di-deserialize.
-- **Rekomendasi Optimasi**: Tambahkan **In-Memory LRU Cache untuk `LuaValue` / `Prototype`** yang sudah terkompilasi agar pemuatan ulang plugin yang baru dieviksi menjadi *instant* (0ms).
+- **Masalah**: Saat ini caching bytecode (`.lbc`) dilakukan pada level disk file. Saat adapter dieviksi dari LRU cache `LuaSourceLoader`, file `.lbc` dibaca ulang dari storage disk dan di-deserialize.
+- **Status Implementation**: **[SELESAI DITERAPKAN]** Ditambahkan `inMemoryBytecodeCache` (`LruCache<String, ByteArray>(50)`) pada `LuaEngine` untuk pemuatan ulang instant (0ms).
+
+### 5. Concurrent CSS Selector Cache & API Instance Reuse
+- **Status Implementation**: **[SELESAI DITERAPKAN]** Ditambahkan `cssSelectorCache` (`ConcurrentHashMap<String, Evaluator>`) untuk memangkas regex parse CSS selector Jsoup, serta `sharedApiFunctions` untuk mendaftar 35+ fungsi API tanpa alokasi objek berulang (`LuaSourceLoader.kt`).
 
 ---
 
