@@ -1,5 +1,8 @@
 package my.noveldokusha.scraper.domain
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class ChapterResult(
     val title: String,
     val url: String,
