@@ -112,16 +112,13 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
             .maxSizeBytes(AppCacheConfig.IMAGE_DISK_CACHE_BYTES)
             .build()
 
-        val memoryCache = coil3.memory.MemoryCache.Builder()
-            .maxSizePercent(context, AppCacheConfig.IMAGE_MEMORY_CACHE_PERCENT) // ponytail: 25% — стандарт для сетевых грид-приложений (Mihon=20%, Coil Sample=25%)
-            .build()
-
-        val animatorDurationScale = Settings.System.getFloat(
-            contentResolver, Settings.System.ANIMATOR_DURATION_SCALE, 1f
-        )
-
         val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val isLowRamDevice = activityManager.isLowRamDevice
+        val memoryCachePercent = if (isLowRamDevice) 0.15 else AppCacheConfig.IMAGE_MEMORY_CACHE_PERCENT
+
+        val memoryCache = coil3.memory.MemoryCache.Builder()
+            .maxSizePercent(context, memoryCachePercent)
+            .build()
 
         val sharedBuilder = ImageLoader.Builder(context)
             .fetcherCoroutineContext(Dispatchers.IO.limitedParallelism(8))

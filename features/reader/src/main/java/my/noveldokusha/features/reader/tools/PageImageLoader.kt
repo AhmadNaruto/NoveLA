@@ -55,7 +55,7 @@ class PageImageLoader @Inject constructor(
         private const val MAX_CACHE_BYTES = AppCacheConfig.PAGE_IMAGES_CACHE_BYTES
         private const val CACHE_DIR = AppCacheConfig.PAGE_IMAGES_CACHE_DIR
         private const val CBZ_SCHEME = "cbz://"
-        private const val PREFETCH_PARALLELISM = 6
+        private const val PREFETCH_PARALLELISM = 4
         private const val MAX_OPEN_ZIP_FILES = 3
     }
 
@@ -79,8 +79,9 @@ class PageImageLoader @Inject constructor(
      * Пропорции страниц (raw URL → ширина/высота) для стабильной высоты
      * рядов: высота известна до появления картинки, RecyclerView не дёргается.
      * Заполняется при загрузке/префетче и из локально скачанных файлов.
+     * Bounded LRU cache (2000 entries) prevents memory leaks during long reading sessions.
      */
-    private val dimsCache = java.util.concurrent.ConcurrentHashMap<String, Pair<Int, Int>>()
+    private val dimsCache = android.util.LruCache<String, Pair<Int, Int>>(2000)
 
     // Дедупликация одновременных загрузок одной страницы (скролл + префетч).
     private val inflight = java.util.concurrent.ConcurrentHashMap<String, CompletableDeferred<PageImage?>>()
@@ -117,7 +118,7 @@ class PageImageLoader @Inject constructor(
      * при листании вверх. Точные пропорции подтянутся при load()/появлении
      * картинки, это единственное асинхронное изменение высоты.
      */
-    fun getCachedDimensions(url: String): Pair<Int, Int>? = dimsCache[url]
+    fun getCachedDimensions(url: String): Pair<Int, Int>? = dimsCache.get(url)
 
     /**
      * Размеры страницы без сетевых запросов: память → локально скачанная
@@ -129,7 +130,7 @@ class PageImageLoader @Inject constructor(
      * dimsCache для последующих синхронных getCachedDimensions.
      */
     suspend fun getDimensions(chapterUrl: String, url: String): Pair<Int, Int>? {
-        dimsCache[url]?.let { return it }
+        dimsCache.get(url)?.let { return it }
         val dims = withContext(Dispatchers.IO) {
             if (url.startsWith(CBZ_SCHEME)) {
                 decodeBoundsFromCbz(url)
@@ -141,7 +142,7 @@ class PageImageLoader @Inject constructor(
                         ?.let { decodeBounds(it) }
             }
         }
-        if (dims != null) dimsCache[url] = dims
+        if (dims != null) dimsCache.put(url, dims)
         return dims
     }
 
@@ -187,7 +188,7 @@ class PageImageLoader @Inject constructor(
             inflight[url] = deferred
             try {
                 val result = loadCbzPage(url)
-                if (result != null) dimsCache[url] = result.width to result.height
+                if (result != null) dimsCache.put(url, result.width to result.height)
                 deferred.complete(result)
                 return result
             } catch (e: CancellationException) {
@@ -203,7 +204,7 @@ class PageImageLoader @Inject constructor(
         downloadedPageChaptersStore.getLocalPageFile(chapterUrl, url)?.let { file ->
             val dims = withContext(Dispatchers.IO) { decodeBounds(file) }
             if (dims != null) {
-                dimsCache[url] = dims
+                dimsCache.put(url, dims)
                 return PageImage(file, dims.first, dims.second)
             }
             // Файл есть, но не декодируется (повреждён/не картинка) — в сеть
@@ -215,7 +216,7 @@ class PageImageLoader @Inject constructor(
         inflight[url] = deferred
         try {
             val result = doLoad(url, chapterUrl)
-            if (result != null) dimsCache[url] = result.width to result.height
+            if (result != null) dimsCache.put(url, result.width to result.height)
             deferred.complete(result)
             return result
         } catch (e: CancellationException) {
