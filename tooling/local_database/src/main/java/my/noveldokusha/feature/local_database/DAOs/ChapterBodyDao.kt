@@ -7,6 +7,8 @@ import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import my.noveldokusha.feature.local_database.tables.ChapterBody
 
+import androidx.room.Transaction
+
 @Dao
 interface ChapterBodyDao {
     @Query("SELECT * FROM ChapterBody")
@@ -17,6 +19,14 @@ interface ChapterBodyDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReplace(chapterBody: List<ChapterBody>)
+
+    @Transaction
+    suspend fun insertReplaceInChunks(chapterBodies: List<ChapterBody>, chunkSize: Int = 100) {
+        if (chapterBodies.isEmpty()) return
+        chapterBodies.chunked(chunkSize).forEach { chunk ->
+            insertReplace(chunk)
+        }
+    }
 
     @Query("SELECT * FROM ChapterBody WHERE url = :url")
     suspend fun get(url: String): ChapterBody?
@@ -29,6 +39,14 @@ interface ChapterBodyDao {
 
     @Query("DELETE FROM ChapterBody WHERE ChapterBody.url IN (:chaptersUrl)")
     suspend fun removeChapterRows(chaptersUrl: List<String>)
+
+    @Transaction
+    suspend fun removeChapterRowsInChunks(chaptersUrl: List<String>, chunkSize: Int = 500) {
+        if (chaptersUrl.isEmpty()) return
+        chaptersUrl.chunked(chunkSize).forEach { chunk ->
+            removeChapterRows(chunk)
+        }
+    }
 
     @Query("""
         DELETE FROM ChapterBody 

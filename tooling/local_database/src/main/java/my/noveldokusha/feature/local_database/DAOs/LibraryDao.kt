@@ -12,6 +12,8 @@ import my.noveldokusha.feature.local_database.BookWithContext
 import my.noveldokusha.feature.local_database.tables.Book
 import my.noveldokusha.feature.local_database.tables.Chapter
 
+import androidx.room.Transaction
+
 @Dao
 interface LibraryDao {
     @Query("SELECT * FROM Book")
@@ -37,6 +39,22 @@ interface LibraryDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReplace(book: List<Book>)
+
+    @Transaction
+    suspend fun insertInChunks(books: List<Book>, chunkSize: Int = 200) {
+        if (books.isEmpty()) return
+        books.chunked(chunkSize).forEach { chunk ->
+            insert(chunk)
+        }
+    }
+
+    @Transaction
+    suspend fun insertReplaceInChunks(books: List<Book>, chunkSize: Int = 200) {
+        if (books.isEmpty()) return
+        books.chunked(chunkSize).forEach { chunk ->
+            insertReplace(chunk)
+        }
+    }
 
     @Delete
     suspend fun remove(book: Book)
@@ -112,11 +130,27 @@ interface LibraryDao {
     @Query("DELETE FROM Book WHERE url IN (:urls)")
     suspend fun removeBooksByUrls(urls: List<String>)
 
+    @Transaction
+    suspend fun removeBooksByUrlsInChunks(urls: List<String>, chunkSize: Int = 500) {
+        if (urls.isEmpty()) return
+        urls.chunked(chunkSize).forEach { chunk ->
+            removeBooksByUrls(chunk)
+        }
+    }
+
     @Query("UPDATE Book SET inLibrary = 0 WHERE url = :bookUrl")
     suspend fun setNotInLibrary(bookUrl: String)
 
     @Query("UPDATE Book SET inLibrary = 0 WHERE url IN (:bookUrls)")
     suspend fun setNotInLibrary(bookUrls: List<String>)
+
+    @Transaction
+    suspend fun setNotInLibraryInChunks(bookUrls: List<String>, chunkSize: Int = 500) {
+        if (bookUrls.isEmpty()) return
+        bookUrls.chunked(chunkSize).forEach { chunk ->
+            setNotInLibrary(chunk)
+        }
+    }
 
     @Query("UPDATE Book SET category = :category, completed = :isCompleted WHERE url IN (:bookUrls)")
     suspend fun updateCategoryAndCompleted(bookUrls: List<String>, category: String, isCompleted: Boolean)
