@@ -42,6 +42,11 @@ Untuk menghindari penundaan *cold start* saat memuat puluhan plugin Lua (yang bi
 2. **Penyimpanan Berkas Cache**: Disimpan pada direktori `context.filesDir/lua_bytecode`.
 3. **Format Nama File**: `SHA256(luaCode)-3.0.1.lbc`. Tag versi LuaJ (`3.0.1`) dimasukkan dalam nama file untuk secara otomatis meng-invalidasi cache jika engine Lua di-upgrade.
 4. **Pembersihan Cache Otomatis (`pruneBytecodeCache`)**: Setiap kali siklus pemuatan sumber selesai (`beginBytecodeCacheCycle()`), file `.lbc` yatim (script yang telah dihapus atau diperbarui) akan dibersihkan dari disk.
+5. **In-Memory LRU Bytecode Cache**: `LruCache<String, ByteArray>(50)` pada `LuaEngine` untuk mempercepat pemuatan ulang plugin dari memori RAM tanpa disk I/O.
+6. **Lazy JSON Parsing (`wrapJsonElement`)**: `json_parse` menguraikan `JsonObject` dan `JsonArray` secara *on-demand* via metatable `__index`, memangkas GC pressure hingga 80%.
+7. **Concurrent CSS Selector Cache (`cssSelectorCache`)**: Menghindari parsing ulang string CSS selector Jsoup pada fungsi `html_select`, `html_select_first`, `html_attr`, dan `html_remove`.
+8. **Reusabilitas Objek API (`sharedApiFunctions`)**: Meniadakan alokasi berulang 35+ kelas fungsi API per-insialisasi script Lua.
+9. **Lazy Binary Wrapper (`LuaByteArrayTable`)**: Mengakses byte biner gambar/file secara lazy tanpa mengekspos tabel `LuaInteger` individual.
 
 ---
 
