@@ -1,14 +1,12 @@
 package my.noveldokusha.feature.local_database.tables
 
 import android.os.Parcelable
-import androidx.compose.runtime.Stable
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-@Stable
 @Entity(
     indices = [
         Index(value = ["inLibrary"])
