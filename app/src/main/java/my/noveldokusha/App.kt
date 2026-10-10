@@ -112,6 +112,10 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
             .maxSizeBytes(AppCacheConfig.IMAGE_DISK_CACHE_BYTES)
             .build()
 
+        val animatorDurationScale = Settings.System.getFloat(
+            contentResolver, Settings.System.ANIMATOR_DURATION_SCALE, 1f
+        )
+
         val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val isLowRamDevice = activityManager.isLowRamDevice
         val memoryCachePercent = if (isLowRamDevice) 0.15 else AppCacheConfig.IMAGE_MEMORY_CACHE_PERCENT
