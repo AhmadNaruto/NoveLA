@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import my.noveldokusha.feature.local_database.ChapterWithContext
 import my.noveldokusha.feature.local_database.tables.Chapter
@@ -44,7 +45,7 @@ interface ChapterDao {
     @Query(
         """
         SELECT * FROM Chapter
-        WHERE Chapter.bookUrl = :bookUrl
+        WHERE Chapter.bookUrl == :bookUrl
         ORDER BY Chapter.position ASC
         LIMIT 1
     """
@@ -86,6 +87,46 @@ interface ChapterDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReplace(chapters: List<Chapter>)
+
+    @Transaction
+    suspend fun insertInChunks(chapters: List<Chapter>, chunkSize: Int = 250) {
+        if (chapters.isEmpty()) return
+        chapters.chunked(chunkSize).forEach { chunk ->
+            insert(chunk)
+        }
+    }
+
+    @Transaction
+    suspend fun insertReplaceInChunks(chapters: List<Chapter>, chunkSize: Int = 250) {
+        if (chapters.isEmpty()) return
+        chapters.chunked(chunkSize).forEach { chunk ->
+            insertReplace(chunk)
+        }
+    }
+
+    @Transaction
+    suspend fun setAsReadInChunks(chaptersUrl: List<String>, chunkSize: Int = 500) {
+        if (chaptersUrl.isEmpty()) return
+        chaptersUrl.chunked(chunkSize).forEach { chunk ->
+            setAsRead(chunk)
+        }
+    }
+
+    @Transaction
+    suspend fun setAsUnreadInChunks(chaptersUrl: List<String>, chunkSize: Int = 500) {
+        if (chaptersUrl.isEmpty()) return
+        chaptersUrl.chunked(chunkSize).forEach { chunk ->
+            setAsUnread(chunk)
+        }
+    }
+
+    @Transaction
+    suspend fun removeByUrlsInChunks(urls: List<String>, chunkSize: Int = 500) {
+        if (urls.isEmpty()) return
+        urls.chunked(chunkSize).forEach { chunk ->
+            removeByUrls(chunk)
+        }
+    }
 
     @Query("SELECT * FROM Chapter WHERE url = :url")
     suspend fun get(url: String): Chapter?
