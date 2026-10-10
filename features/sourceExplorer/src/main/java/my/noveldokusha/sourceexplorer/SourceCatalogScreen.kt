@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import my.noveldokusha.coreui.components.AnimatedTransition
 import my.noveldokusha.coreui.components.BooksVerticalView
@@ -107,7 +108,9 @@ internal fun SourceCatalogScreen(
                                         Text(
                                             text = "$contentTypeLabel · ${stringResource(R.string.catalog)}",
                                             style = MaterialTheme.typography.titleSmall,
-                                            color = contentTypeColor
+                                            color = contentTypeColor,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 },

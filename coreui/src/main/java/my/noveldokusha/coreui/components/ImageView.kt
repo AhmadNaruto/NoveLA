@@ -1,5 +1,6 @@
 package my.noveldokusha.coreui.components
 
+import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -36,6 +37,7 @@ import coil3.network.httpHeaders
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Precision
+import java.io.File
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -62,11 +64,23 @@ fun ImageView(
 ) {
     val model by remember(imageModel, error) {
         derivedStateOf {
-            when (imageModel) {
+            val resolved = when (imageModel) {
                 is String -> imageModel.ifBlank { error }
                 null -> error
                 else -> imageModel
             }
+            // Диагностика пустых обложек: что реально ушло в Coil.
+            // Логируются только данные изображения (URL/путь/ресурс), никаких секретов.
+            val input = when (imageModel) {
+                is String -> if (imageModel.isBlank()) "blank→error-resource" else imageModel
+                is File -> "file:" + imageModel.path
+                is Int -> "resource"
+                null -> "null→error-resource"
+                else -> imageModel::class.simpleName
+            }
+            val coil = if (resolved is Int) "resource" else resolved.toString()
+            Log.d("ImageView", "model input=$input coil=$coil")
+            resolved
         }
     }
     if (LocalInspectionMode.current) {

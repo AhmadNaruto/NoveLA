@@ -337,8 +337,14 @@ class VideoPlayerActivity : ComponentActivity() {
                     LaunchedEffect(state) { setKeepScreenOn(false) }
                 }
                 when (val s = state) {
+                    // Своё окно/фон: окно активности наследует AppTheme.Light из
+                    // манифеста (следует системному uiMode), а Compose-тема — из
+                    // настройки приложения. Без явного фона текст мог оказаться
+                    // неразличимым (тёмный на тёмном / светлый на светлом).
                     is State.Loading -> Column(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
@@ -348,7 +354,9 @@ class VideoPlayerActivity : ComponentActivity() {
                     }
 
                     is State.Error -> Column(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
@@ -748,7 +756,10 @@ class VideoPlayerActivity : ComponentActivity() {
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center,
                                 ) {
-                                    Text(stringResource(messageRes))
+                                    // Скрим чёрный в обеих темах, поэтому текст явно
+                                    // светлый: в светлой теме onSurface тёмный и на
+                                    // чёрном фоне не читается.
+                                    Text(stringResource(messageRes), color = Color.White)
                                     Spacer(Modifier.height(16.dp))
                                     Button(onClick = {
                                         playerError = null

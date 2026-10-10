@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -36,6 +35,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
@@ -62,6 +62,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -121,7 +122,7 @@ private fun UnifiedExtensionsScreen(
     ) {
         // Content area
         when {
-            state.isLoading -> {
+            state.isLoading && state.extensions.isEmpty() && state.availableExtensions.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
@@ -131,28 +132,31 @@ private fun UnifiedExtensionsScreen(
                     )
                 }
             }
-            state.error != null -> {
-                val errorText = state.error
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+            else -> {
+                if (state.error != null) {
+                    OutlinedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        Text(
-                            text = errorText,
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center
-                        )
-                        Button(onClick = { viewModel.onEvent(ExtensionsScreenEvent.OnRefresh) }) {
-                            Text(stringResource(my.noveldokusha.strings.R.string.retry))
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = state.error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            TextButton(onClick = { viewModel.onEvent(ExtensionsScreenEvent.OnRefresh) }) {
+                                Text(stringResource(my.noveldokusha.strings.R.string.retry))
+                            }
                         }
                     }
                 }
-            }
-            else -> {
+                if (state.isLoading) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
                 val localExtensionDesc = stringResource(my.noveldokusha.strings.R.string.local_extension_description)
                 val localExtensionAuthor = stringResource(my.noveldokusha.strings.R.string.extension_author_local)
                 val filteredExtensions = state.availableExtensions
@@ -467,6 +471,8 @@ private fun ContentTypeBadge(contentType: String) {
         text = stringResource(textRes),
         style = MaterialTheme.typography.labelSmall,
         color = color,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         modifier = Modifier
             .padding(start = 6.dp)
             .background(color.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
@@ -486,6 +492,8 @@ private fun ExtensionListItem(
                 Text(
                     text = extension.name,
                     style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
                 ContentTypeBadge(contentType = extension.contentType)

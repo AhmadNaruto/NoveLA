@@ -118,8 +118,14 @@ class ExtensionsManagerViewModel @Inject constructor(
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
+            // Пустой URL репозитория — это не ошибка: работаем только с локально установленными плагинами,
+            // поэтому не ходим в сеть и не выставляем state.error.
+            val repoUrl = _state.value.repositoryUrl.trim()
+            if (repoUrl.isEmpty()) {
+                _state.update { it.copy(isLoading = false, error = null) }
+                return@launch
+            }
             try {
-                val repoUrl  = _state.value.repositoryUrl
                 val responseBody = withContext(Dispatchers.IO) {
                     val response = if (forceRefresh) {
                         httpClient.getWithHeaders(repoUrl, mapOf("Cache-Control" to "no-cache"))

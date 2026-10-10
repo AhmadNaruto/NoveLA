@@ -147,6 +147,15 @@ fun CatalogExplorerScreen(
         }
     }
 
+    val onUnknownSourceClick = remember(context) {
+        {
+            navigationRouteViewModel.massMigration(
+                context,
+                sourceBaseUrl = null
+            ).let(context::startActivity)
+        }
+    }
+
     Scaffold(
         topBar = {
             Column {
@@ -321,6 +330,7 @@ fun CatalogExplorerScreen(
                     MigrationTabContent(
                         innerPadding = innerPadding,
                         onSourceClick = onMigrationSourceClick,
+                        onUnknownSourceClick = onUnknownSourceClick,
                         onHistoryClick = {
                             navigationRouteViewModel.migrationHistory(context).let(context::startActivity)
                         },

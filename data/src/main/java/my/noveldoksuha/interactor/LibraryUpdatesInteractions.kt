@@ -2,6 +2,7 @@ package my.noveldokusha.interactor
 
 import timber.log.Timber
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -173,6 +174,9 @@ class LibraryUpdatesInteractions @Inject constructor(
         if (activeBook.coverImageUrl.isBlank() || activeBook.coverImageUrl.isHttpsUrl) {
             downloaderRepository.bookCoverImageUrl(bookUrl = activeBook.url).onSuccess { newCoverUrl ->
                 if (!newCoverUrl.isNullOrBlank()) {
+                    // Свежий URL источника персистим в любом случае: сломанный URL
+                    // в БД — корень бага, падение скачивания файла не должно его оставлять.
+                    appRepository.libraryBooks.updateCover(bookUrl = activeBook.url, coverUrl = newCoverUrl)
                     syncCover(activeBook.url, newCoverUrl)
                 }
             }
@@ -466,6 +470,9 @@ class LibraryUpdatesInteractions @Inject constructor(
                     if (book.coverImageUrl.isBlank() || book.coverImageUrl.isHttpsUrl) {
                         downloaderRepository.bookCoverImageUrl(bookUrl = canonical).toSuccessOrNull()?.data?.let { coverUrl ->
                             if (!coverUrl.isNullOrBlank()) {
+                                // Свежий URL источника персистим до попытки скачать файл —
+                                // см. updateBook: сломанный URL в БД чинит только updateCover.
+                                appRepository.libraryBooks.updateCover(bookUrl = canonical, coverUrl = coverUrl)
                                 syncCover(canonical, coverUrl)
                             }
                         }
@@ -521,6 +528,12 @@ class LibraryUpdatesInteractions @Inject constructor(
 
     private val updatesInProgress = mutableSetOf<String>()
 
+    // Ре-резолв обложки у источника — однократно за сессию процесса: сброс только
+    // при рестарте процесса. Книга, у которой источник не отдаёт обложку (или запрос
+    // падает), иначе спрашивала бы свежий URL при каждом открытии библиотеки.
+    // Осознанный потолок: транзиентная сетевая ошибка тоже откладывается до рестарта.
+    private val coverResolveAttempted = mutableSetOf<String>()
+
     suspend fun syncCover(bookUrl: String, remoteCoverUrl: String) {
         val coverFile = appFileResolver.getStorageBookCoverImageFile(appFileResolver.getLocalBookFolderName(bookUrl))
         if (!coverRepository.ensureCover(coverFile, remoteCoverUrl, referer = scraper.coverReferer(bookUrl))) {
@@ -537,7 +550,29 @@ class LibraryUpdatesInteractions @Inject constructor(
         if (!isBackfilling.compareAndSet(false, true)) return@withContext
         try {
             if (!isNetworkAvailable()) return@withContext
-            backfillCovers(appRepository.libraryBooks.getAllInLibrary(), appFileResolver, coverRepository, scraper)
+            val books = appRepository.libraryBooks.getAllInLibrary()
+            val failedUrls = backfillCovers(books, appFileResolver, coverRepository, scraper)
+            // Один проход ре-резолва на книгу: хранимый URL битый/пустой,
+            // поэтому спрашиваем свежий URL у источника и персистим его.
+            for (bookUrl in failedUrls) {
+                if (!coverResolveAttempted.add(bookUrl)) continue
+                try {
+                    downloaderRepository.bookCoverImageUrl(bookUrl = bookUrl).onSuccess { freshUrl ->
+                        if (!freshUrl.isNullOrBlank()) {
+                            appRepository.libraryBooks.updateCover(bookUrl = bookUrl, coverUrl = freshUrl)
+                            val coverFile = appFileResolver.getStorageBookCoverImageFile(
+                                appFileResolver.getLocalBookFolderName(bookUrl)
+                            )
+                            coverRepository.ensureCover(coverFile, freshUrl, referer = scraper.coverReferer(bookUrl))
+                        }
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // Одна книга не должна ронять весь backfill.
+                    Timber.w(e, "Cover re-resolve failed for $bookUrl")
+                }
+            }
         } finally {
             isBackfilling.set(false)
         }

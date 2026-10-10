@@ -232,7 +232,12 @@ class WebViewActivity : ComponentActivity() {
                     onNavigateToUrl = { url -> webView.loadUrl(url) },
                     onBackClicked = {
                         if (isBypassMode) closeBypassOnUserDismiss()
-                        else if (!isFinishing) finish()
+                        else if (!isFinishing) {
+                            // Без flush куки сессии (логин) остаются только в памяти
+                            // WebView и теряются при убийстве процесса системой.
+                            CookieManager.getInstance().flush()
+                            finish()
+                        }
                     },
                     onDoneClicked = {
                         if (!isFinishing) {
@@ -397,6 +402,13 @@ class WebViewActivity : ComponentActivity() {
             prefs.edit().putString(host, json).apply()
             Timber.d("localStorage saved: host=$host, keys=${json.length} chars")
         }
+    }
+
+    override fun onPause() {
+        // Каждый уход в фон может быть последним перед убийством процесса:
+        // сбрасываем куки на диск, иначе залогиненная сессия теряется.
+        if (::webView.isInitialized) CookieManager.getInstance().flush()
+        super.onPause()
     }
 
     override fun onDestroy() {

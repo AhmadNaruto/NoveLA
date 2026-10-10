@@ -192,13 +192,28 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
 // Проверено на устройстве: 404 от 30.09 в image_cache для aniliberty.png.
 @OptIn(ExperimentalCoilApi::class)
 private object RevalidatingCacheStrategy : CacheStrategy {
+
+    // Тело, которое не декодируется как картинка и потому отравляет кэш:
+    // 1) text/* — заглушка CDN/блокировка (text/html, text/plain и прочие);
+    // 2) image/avif — CDN отдаёт AVIF только по Accept с image/avif, а на устройстве
+    //    HeifDecoderImpl его не декодирует ("videoFrame is a nullptr"), ретрай читает
+    //    ту же immutable-запись и вечно падает.
+    private fun NetworkResponse.isUnusableBody(): Boolean {
+        val contentType = headers["content-type"]?.substringBefore(';')?.trim() ?: return false
+        return contentType.startsWith("text/", ignoreCase = true) ||
+            contentType.equals("image/avif", ignoreCase = true)
+    }
+
     override suspend fun read(
         cacheResponse: NetworkResponse,
         networkRequest: NetworkRequest,
         options: Options,
     ): CacheStrategy.ReadResult {
-        // Пригодный для кэша ответ отдаём как есть, ошибку — всегда в сеть.
-        return if (AppCacheConfig.isCacheableStatus(cacheResponse.code)) {
+        // Пригодный для кэша ответ отдаём как есть, ошибку и непригодное тело —
+        // всегда в сеть (лечит уже отравленные записи при ретрае).
+        return if (
+            AppCacheConfig.isCacheableStatus(cacheResponse.code) && !cacheResponse.isUnusableBody()
+        ) {
             CacheStrategy.ReadResult(cacheResponse)
         } else {
             CacheStrategy.ReadResult(networkRequest)
@@ -211,10 +226,20 @@ private object RevalidatingCacheStrategy : CacheStrategy {
         networkResponse: NetworkResponse,
         options: Options,
     ): CacheStrategy.WriteResult {
-        // Кэшируем только пригодные коды: тело «404: Not Found» не декодируется
-        // как картинка и только отравляет кэш.
-        return if (AppCacheConfig.isCacheableStatus(networkResponse.code)) {
-            CacheStrategy.WriteResult(networkResponse)
+        // Кэшируем только пригодные коды и пригодное тело: «404: Not Found»,
+        // текстовые заглушки и AVIF не декодируются и только отравляют кэш.
+        if (
+            AppCacheConfig.isCacheableStatus(networkResponse.code) &&
+            !networkResponse.isUnusableBody()
+        ) {
+            return CacheStrategy.WriteResult(networkResponse)
+        }
+        // DISABLED при открытом снапшоте (cacheResponse != null) утекают FD:
+        // NetworkFetcher не закрывает снапшот при response == null. Запись без тела
+        // проходит через closeAndOpenEditor (снапшот закрыт, тело в кэш не попадёт);
+        // старая запись и так непригодна — её бы всё равно перечитали из сети.
+        return if (cacheResponse != null) {
+            CacheStrategy.WriteResult(networkResponse.copy(body = null))
         } else {
             CacheStrategy.WriteResult.DISABLED
         }

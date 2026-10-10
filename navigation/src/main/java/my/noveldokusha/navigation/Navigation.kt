@@ -38,7 +38,8 @@ interface NavigationRoutes {
     fun sourceCatalog(context: Context, sourceBaseUrl: String): Intent
 
     fun novelMigration(context: Context, bookUrl: String, bookTitle: String): Intent
-    fun massMigration(context: Context, sourceBaseUrl: String): Intent
+    // sourceBaseUrl == null — режим «неизвестный источник» (плагин удалён/не установлен)
+    fun massMigration(context: Context, sourceBaseUrl: String?): Intent
     fun migrationHistory(context: Context): Intent
 
     fun regexRules(context: Context, bookUrl: String? = null): Intent

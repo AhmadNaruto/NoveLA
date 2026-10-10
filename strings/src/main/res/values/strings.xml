@@ -712,6 +712,8 @@
     <string name="migration_no_book_selected">No book selected</string>
     <string name="migration_chapter_matching_not_ready">Chapter matching not ready</string>
     <string name="migration_no_sources_with_books">No sources with books in library</string>
+    <string name="migration_unknown_source">Unknown source</string>
+    <string name="migration_unknown_source_hint">Plugin removed or not installed</string>
     <string name="migration_searching_progress">%1$d of %2$d: %3$s</string>
     <string name="migration_chapters_count">%1$d ch.</string>
     <string name="migration_source_with_chapters">%1$s (%2$d ch.)</string>

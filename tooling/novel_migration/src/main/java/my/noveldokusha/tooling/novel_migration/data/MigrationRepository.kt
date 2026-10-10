@@ -1,10 +1,13 @@
 package my.noveldokusha.tooling.novel_migration.data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import my.noveldokusha.core.appPreferences.AppPreferences
+import my.noveldokusha.core.isLocalUri
 import my.noveldokusha.data.BookChaptersRepository
 import my.noveldokusha.data.ChapterBodyRepository
+import my.noveldokusha.data.DownloaderRepository
 import my.noveldokusha.data.LibraryBooksRepository
 import my.noveldokusha.feature.local_database.AppDatabase
 import my.noveldokusha.feature.local_database.DAOs.NovelMigrationDao
@@ -48,6 +51,7 @@ class MigrationRepository @Inject constructor(
     private val novelMigrationDao: NovelMigrationDao,
     private val appPreferences: AppPreferences,
     private val scraper: Scraper,
+    private val downloaderRepository: DownloaderRepository,
 ) {
     suspend fun migrate(
         oldBookUrl: String,
@@ -83,7 +87,7 @@ class MigrationRepository @Inject constructor(
                     existingNewBook.copy(
                         title = newBookTitle, inLibrary = true,
                         completed = oldBook.completed, category = oldBook.category,
-                        coverImageUrl = oldBook.coverImageUrl.ifEmpty { newBookUrl },
+                        coverImageUrl = oldBook.coverImageUrl,
                         description = oldBook.description, genres = oldBook.genres,
                         lastReadEpochTimeMilli = oldBook.lastReadEpochTimeMilli,
                         lastUpdateEpochTimeMilli = System.currentTimeMillis(),
@@ -92,7 +96,7 @@ class MigrationRepository @Inject constructor(
                     Book(
                         title = newBookTitle, url = newBookUrl,
                         completed = oldBook.completed, inLibrary = true,
-                        coverImageUrl = oldBook.coverImageUrl.ifEmpty { newBookUrl },
+                        coverImageUrl = oldBook.coverImageUrl,
                         description = oldBook.description, lastReadEpochTimeMilli = oldBook.lastReadEpochTimeMilli,
                         addedToLibraryEpochTimeMilli = oldBook.addedToLibraryEpochTimeMilli,
                         lastUpdateEpochTimeMilli = System.currentTimeMillis(),
@@ -206,6 +210,18 @@ class MigrationRepository @Inject constructor(
                 ))
             }
 
+            // Свежая обложка с нового источника: персистим URL; файл докачает
+            // backfillMissingCovers при открытии библиотеки / отобразится напрямую.
+            try {
+                downloaderRepository.bookCoverImageUrl(newBookUrl).onSuccess { fresh ->
+                    if (!fresh.isNullOrBlank()) libraryBooks.updateCover(newBookUrl, fresh)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Cover refresh failed after migration $newBookUrl")
+            }
+
             MigrationResult(
                 oldBookUrl = oldBookUrl, newBookUrl = newBookUrl,
                 chaptersTotal = oldChapters.size, chaptersMatched = matchedChapters.size,
@@ -234,6 +250,18 @@ class MigrationRepository @Inject constructor(
         val allBooks = libraryBooks.getAllInLibrary()
         return allBooks.filter { book ->
             book.url.startsWith(sourceBaseUrl.trimEnd('/') + "/") || book.url.startsWith(sourceBaseUrl)
+        }
+    }
+
+    // Книги, чей источник не совпадает ни с одним из загруженных каталогов
+    // (плагин удалён либо не установлен), локальные книги не считаем.
+    suspend fun getUnknownSourceBooks(loadedBaseUrls: List<String>): List<Book> {
+        val allBooks = libraryBooks.getAllInLibrary()
+        return allBooks.filter { book ->
+            if (book.url.isLocalUri) return@filter false
+            loadedBaseUrls.none { sourceUrl ->
+                book.url.startsWith(sourceUrl.trimEnd('/') + "/") || book.url.startsWith(sourceUrl)
+            }
         }
     }
 

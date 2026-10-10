@@ -114,10 +114,15 @@ internal class ChromeHeadersInterceptor(
 
     companion object {
         private val CHROME_MAJOR = Regex("""Chrome/(\d+)""")
+        // "image/avif" is intentionally omitted (real Chrome sends it): the app's
+        // ImageLoader relies on this Accept, the CDN serves AVIF only when it sees
+        // the avif token (Vary: Accept), and AVIF fails to decode on device
+        // (HeifDecoderImpl: "videoFrame is a nullptr"). Without the token the CDN
+        // answers image/webp or image/jpeg, which decode everywhere.
         private const val NAV_ACCEPT =
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp," +
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp," +
                 "image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
-        private const val IMG_ACCEPT = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        private const val IMG_ACCEPT = "image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
 
         private val GREASE_CHARS = arrayOf(" ", "(", ":", "-", ".", "/", ")", ";", "=", "?", "_")
         private val GREASE_VERSIONS = arrayOf("8", "99", "24")
