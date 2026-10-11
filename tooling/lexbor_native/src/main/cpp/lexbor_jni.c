@@ -8,6 +8,7 @@
 #include <lexbor/selectors/selectors.h>
 #include <lexbor/dom/interfaces/element.h>
 #include <lexbor/dom/interfaces/node.h>
+#include <lexbor/html/interfaces/document.h>
 
 #define LOG_TAG "LexborJNI"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
@@ -69,6 +70,48 @@ Java_my_noveldokusha_tooling_lexbor_1native_LexborNative_nativeGetRootNode(
     lxb_html_document_t *document = (lxb_html_document_t *) (intptr_t) doc_ptr;
     lxb_dom_node_t *root = lxb_dom_interface_node(document);
     return (jlong) (intptr_t) root;
+}
+
+JNIEXPORT jlong JNICALL
+Java_my_noveldokusha_tooling_lexbor_1native_LexborNative_nativeGetBodyNode(
+    JNIEnv *env, jclass clazz, jlong doc_ptr)
+{
+    if (!doc_ptr) return 0;
+    lxb_html_document_t *document = (lxb_html_document_t *) (intptr_t) doc_ptr;
+    lxb_html_body_element_t *body = lxb_html_document_body_element(document);
+    if (!body) return 0;
+    return (jlong) (intptr_t) lxb_dom_interface_node(body);
+}
+
+JNIEXPORT jlong JNICALL
+Java_my_noveldokusha_tooling_lexbor_1native_LexborNative_nativeGetHeadNode(
+    JNIEnv *env, jclass clazz, jlong doc_ptr)
+{
+    if (!doc_ptr) return 0;
+    lxb_html_document_t *document = (lxb_html_document_t *) (intptr_t) doc_ptr;
+    lxb_html_head_element_t *head = lxb_html_document_head_element(document);
+    if (!head) return 0;
+    return (jlong) (intptr_t) lxb_dom_interface_node(head);
+}
+
+JNIEXPORT jstring JNICALL
+Java_my_noveldokusha_tooling_lexbor_1native_LexborNative_nativeGetTitle(
+    JNIEnv *env, jclass clazz, jlong doc_ptr)
+{
+    if (!doc_ptr) return (*env)->NewStringUTF(env, "");
+    lxb_html_document_t *document = (lxb_html_document_t *) (intptr_t) doc_ptr;
+    size_t len = 0;
+    const lxb_char_t *title = lxb_html_document_title(document, &len);
+    if (!title) return (*env)->NewStringUTF(env, "");
+
+    char *buf = malloc(len + 1);
+    if (!buf) return (*env)->NewStringUTF(env, "");
+    memcpy(buf, title, len);
+    buf[len] = '\0';
+
+    jstring res = (*env)->NewStringUTF(env, buf);
+    free(buf);
+    return res;
 }
 
 JNIEXPORT void JNICALL
@@ -262,6 +305,22 @@ Java_my_noveldokusha_tooling_lexbor_1native_LexborNative_nativeGetOuterHtml(
 }
 
 JNIEXPORT jstring JNICALL
+Java_my_noveldokusha_tooling_lexbor_1native_LexborNative_nativeGetInnerHtml(
+    JNIEnv *env, jclass clazz, jlong node_ptr)
+{
+    if (!node_ptr) return (*env)->NewStringUTF(env, "");
+    lxb_dom_node_t *node = (lxb_dom_node_t *) (intptr_t) node_ptr;
+
+    lexbor_str_t str = {0};
+    lxb_status_t status = lxb_html_serialize_tree_str(node, &str);
+    if (status != LXB_STATUS_OK || !str.data) return (*env)->NewStringUTF(env, "");
+
+    jstring res = (*env)->NewStringUTF(env, (const char *) str.data);
+    lexbor_str_destroy(&str, node->owner_document->text, false);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
 Java_my_noveldokusha_tooling_lexbor_1native_LexborNative_nativeGetTagName(
     JNIEnv *env, jclass clazz, jlong node_ptr)
 {
@@ -282,4 +341,61 @@ Java_my_noveldokusha_tooling_lexbor_1native_LexborNative_nativeGetTagName(
     jstring res = (*env)->NewStringUTF(env, buf);
     free(buf);
     return res;
+}
+
+JNIEXPORT jint JNICALL
+Java_my_noveldokusha_tooling_lexbor_1native_LexborNative_nativeGetNodeType(
+    JNIEnv *env, jclass clazz, jlong node_ptr)
+{
+    if (!node_ptr) return 0;
+    lxb_dom_node_t *node = (lxb_dom_node_t *) (intptr_t) node_ptr;
+    return (jint) node->type;
+}
+
+JNIEXPORT jstring JNICALL
+Java_my_noveldokusha_tooling_lexbor_1native_LexborNative_nativeGetNodeName(
+    JNIEnv *env, jclass clazz, jlong node_ptr)
+{
+    if (!node_ptr) return (*env)->NewStringUTF(env, "");
+    lxb_dom_node_t *node = (lxb_dom_node_t *) (intptr_t) node_ptr;
+    size_t len = 0;
+    const lxb_char_t *name = lxb_dom_node_name(node, &len);
+    if (!name) return (*env)->NewStringUTF(env, "");
+
+    char *buf = malloc(len + 1);
+    if (!buf) return (*env)->NewStringUTF(env, "");
+    memcpy(buf, name, len);
+    buf[len] = '\0';
+
+    jstring res = (*env)->NewStringUTF(env, buf);
+    free(buf);
+    return res;
+}
+
+JNIEXPORT jlongArray JNICALL
+Java_my_noveldokusha_tooling_lexbor_1native_LexborNative_nativeGetChildNodes(
+    JNIEnv *env, jclass clazz, jlong node_ptr)
+{
+    if (!node_ptr) return (*env)->NewLongArray(env, 0);
+    lxb_dom_node_t *node = (lxb_dom_node_t *) (intptr_t) node_ptr;
+
+    size_t count = 0;
+    for (lxb_dom_node_t *curr = node->first_child; curr != NULL; curr = curr->next) {
+        count++;
+    }
+
+    jlongArray result = (*env)->NewLongArray(env, count);
+    if (!result || count == 0) return result;
+
+    jlong *elems = malloc(count * sizeof(jlong));
+    if (!elems) return result;
+
+    size_t i = 0;
+    for (lxb_dom_node_t *curr = node->first_child; curr != NULL; curr = curr->next) {
+        elems[i++] = (jlong) (intptr_t) curr;
+    }
+
+    (*env)->SetLongArrayRegion(env, result, 0, count, elems);
+    free(elems);
+    return result;
 }

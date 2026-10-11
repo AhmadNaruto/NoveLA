@@ -16,6 +16,15 @@ object LexborNative {
     external fun nativeGetRootNode(docPtr: Long): Long
 
     @JvmStatic
+    external fun nativeGetBodyNode(docPtr: Long): Long
+
+    @JvmStatic
+    external fun nativeGetHeadNode(docPtr: Long): Long
+
+    @JvmStatic
+    external fun nativeGetTitle(docPtr: Long): String
+
+    @JvmStatic
     external fun nativeFreeDocument(docPtr: Long)
 
     @JvmStatic
@@ -37,5 +46,17 @@ object LexborNative {
     external fun nativeGetOuterHtml(nodePtr: Long): String
 
     @JvmStatic
+    external fun nativeGetInnerHtml(nodePtr: Long): String
+
+    @JvmStatic
     external fun nativeGetTagName(nodePtr: Long): String
+
+    @JvmStatic
+    external fun nativeGetNodeType(nodePtr: Long): Int
+
+    @JvmStatic
+    external fun nativeGetNodeName(nodePtr: Long): String
+
+    @JvmStatic
+    external fun nativeGetChildNodes(nodePtr: Long): LongArray?
 }
