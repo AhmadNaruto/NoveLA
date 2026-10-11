@@ -49,6 +49,51 @@ open class LexborNode(
         }
     }
 
+    fun parent(): LexborElement? {
+        val ptr = LexborNative.nativeGetParentNode(nodePtr)
+        if (ptr == 0L) return null
+        val doc = ownerDocument ?: (this as? LexborDocument)
+        return LexborElement(ptr, doc)
+    }
+
+    fun nextSibling(): LexborNode? {
+        val ptr = LexborNative.nativeGetNextSibling(nodePtr)
+        if (ptr == 0L) return null
+        val doc = ownerDocument ?: (this as? LexborDocument)
+        val type = LexborNative.nativeGetNodeType(ptr)
+        return when (type) {
+            1 -> LexborElement(ptr, doc)
+            3 -> LexborTextNode(ptr, doc)
+            else -> LexborNode(ptr, doc)
+        }
+    }
+
+    fun previousSibling(): LexborNode? {
+        val ptr = LexborNative.nativeGetPrevSibling(nodePtr)
+        if (ptr == 0L) return null
+        val doc = ownerDocument ?: (this as? LexborDocument)
+        val type = LexborNative.nativeGetNodeType(ptr)
+        return when (type) {
+            1 -> LexborElement(ptr, doc)
+            3 -> LexborTextNode(ptr, doc)
+            else -> LexborNode(ptr, doc)
+        }
+    }
+
+    fun nextElementSibling(): LexborElement? {
+        val ptr = LexborNative.nativeGetNextElementSibling(nodePtr)
+        if (ptr == 0L) return null
+        val doc = ownerDocument ?: (this as? LexborDocument)
+        return LexborElement(ptr, doc)
+    }
+
+    fun previousElementSibling(): LexborElement? {
+        val ptr = LexborNative.nativeGetPrevElementSibling(nodePtr)
+        if (ptr == 0L) return null
+        val doc = ownerDocument ?: (this as? LexborDocument)
+        return LexborElement(ptr, doc)
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is LexborNode) return false

@@ -399,3 +399,59 @@ Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeGetChildNodes(
     free(elems);
     return result;
 }
+
+JNIEXPORT jlong JNICALL
+Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeGetParentNode(
+    JNIEnv *env, jclass clazz, jlong node_ptr)
+{
+    if (!node_ptr) return 0;
+    lxb_dom_node_t *node = (lxb_dom_node_t *) (intptr_t) node_ptr;
+    return (jlong) (intptr_t) node->parent;
+}
+
+JNIEXPORT jlong JNICALL
+Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeGetNextSibling(
+    JNIEnv *env, jclass clazz, jlong node_ptr)
+{
+    if (!node_ptr) return 0;
+    lxb_dom_node_t *node = (lxb_dom_node_t *) (intptr_t) node_ptr;
+    return (jlong) (intptr_t) node->next;
+}
+
+JNIEXPORT jlong JNICALL
+Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeGetPrevSibling(
+    JNIEnv *env, jclass clazz, jlong node_ptr)
+{
+    if (!node_ptr) return 0;
+    lxb_dom_node_t *node = (lxb_dom_node_t *) (intptr_t) node_ptr;
+    return (jlong) (intptr_t) node->prev;
+}
+
+JNIEXPORT jlong JNICALL
+Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeGetNextElementSibling(
+    JNIEnv *env, jclass clazz, jlong node_ptr)
+{
+    if (!node_ptr) return 0;
+    lxb_dom_node_t *node = (lxb_dom_node_t *) (intptr_t) node_ptr;
+    for (lxb_dom_node_t *curr = node->next; curr != NULL; curr = curr->next) {
+        if (curr->type == LXB_DOM_NODE_TYPE_ELEMENT) {
+            return (jlong) (intptr_t) curr;
+        }
+    }
+    return 0;
+}
+
+JNIEXPORT jlong JNICALL
+Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeGetPrevElementSibling(
+    JNIEnv *env, jclass clazz, jlong node_ptr)
+{
+    if (!node_ptr) return 0;
+    lxb_dom_node_t *node = (lxb_dom_node_t *) (intptr_t) node_ptr;
+    for (lxb_dom_node_t *curr = node->prev; curr != NULL; curr = curr->prev) {
+        if (curr->type == LXB_DOM_NODE_TYPE_ELEMENT) {
+            return (jlong) (intptr_t) curr;
+        }
+    }
+    return 0;
+}
+

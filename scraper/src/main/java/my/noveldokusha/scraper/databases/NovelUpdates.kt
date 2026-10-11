@@ -9,14 +9,14 @@ import my.noveldokusha.core.Response.Success
 import my.noveldokusha.core.runCatchingAsResponse
 import my.noveldokusha.network.NetworkClient
 import my.noveldokusha.network.add
-import my.noveldokusha.network.toDocument
 import my.noveldokusha.network.toUrlBuilderSafe
 import my.noveldokusha.network.tryFlatConnect
 import my.noveldokusha.scraper.DatabaseInterface
 import my.noveldokusha.scraper.R
 import my.noveldokusha.scraper.TextExtractor
 import my.noveldokusha.scraper.domain.BookResult
-import org.jsoup.nodes.Document
+import my.noveldokusha.tooling.native_scraper.LexborDocument
+import my.noveldokusha.tooling.native_scraper.LexborJsoupFacade
 
 /**
  * Novel main page example:
@@ -44,10 +44,9 @@ class NovelUpdates(
 
     override suspend fun getSearchFilters() = withContext(Dispatchers.Default) {
         tryFlatConnect {
-            networkClient
-                .get("https://www.novelupdates.com/series-finder/")
-                .toDocument()
-                .select(".genreme")
+            val response = networkClient.get("https://www.novelupdates.com/series-finder/")
+            val doc = LexborJsoupFacade.parse(response.body.string(), "https://www.novelupdates.com/series-finder/")
+            doc.select(".genreme")
                 .associate { it.text().trim() to it.attr("genreid") }
                 .map { (genre, id) ->
                     my.noveldokusha.scraper.SearchGenre(
@@ -106,12 +105,15 @@ class NovelUpdates(
     override suspend fun getBookData(
         bookUrl: String
     ) = withContext(Dispatchers.Default) {
-        networkClient.get(bookUrl).toDocument().let(::parseBookData)
+        val response = networkClient.get(bookUrl)
+        val doc = LexborJsoupFacade.parse(response.body.string(), bookUrl)
+        parseBookData(doc)
     }
 
     override suspend fun getAuthorData(authorUrl: String) = withContext(Dispatchers.Default) {
         tryFlatConnect {
-            val doc = networkClient.get(authorUrl).toDocument()
+            val response = networkClient.get(authorUrl)
+            val doc = LexborJsoupFacade.parse(response.body.string(), authorUrl)
             val books = doc.select(".search_main_box_nu")
                 .mapNotNull {
                     val title =
@@ -138,7 +140,8 @@ class NovelUpdates(
         url: Uri.Builder
     ) = withContext(Dispatchers.Default) {
         tryFlatConnect(extraErrorInfo = "index: $index\npage: $page\n\nurl: $url") {
-            val doc = networkClient.get(url).toDocument()
+            val response = networkClient.get(url)
+            val doc = LexborJsoupFacade.parse(response.body.string(), url.toString())
             doc.select(".search_main_box_nu")
                 .mapNotNull {
                     val title =
@@ -155,7 +158,7 @@ class NovelUpdates(
     }
 
     private fun parseBookData(
-        doc: Document
+        doc: LexborDocument
     ): Response<DatabaseInterface.BookData> = runCatchingAsResponse {
         val relatedBooks = doc
             .select("h5")
@@ -218,7 +221,7 @@ class NovelUpdates(
         )
     }
 
-    private fun isLastPage(doc: Document, page: Int): Boolean {
+    private fun isLastPage(doc: LexborDocument, page: Int): Boolean {
         val pageNumbers = doc
             .select("a[href*='pg='], a[href*='/pg/']")
             .mapNotNull { extractPageNumber(it.attr("href")) }

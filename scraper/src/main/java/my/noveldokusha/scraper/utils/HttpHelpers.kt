@@ -4,7 +4,6 @@ import my.noveldokusha.network.NetworkClient
 import my.noveldokusha.network.getRequest
 import my.noveldokusha.network.postPayload
 import my.noveldokusha.network.postRequest
-import my.noveldokusha.network.toDocument
 import my.noveldokusha.network.toJson
 import okhttp3.Headers
 import okhttp3.Request
@@ -21,7 +20,7 @@ suspend fun GET(
     headers: Map<String, String> = emptyMap(),
     networkClient: NetworkClient,
     charset: String? = null
-): org.jsoup.nodes.Document {
+): my.noveldokusha.tooling.native_scraper.LexborDocument {
     val requestHeaders = Headers.Builder().apply {
         headers.forEach { (key, value) -> add(key, value) }
     }.build()
@@ -29,11 +28,12 @@ suspend fun GET(
     val requestBuilder = getRequest(url, headers = requestHeaders)
     val response = networkClient.call(requestBuilder)
 
-    return if (charset != null) {
-        response.toDocument(charset)
+    val html = if (charset != null) {
+        String(response.body.bytes(), java.nio.charset.Charset.forName(charset))
     } else {
-        response.toDocument()
+        response.body.string()
     }
+    return my.noveldokusha.tooling.native_scraper.LexborJsoupFacade.parse(html, response.request.url.toString())
 }
 
 /**
@@ -44,7 +44,7 @@ suspend fun POST(
     data: Map<String, String>,
     headers: Map<String, String> = emptyMap(),
     networkClient: NetworkClient
-): org.jsoup.nodes.Document {
+): my.noveldokusha.tooling.native_scraper.LexborDocument {
     val requestHeaders = Headers.Builder().apply {
         headers.forEach { (key, value) -> add(key, value) }
     }.build()
@@ -57,7 +57,8 @@ suspend fun POST(
         }
     }
 
-    return networkClient.call(requestBuilder).toDocument()
+    val response = networkClient.call(requestBuilder)
+    return my.noveldokusha.tooling.native_scraper.LexborJsoupFacade.parse(response.body.string(), response.request.url.toString())
 }
 
 /**

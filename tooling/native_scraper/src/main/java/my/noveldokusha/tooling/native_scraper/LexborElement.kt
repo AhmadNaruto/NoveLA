@@ -31,6 +31,32 @@ open class LexborElement(
         val classes = className().split(Regex("""\s+"""))
         return classes.contains(className)
     }
+
+    fun nextElementSiblings(): LexborElements {
+        val list = mutableListOf<LexborElement>()
+        var curr = nextElementSibling()
+        while (curr != null) {
+            list.add(curr)
+            curr = curr.nextElementSibling()
+        }
+        return LexborElements(list)
+    }
+
+    fun previousElementSiblings(): LexborElements {
+        val list = mutableListOf<LexborElement>()
+        var curr = previousElementSibling()
+        while (curr != null) {
+            list.add(curr)
+            curr = curr.previousElementSibling()
+        }
+        return LexborElements(list)
+    }
+
+    fun `is`(cssQuery: String): Boolean {
+        val parentEl = parent() ?: return false
+        val matches = parentEl.select(cssQuery)
+        return matches.any { it.nodePtr == this.nodePtr }
+    }
 }
 
 class LexborElements(elements: List<LexborElement> = emptyList()) : ArrayList<LexborElement>(elements) {
