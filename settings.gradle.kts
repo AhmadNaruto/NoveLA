@@ -55,4 +55,6 @@ include(":tooling:application_workers")
 include(":features:webview")
 include(":tooling:local_source")
 include(":tooling:novel_migration")
+include(":tooling:lexbor_native")
+
 
