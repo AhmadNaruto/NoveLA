@@ -85,6 +85,30 @@ class LexborTest {
     }
 
     @Test
+    fun testCompoundSelectorWithHierarchyAndIdClass() {
+        val html = """
+            <html><body>
+                <div>
+                    <p>
+                        <span class="book" id="chapter">Target Chapter Content</span>
+                        <span class="book">Not this (no id)</span>
+                    </p>
+                    <span class="book" id="chapter">Not this (not in p)</span>
+                </div>
+            </body></html>
+        """.trimIndent()
+
+        val doc = LexborJsoupFacade.parse(html)
+        val selected = doc.select("div p .book#chapter")
+        assertEquals(1, selected.size)
+        assertEquals("Target Chapter Content", selected[0].text())
+        assertEquals("chapter", selected[0].attr("id"))
+        assertEquals("book", selected[0].attr("class"))
+
+        doc.close()
+    }
+
+    @Test
     fun testChildNodesTraversal() {
         val html = "<div><p>Hello</p>World<span>!</span></div>"
         val doc = LexborJsoupFacade.parse(html)
