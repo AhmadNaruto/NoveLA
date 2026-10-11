@@ -6,10 +6,11 @@ import my.noveldokusha.core.models.RegexRule
 import my.noveldokusha.core.utils.STRIP_HTML_TAGS
 import my.noveldokusha.features.reader.domain.ImgEntry
 import my.noveldokusha.features.reader.domain.ReaderItem
-import org.jsoup.Jsoup
 import timber.log.Timber
 
 private val IMG_TAG_REGEX = Regex("<img\\b", RegexOption.IGNORE_CASE)
+private val SRC_ATTR_REGEX = Regex("""\b(?:data-)?src\s*=\s*['"]([^'"]+)['"]""", RegexOption.IGNORE_CASE)
+private val YREL_ATTR_REGEX = Regex("""\byrel\s*=\s*['"]([^'"]+)['"]""", RegexOption.IGNORE_CASE)
 private val COLLAPSE_SPACES = Regex("[ ]+")
 private val PARAGRAPH_BREAK = Regex("\\n\\s*\\n")
 
@@ -114,9 +115,8 @@ private fun extractImgTag(text: String): Pair<String, Float>? {
     if (endIdx < 0) return null
     val tag = text.substring(0, endIdx + 1)
     return try {
-        val img = Jsoup.parse(tag).selectFirst("img") ?: return null
-        val src = (img.attr("src").ifBlank { img.attr("data-src") }).takeIf { it.isNotBlank() } ?: return null
-        val yrel = img.attr("yrel").toFloatOrNull()?.takeIf { it >= 0.01f } ?: 1.45f
+        val src = SRC_ATTR_REGEX.find(tag)?.groupValues?.get(1)?.takeIf { it.isNotBlank() } ?: return null
+        val yrel = YREL_ATTR_REGEX.find(tag)?.groupValues?.get(1)?.toFloatOrNull()?.takeIf { it >= 0.01f } ?: 1.45f
         Pair(src, yrel)
     } catch (_: Exception) {
         null

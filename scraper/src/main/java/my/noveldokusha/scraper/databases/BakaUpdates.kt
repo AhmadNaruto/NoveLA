@@ -7,7 +7,6 @@ import my.noveldokusha.core.PagedList
 import my.noveldokusha.core.Response.Success
 import my.noveldokusha.network.NetworkClient
 import my.noveldokusha.network.add
-import my.noveldokusha.network.toDocument
 import my.noveldokusha.network.toUrlBuilderSafe
 import my.noveldokusha.network.tryFlatConnect
 import my.noveldokusha.scraper.DatabaseInterface
@@ -15,6 +14,7 @@ import my.noveldokusha.scraper.R
 import my.noveldokusha.scraper.SearchGenre
 import my.noveldokusha.scraper.TextExtractor
 import my.noveldokusha.scraper.domain.BookResult
+import my.noveldokusha.tooling.native_scraper.LexborJsoupFacade
 
 class BakaUpdates(
     private val networkClient: NetworkClient
@@ -39,9 +39,11 @@ class BakaUpdates(
 
     override suspend fun getAuthorData(authorUrl: String) = withContext(Dispatchers.Default) {
         tryFlatConnect {
-            val doc = networkClient.get(authorUrl).toDocument()
+            val response = networkClient.get(authorUrl)
+            val doc = LexborJsoupFacade.parse(response.body.string(), authorUrl)
             fun entry(header: String) =
-                doc.selectFirst("div.sCat > b:containsOwn($header)")
+                doc.select("div.sCat > b")
+                    .find { it.text().trim() == header }
                     ?.parent()?.nextElementSibling()
 
             val coverImageUrl = entry("Image")
@@ -68,9 +70,9 @@ class BakaUpdates(
 
     override suspend fun getSearchFilters() = withContext(Dispatchers.Default) {
         tryFlatConnect {
-            return@tryFlatConnect networkClient
-                .get("https://www.mangaupdates.com/series.html?act=genresearch")
-                .toDocument()
+            val response = networkClient.get("https://www.mangaupdates.com/series.html?act=genresearch")
+            val doc = LexborJsoupFacade.parse(response.body.string(), "https://www.mangaupdates.com/series.html?act=genresearch")
+            return@tryFlatConnect doc
                 .select(".p-1.col-6.text")
                 .map { it.text().trim() }
                 .associateWith { it.replace(" ", "+") }
@@ -124,7 +126,8 @@ class BakaUpdates(
         url: Uri.Builder
     ) = withContext(Dispatchers.Default) {
         tryFlatConnect("index: $index\n\nurl: $url") {
-            val doc = networkClient.get(url).toDocument()
+            val response = networkClient.get(url)
+            val doc = LexborJsoupFacade.parse(response.body.string(), url.toString())
             doc.select(".col-12.col-lg-6.p-3.text")
                 .mapNotNull {
                     val link = it.selectFirst("div.text > a[href]") ?: return@mapNotNull null
@@ -139,11 +142,12 @@ class BakaUpdates(
                     )
                 }
                 .let {
+                    val isLastPage = doc.select("a[href]").none { it.text().contains("Next Page") }
                     Success(
                         PagedList(
                             list = it,
                             index = index,
-                            isLastPage = doc.selectFirst("a[href]:contains(Next Page)") == null
+                            isLastPage = isLastPage
                         )
                     )
                 }
@@ -154,9 +158,11 @@ class BakaUpdates(
         bookUrl: String
     ) = withContext(Dispatchers.Default) {
         tryFlatConnect {
-            val doc = networkClient.get(bookUrl).toDocument()
+            val response = networkClient.get(bookUrl)
+            val doc = LexborJsoupFacade.parse(response.body.string(), bookUrl)
             fun entry(header: String) =
-                doc.selectFirst("div.sCat > b:containsOwn($header)")
+                doc.select("div.sCat > b")
+                    .find { it.text().trim() == header }
                     ?.parent()?.nextElementSibling()
 
             val relatedBooks = entry("Category Recommendations")

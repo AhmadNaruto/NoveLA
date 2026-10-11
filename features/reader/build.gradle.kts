@@ -43,7 +43,6 @@ dependencies {
     implementation(libs.compose.coil)
     implementation(libs.coil.network.okhttp)
     implementation(libs.okhttp)
-    implementation(libs.jsoup)
     implementation(libs.timber)
     implementation(libs.subsampling.scale.image.view)
 

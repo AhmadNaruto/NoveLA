@@ -130,4 +130,39 @@ class LexborTest {
         val unescaped = LexborJsoupFacade.unescapeEntities("&lt;p&gt;Hello &amp; World &#x3D; 123&lt;/p&gt;")
         assertEquals("<p>Hello & World = 123</p>", unescaped)
     }
+
+    @Test
+    fun testSiblingsAndParentNavigation() {
+        val html = """
+            <div id="container">
+                <h5 class="seriesother">Recommendations</h5>
+                <a href="/rec1">Rec 1</a>
+                <a href="/rec2">Rec 2</a>
+                <h5>Other Section</h5>
+            </div>
+        """.trimIndent()
+        val doc = LexborJsoupFacade.parse(html)
+        val h5 = doc.select("h5").find { it.hasClass("seriesother") && it.text() == "Recommendations" }
+        assertNotNull(h5)
+
+        val parent = h5!!.parent()
+        assertNotNull(parent)
+        assertEquals("container", parent?.attr("id"))
+
+        val nextSiblings = h5.nextElementSiblings()
+        assertEquals(3, nextSiblings.size)
+
+        val recommendedLinks = nextSiblings.asSequence()
+            .takeWhile { !it.`is`("h5") }
+            .filter { it.`is`("a[href]") }
+            .map { it.text() to it.attr("href") }
+            .toList()
+
+        assertEquals(2, recommendedLinks.size)
+        assertEquals("Rec 1" to "/rec1", recommendedLinks[0])
+        assertEquals("Rec 2" to "/rec2", recommendedLinks[1])
+
+        doc.close()
+    }
 }
+

@@ -59,4 +59,19 @@ object LexborNative {
 
     @JvmStatic
     external fun nativeGetChildNodes(nodePtr: Long): LongArray?
+
+    @JvmStatic
+    external fun nativeGetParentNode(nodePtr: Long): Long
+
+    @JvmStatic
+    external fun nativeGetNextSibling(nodePtr: Long): Long
+
+    @JvmStatic
+    external fun nativeGetPrevSibling(nodePtr: Long): Long
+
+    @JvmStatic
+    external fun nativeGetNextElementSibling(nodePtr: Long): Long
+
+    @JvmStatic
+    external fun nativeGetPrevElementSibling(nodePtr: Long): Long
 }
