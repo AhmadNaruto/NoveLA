@@ -1,11 +1,72 @@
 package my.noveldokusha.scraper
 
 import my.noveldokusha.core.BookTextMapper
+import my.noveldokusha.tooling.native_scraper.LexborNode
+import my.noveldokusha.tooling.native_scraper.LexborTextNode
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
 
 object TextExtractor {
+    fun get(node: LexborNode?): String {
+        val children = node?.childNodes() ?: return ""
+        if (children.isEmpty()) return ""
+
+        return children.joinToString("") { child ->
+            when {
+                child.nodeName() == "p" -> getPTraverse(child)
+                child.nodeName() == "br" -> "\n"
+                child.nodeName() == "hr" -> "\n\n"
+                child.nodeName() == "img" -> declareImgEntry(child)
+                child is LexborTextNode -> child.text().trim()
+                else -> getNodeTextTraverse(child)
+            }
+        }
+    }
+
+    private fun getPTraverse(node: LexborNode): String {
+        fun innerTraverse(n: LexborNode): String = n.childNodes().joinToString("") { child ->
+            when {
+                child.nodeName() == "br" -> "\n"
+                child is LexborTextNode -> child.text()
+                child.nodeName() == "img" -> declareImgEntry(child)
+                else -> innerTraverse(child)
+            }
+        }
+
+        val paragraph = innerTraverse(node).trim()
+        return if (paragraph.isEmpty()) "" else paragraph + "\n\n"
+    }
+
+    private fun getNodeTextTraverse(node: LexborNode): String {
+        val children = node.childNodes()
+        if (children.isEmpty()) return ""
+
+        return children.joinToString("") { child ->
+            when {
+                child.nodeName() == "p" -> getPTraverse(child)
+                child.nodeName() == "br" -> "\n"
+                child.nodeName() == "hr" -> "\n\n"
+                child.nodeName() == "img" -> declareImgEntry(child)
+                child is LexborTextNode -> {
+                    val text = child.text().trim()
+                    if (text.isEmpty()) "" else text + "\n\n"
+                }
+                else -> getNodeTextTraverse(child)
+            }
+        }
+    }
+
+    private fun declareImgEntry(node: LexborNode): String {
+        val relPathEncoded = node.attr("src")
+        if (relPathEncoded.isEmpty()) return ""
+        val text = BookTextMapper.ImgEntry(
+            path = relPathEncoded,
+            yrel = 1.45f
+        ).toXMLString()
+        return "\n\n$text\n\n"
+    }
+
     /**
      * Given an node, extract the text.
      *

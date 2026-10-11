@@ -23,6 +23,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import my.noveldokusha.tooling.native_scraper.LexborJsoupFacade
+import my.noveldokusha.tooling.native_scraper.LexborElement
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.luaj.vm2.*
@@ -879,7 +881,7 @@ class LuaEngine @Inject constructor(
      */
     private inner class HtmlParseFunction : OneArgFunction() {
         override fun call(arg: LuaValue): LuaValue = try {
-            val doc = Jsoup.parse(arg.checkjstring())
+            val doc = LexborJsoupFacade.parse(arg.checkjstring())
             LuaTable().also { t ->
                 t.set("text",  LuaValue.valueOf(doc.text()))
                 t.set("html",  LuaValue.valueOf(doc.html()))
@@ -895,12 +897,18 @@ class LuaEngine @Inject constructor(
      */
     private inner class HtmlSelectFunction : TwoArgFunction() {
         override fun call(a1: LuaValue, a2: LuaValue): LuaValue = try {
-            val el = elementFromValue(a1)
-            val evaluator = parseCssSelector(a2.checkjstring())
-            val elems = if (el != null) {
-                el.select(evaluator)
+            val selector = a2.checkjstring()
+            val lel = lexborElementFromValue(a1)
+            val elems = if (lel != null) {
+                lel.select(selector)
             } else {
-                Jsoup.parse(a1.checkjstring()).select(evaluator)
+                val jel = elementFromValue(a1)
+                if (jel != null) {
+                    val evaluator = parseCssSelector(selector)
+                    return LuaTable().also { t -> jel.select(evaluator).forEachIndexed { i, e -> t.set(i + 1, elementToTable(e)) } }
+                } else {
+                    LexborJsoupFacade.parse(a1.checkjstring()).select(selector)
+                }
             }
             LuaTable().also { t -> elems.forEachIndexed { i, e -> t.set(i + 1, elementToTable(e)) } }
         } catch (e: Exception) { Timber.e(e, "html_select"); LuaTable() }
@@ -911,14 +919,22 @@ class LuaEngine @Inject constructor(
      */
     private inner class HtmlSelectFirstFunction : TwoArgFunction() {
         override fun call(a1: LuaValue, a2: LuaValue): LuaValue = try {
-            val el = elementFromValue(a1)
-            val evaluator = parseCssSelector(a2.checkjstring())
-            val first = if (el != null) {
-                el.selectFirst(evaluator)
+            val selector = a2.checkjstring()
+            val lel = lexborElementFromValue(a1)
+            if (lel != null) {
+                val first = lel.selectFirst(selector)
+                if (first != null) elementToTable(first) else LuaValue.NIL
             } else {
-                Jsoup.parse(a1.checkjstring()).selectFirst(evaluator)
+                val jel = elementFromValue(a1)
+                if (jel != null) {
+                    val evaluator = parseCssSelector(selector)
+                    val first = jel.selectFirst(evaluator)
+                    if (first != null) elementToTable(first) else LuaValue.NIL
+                } else {
+                    val first = LexborJsoupFacade.parse(a1.checkjstring()).selectFirst(selector)
+                    if (first != null) elementToTable(first) else LuaValue.NIL
+                }
             }
-            if (first != null) elementToTable(first) else LuaValue.NIL
         } catch (e: Exception) { Timber.e(e, "html_select_first"); LuaValue.NIL }
     }
 
@@ -928,14 +944,23 @@ class LuaEngine @Inject constructor(
      */
     private inner class HtmlAttrFunction : ThreeArgFunction() {
         override fun call(a1: LuaValue, a2: LuaValue, a3: LuaValue): LuaValue = try {
-            val el = elementFromValue(a1)
-            val evaluator = parseCssSelector(a2.checkjstring())
-            val target = if (el != null) {
-                el.selectFirst(evaluator)
+            val selector = a2.checkjstring()
+            val attrName = a3.checkjstring()
+            val lel = lexborElementFromValue(a1)
+            if (lel != null) {
+                val target = lel.selectFirst(selector)
+                if (target != null) LuaValue.valueOf(target.attr(attrName)) else LuaValue.valueOf("")
             } else {
-                Jsoup.parse(a1.checkjstring()).selectFirst(evaluator)
+                val jel = elementFromValue(a1)
+                if (jel != null) {
+                    val evaluator = parseCssSelector(selector)
+                    val target = jel.selectFirst(evaluator)
+                    if (target != null) LuaValue.valueOf(target.attr(attrName)) else LuaValue.valueOf("")
+                } else {
+                    val target = LexborJsoupFacade.parse(a1.checkjstring()).selectFirst(selector)
+                    if (target != null) LuaValue.valueOf(target.attr(attrName)) else LuaValue.valueOf("")
+                }
             }
-            if (target != null) LuaValue.valueOf(target.attr(a3.checkjstring())) else LuaValue.valueOf("")
         } catch (_: Exception) { LuaValue.valueOf("") }
     }
 
@@ -944,12 +969,17 @@ class LuaEngine @Inject constructor(
      */
     private inner class HtmlTextFunction : OneArgFunction() {
         override fun call(arg: LuaValue): LuaValue = try {
-            val el = elementFromValue(arg)
-            val text = if (el != null) {
-                TextExtractor.get(el)
+            val lel = lexborElementFromValue(arg)
+            val text = if (lel != null) {
+                TextExtractor.get(lel)
             } else {
-                val doc = Jsoup.parseBodyFragment(arg.tojstring())
-                TextExtractor.get(doc.body())
+                val jel = elementFromValue(arg)
+                if (jel != null) {
+                    TextExtractor.get(jel)
+                } else {
+                    val doc = LexborJsoupFacade.parseBodyFragment(arg.tojstring())
+                    TextExtractor.get(doc.body())
+                }
             }
             LuaValue.valueOf(text)
         } catch (e: Exception) {
@@ -966,27 +996,37 @@ class LuaEngine @Inject constructor(
         override fun invoke(args: Varargs): Varargs {
             return try {
                 val arg1 = args.arg(1)
-                val el = elementFromValue(arg1)
-                if (el != null) {
+                val lel = lexborElementFromValue(arg1)
+                if (lel != null) {
                     for (i in 2..args.narg()) {
                         val selector = args.arg(i).optjstring(null) ?: continue
                         if (selector.isNotBlank()) {
-                            val evaluator = parseCssSelector(selector)
-                            el.select(evaluator).remove()
+                            lel.select(selector).remove()
                         }
                     }
-                    LuaValue.valueOf(el.html())
+                    LuaValue.valueOf(lel.html())
                 } else {
-                    val html = arg1.checkjstring()
-                    val doc  = Jsoup.parse(html)
-                    for (i in 2..args.narg()) {
-                        val selector = args.arg(i).optjstring(null) ?: continue
-                        if (selector.isNotBlank()) {
-                            val evaluator = parseCssSelector(selector)
-                            doc.select(evaluator).remove()
+                    val jel = elementFromValue(arg1)
+                    if (jel != null) {
+                        for (i in 2..args.narg()) {
+                            val selector = args.arg(i).optjstring(null) ?: continue
+                            if (selector.isNotBlank()) {
+                                val evaluator = parseCssSelector(selector)
+                                jel.select(evaluator).remove()
+                            }
                         }
+                        LuaValue.valueOf(jel.html())
+                    } else {
+                        val html = arg1.checkjstring()
+                        val doc = LexborJsoupFacade.parse(html)
+                        for (i in 2..args.narg()) {
+                            val selector = args.arg(i).optjstring(null) ?: continue
+                            if (selector.isNotBlank()) {
+                                doc.select(selector).remove()
+                            }
+                        }
+                        LuaValue.valueOf(doc.body().html())
                     }
-                    LuaValue.valueOf(doc.body().html())
                 }
             } catch (e: Exception) {
                 Timber.e(e, "html_remove")
@@ -1008,6 +1048,75 @@ class LuaEngine @Inject constructor(
 
     private fun htmlFromValue(v: LuaValue): String =
         if (v.istable()) v.checktable().get("html").optjstring("") else v.checkjstring()
+
+    private fun lexborElementFromValue(v: LuaValue): LexborElement? {
+        if (v.istable()) {
+            val user = v.checktable().get("__element")
+            if (user.isuserdata(LexborElement::class.java)) {
+                return user.touserdata(LexborElement::class.java) as LexborElement
+            }
+        }
+        return null
+    }
+
+    private fun elementToTable(el: LexborElement): LuaTable {
+        val t = LuaTable()
+        t.set("__element", org.luaj.vm2.LuaUserdata(el))
+
+        val mt = LuaTable()
+        mt.set(LuaValue.INDEX, object : TwoArgFunction() {
+            override fun call(table: LuaValue, key: LuaValue): LuaValue {
+                val keyStr = key.optjstring(null) ?: return LuaValue.NIL
+                val value = when (keyStr) {
+                    "text" -> LuaValue.valueOf(el.text())
+                    "html" -> LuaValue.valueOf(el.html())
+                    "href" -> LuaValue.valueOf(el.attr("abs:href").ifEmpty { el.attr("href") })
+                    "src" -> LuaValue.valueOf(el.attr("abs:src").ifEmpty { el.attr("src") })
+                    "title" -> LuaValue.valueOf(el.attr("title"))
+                    "class" -> LuaValue.valueOf(el.attr("class"))
+                    "id" -> LuaValue.valueOf(el.attr("id"))
+                    "get_text" -> object : ZeroArgFunction() { override fun call() = LuaValue.valueOf(el.text()) }
+                    "get_html" -> object : ZeroArgFunction() { override fun call() = LuaValue.valueOf(el.html()) }
+                    "attr" -> object : VarArgFunction() {
+                        override fun invoke(args: Varargs): Varargs {
+                            val name = if (args.narg() >= 2) args.arg(2) else args.arg(1)
+                            return try {
+                                LuaValue.valueOf(el.attr(name.checkjstring()))
+                            } catch (_: Exception) { LuaValue.valueOf("") }
+                        }
+                    }
+                    "remove" -> object : ZeroArgFunction() {
+                        override fun call(): LuaValue { el.remove(); return LuaValue.NIL }
+                    }
+                    "select" -> object : VarArgFunction() {
+                        override fun invoke(args: Varargs): Varargs {
+                            val selector = if (args.narg() >= 2) args.arg(2) else args.arg(1)
+                            return try {
+                                val elems = el.select(selector.checkjstring())
+                                LuaTable().also { t2 -> elems.forEachIndexed { i, e -> t2.set(i + 1, elementToTable(e)) } }
+                            } catch (_: Exception) { LuaTable() }
+                        }
+                    }
+                    "select_first" -> object : VarArgFunction() {
+                        override fun invoke(args: Varargs): Varargs {
+                            val selector = if (args.narg() >= 2) args.arg(2) else args.arg(1)
+                            return try {
+                                val first = el.selectFirst(selector.checkjstring())
+                                if (first != null) elementToTable(first) else LuaValue.NIL
+                            } catch (_: Exception) { LuaValue.NIL }
+                        }
+                    }
+                    else -> LuaValue.NIL
+                }
+                if (value != LuaValue.NIL) {
+                    table.set(key, value)
+                }
+                return value
+            }
+        })
+        t.setmetatable(mt)
+        return t
+    }
 
     // Extracts the wrapped Jsoup Element directly from the LuaTable userdata.
     // This allows functions like html_select/html_text to execute queries directly on the DOM tree

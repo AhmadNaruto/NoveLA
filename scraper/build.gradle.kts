@@ -16,6 +16,7 @@ dependencies {
     implementation(projects.core)
     implementation(projects.coreui)
     implementation(projects.networking)
+    implementation(projects.tooling.nativeScraper)
     implementation(libs.compose.material3.android)
     implementation(libs.androidx.core.ktx)
     implementation(libs.jsoup)
