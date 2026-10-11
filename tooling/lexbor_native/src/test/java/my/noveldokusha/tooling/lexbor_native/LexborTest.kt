@@ -11,18 +11,26 @@ class LexborTest {
     fun testBasicParsingAndSelection() {
         val html = """
             <html>
+                <head>
+                    <title>Test Chapter</title>
+                </head>
                 <body>
                     <div id="content" class="main-body">
                         <h1 class="title">Chapter 1</h1>
-                        <p class="chapter-text">Paragraph 1 with <a href="http://example.com">link</a>.</p>
+                        <p class="chapter-text">Paragraph 1 with <a href="/ch1">link</a>.</p>
                         <p class="chapter-text">Paragraph 2.</p>
                     </div>
                 </body>
             </html>
         """.trimIndent()
 
-        val doc = LexborJsoupFacade.parse(html)
+        val doc = LexborJsoupFacade.parse(html, "https://example.com/books/123")
         assertNotNull(doc)
+
+        // Title, Head, Body
+        assertEquals("Test Chapter", doc.title())
+        assertNotNull(doc.head())
+        assertNotNull(doc.body())
 
         // Select by ID
         val contentDiv = doc.selectFirst("#content")
@@ -39,10 +47,16 @@ class LexborTest {
         assertEquals("Paragraph 1 with link.", paragraphs[0].text())
         assertEquals("Paragraph 2.", paragraphs[1].text())
 
-        // Check attribute extraction
+        // Check relative & absolute attribute resolution (abs:href)
         val link = doc.selectFirst("a")
         assertNotNull(link)
-        assertEquals("http://example.com", link?.attr("href"))
+        assertEquals("/ch1", link?.attr("href"))
+        assertEquals("https://example.com/ch1", link?.attr("abs:href"))
+
+        // Check inner vs outer HTML
+        assertTrue(contentDiv?.outerHtml()?.startsWith("<div") == true)
+        assertTrue(contentDiv?.html()?.contains("<h1") == true)
+        assertTrue(!contentDiv?.html()?.startsWith("<div")!!)
 
         doc.close()
     }
@@ -68,5 +82,28 @@ class LexborTest {
         assertEquals("card1", matchingCard?.attr("id"))
 
         doc.close()
+    }
+
+    @Test
+    fun testChildNodesTraversal() {
+        val html = "<div><p>Hello</p>World<span>!</span></div>"
+        val doc = LexborJsoupFacade.parse(html)
+        val div = doc.selectFirst("div")
+        assertNotNull(div)
+
+        val children = div!!.childNodes()
+        assertEquals(3, children.size)
+        assertEquals("p", children[0].nodeName())
+        assertEquals("#text", children[1].nodeName())
+        assertTrue(children[1] is LexborTextNode)
+        assertEquals("span", children[2].nodeName())
+
+        doc.close()
+    }
+
+    @Test
+    fun testUnescapeEntities() {
+        val unescaped = LexborJsoupFacade.unescapeEntities("&lt;p&gt;Hello &amp; World &#x3D; 123&lt;/p&gt;")
+        assertEquals("<p>Hello & World = 123</p>", unescaped)
     }
 }
