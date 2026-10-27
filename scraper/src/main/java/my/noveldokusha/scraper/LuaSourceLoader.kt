@@ -460,7 +460,7 @@ class LuaEngine @Inject constructor(
             // sourceId читается на вызывающем потоке: ThreadLocal не переживает переключение диспетчера.
             val sourceId      = currentSourceId.get()
             // Force-network flag is captured here for the same reason, before withContext(IO).
-            val forceNetwork  = forceNetworkFlag.get()
+            val forceNetwork  = forceNetworkFlag.get() == true
             val params = HttpGetParams(
                 url = url,
                 pluginHeaders = pluginHeaders,
@@ -499,7 +499,7 @@ class LuaEngine @Inject constructor(
             val headers       = defaultHeaders(url) + pluginHeaders
             val sourceId      = currentSourceId.get()
             // Force-network flag is captured here for the same reason, before withContext(IO).
-            val forceNetwork  = forceNetworkFlag.get()
+            val forceNetwork  = forceNetworkFlag.get() == true
             try {
                 withContext(Dispatchers.IO) {
                     val mediaType = (headers["Content-Type"] ?: detectContentType(bodyStr)).toMediaType()
@@ -694,7 +694,7 @@ class LuaEngine @Inject constructor(
 
             val sourceId = currentSourceId.get()
             // Force-network flag: captured before async(Dispatchers.IO) hops threads.
-            val forceNetwork = forceNetworkFlag.get()
+            val forceNetwork = forceNetworkFlag.get() == true
 
             val results = runBlocking {
                 items.map { params ->

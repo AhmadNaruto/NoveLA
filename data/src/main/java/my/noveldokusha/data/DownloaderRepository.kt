@@ -37,7 +37,7 @@ class DownloaderRepository @Inject constructor(
         this is Response.Error && exception is my.noveldokusha.scraper.domain.PluginShowErrorException -> {
             val e = exception as my.noveldokusha.scraper.domain.PluginShowErrorException
             Response.Error(
-                message = e.message ?: "Error",
+                message = e.message,
                 exception = e,
                 pluginErrorTitle = e.errorTitle,
                 pluginErrorMessage = e.message,
@@ -316,7 +316,7 @@ class DownloaderRepository @Inject constructor(
             val finalResult = if (result is Response.Error && result.exception is my.noveldokusha.scraper.domain.PluginShowErrorException) {
                 val e = result.exception as my.noveldokusha.scraper.domain.PluginShowErrorException
                 Response.Error(
-                    message = e.message ?: "Error",
+                    message = e.message,
                     exception = e,
                     pluginErrorTitle = e.errorTitle,
                     pluginErrorMessage = e.message,

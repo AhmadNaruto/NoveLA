@@ -316,7 +316,7 @@ internal fun databaseMigrations() = arrayOf(
                 db.execSQL("""
                     INSERT INTO ChapterTranslation_new (chapterUrl, sourceLang, targetLang, translatedParagraphs, titleTranslation, timestamp)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, arrayOf(chapterUrl, sourceLang, targetLang, translatedParagraphs.toString(), titleTranslation, timestamp))
+                """, arrayOf<Any?>(chapterUrl, sourceLang, targetLang, translatedParagraphs.toString(), titleTranslation, timestamp))
             }
         }
 

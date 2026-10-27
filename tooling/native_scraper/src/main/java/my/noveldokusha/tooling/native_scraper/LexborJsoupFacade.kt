@@ -24,14 +24,18 @@ object LexborJsoupFacade {
         while (matcher.find()) {
             sb.append(string, lastEnd, matcher.start())
             val entityCode = matcher.group(1)
-            try {
-                val codePoint = if (entityCode.startsWith("x") || entityCode.startsWith("X")) {
-                    entityCode.substring(1).toInt(16)
-                } else {
-                    entityCode.toInt(10)
+            if (entityCode != null) {
+                try {
+                    val codePoint = if (entityCode.startsWith("x") || entityCode.startsWith("X")) {
+                        entityCode.substring(1).toInt(16)
+                    } else {
+                        entityCode.toInt(10)
+                    }
+                    sb.append(Character.toChars(codePoint))
+                } catch (_: Exception) {
+                    sb.append(matcher.group(0))
                 }
-                sb.append(Character.toChars(codePoint))
-            } catch (_: Exception) {
+            } else {
                 sb.append(matcher.group(0))
             }
             lastEnd = matcher.end()

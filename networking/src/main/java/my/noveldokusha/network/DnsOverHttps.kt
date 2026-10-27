@@ -175,12 +175,12 @@ class DnsOverHttps : Dns {
                 return null
             }
 
-            val body = response.body?.string() ?: run {
-                response.close()
+            val body = response.body.string()
+            response.close()
+            if (body.isEmpty()) {
                 Timber.tag(TAG).d("DoH %s: empty body for %s", provider.name, hostname)
                 return null
             }
-            response.close()
 
             val addresses = mutableListOf<InetAddress>()
             val answerRegex = Regex("\"data\":\"(\\d+\\.\\d+\\.\\d+\\.\\d+)\"")
