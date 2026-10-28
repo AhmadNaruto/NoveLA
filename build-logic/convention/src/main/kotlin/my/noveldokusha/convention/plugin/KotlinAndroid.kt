@@ -50,7 +50,7 @@ private fun Project.configureKotlin() {
             jvmTarget.set(JvmTarget.JVM_21)
             freeCompilerArgs.addAll(
                 "-opt-in=kotlin.RequiresOptIn",
-                "-jvm-default=all-compatibility",
+                "-jvm-default=enable",
             )
         }
     }
