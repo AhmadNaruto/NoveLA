@@ -17,7 +17,9 @@ import my.noveldokusha.scraper.domain.BookResult
 import my.noveldokusha.scraper.domain.ChapterResult
 import my.noveldokusha.scraper.domain.PluginShowErrorException
 import my.noveldokusha.scraper.domain.VideoSource
+import my.noveldokusha.scraper.domain.VideoSubtitle
 import my.noveldokusha.tooling.native_scraper.LuaNativeEngine
+import org.jsoup.nodes.Document
 import timber.log.Timber
 import java.io.Closeable
 
@@ -67,67 +69,83 @@ open class NativeLuaSourceAdapter(
             else "${baseUrl.trimEnd('/')}/$icon"
         }
 
+    protected suspend fun <T> withSourceContext(block: suspend () -> T): T {
+        luaEngine.currentSourceId.set(id)
+        try { return block() } finally { luaEngine.currentSourceId.set(null) }
+    }
+
     private fun extractMetadata(): SourceMetadata {
         val helperScript = """
             function __novela_meta()
                 return {
                     id = id or "",
                     name = name or "",
-                    url = baseUrl or url or "",
+                    baseUrl = baseUrl or url or "",
                     language = language or "en",
                     charset = charset or "UTF-8",
-                    contentType = contentType or "NOVEL",
+                    content_type = content_type or contentType or "",
                     icon = icon or "",
-                    referer = referer or ""
+                    referer = referer or "",
+                    version = version or "1.0.0"
                 }
             end
         """.trimIndent()
         nativeEngine.execute(helperScript)
-        val json = nativeEngine.callFunctionJson("__novela_meta")
+        val json = nativeEngine.call("__novela_meta")
         if (json != null && json != "null") {
             try {
                 val obj = JsonParser.parseString(json).asJsonObject
+                val rawContentType = obj.get("content_type")?.asString.orEmpty().lowercase()
+                val ct = rawContentType.takeIf { it == "manga" || it == "novel" || it == "video" } ?: ""
                 return SourceMetadata(
-                    id = obj.get("id")?.asString.orEmpty().ifEmpty { fileName?.substringBeforeLast('.') ?: "native_source" },
+                    id = obj.get("id")?.asString.orEmpty().ifEmpty { fileName?.let { "lua_$it" } ?: "lua_native" },
                     name = obj.get("name")?.asString.orEmpty().ifEmpty { fileName?.substringBeforeLast('.') ?: "Native Source" },
-                    url = obj.get("url")?.asString.orEmpty(),
+                    url = obj.get("baseUrl")?.asString.orEmpty(),
                     language = obj.get("language")?.asString.orEmpty().ifEmpty { "en" },
                     charset = obj.get("charset")?.asString.orEmpty().ifEmpty { "UTF-8" },
-                    contentType = obj.get("contentType")?.asString.orEmpty().ifEmpty { "NOVEL" },
+                    contentType = ct,
                     icon = obj.get("icon")?.asString.orEmpty(),
-                    referer = obj.get("referer")?.asString.orEmpty(),
+                    referer = obj.get("referer")?.asString.orEmpty().trim(),
                 )
             } catch (e: Exception) {
                 Timber.w(e, "Failed to parse native metadata JSON: $json")
             }
         }
         return SourceMetadata(
-            id = fileName?.substringBeforeLast('.') ?: "native_source",
+            id = fileName?.let { "lua_$it" } ?: "lua_native",
             name = fileName?.substringBeforeLast('.') ?: "Native Source",
             url = "",
             language = "en",
             charset = "UTF-8",
-            contentType = "NOVEL",
+            contentType = "",
         )
     }
 
-    private fun <T> checkShowError(): Response<T>? {
-        val err = luaEngine.getPendingShowError() ?: return null
+    protected fun checkShowError(): Response.Error? {
+        val triple = luaEngine.getPendingShowError() ?: return null
+        val (title, message, authUrl) = triple
         return Response.Error(
-            err.second,
-            PluginShowErrorException(err.first, err.second, err.third)
+            message = message,
+            exception = PluginShowErrorException(title, message, authUrl),
+            pluginErrorTitle = title,
+            pluginErrorMessage = message,
+            pluginAuthUrl = authUrl
         )
     }
 
     override suspend fun getCatalogList(index: Int): Response<PagedList<BookResult>> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
+                withSourceContext {
                     luaEngine.resetShowError()
-                    val json = nativeEngine.callFunctionJson("getCatalogList", index.toString())
-                    checkShowError() ?: parseBooksFromJson(json)
-                } catch (e: Exception) {
-                    checkShowError() ?: Response.Error(e.message ?: "Native Lua getCatalogList error", e)
+                    try {
+                        val json = luaEngine.withForceNetwork {
+                            nativeEngine.call("getCatalogList", index)
+                        }
+                        checkShowError() ?: parseBooksFromJson(json, index)
+                    } catch (e: Exception) {
+                        checkShowError() ?: Response.Error(e.message ?: "Native Lua getCatalogList error", e)
+                    }
                 }
             }
         }
@@ -135,12 +153,16 @@ open class NativeLuaSourceAdapter(
     override suspend fun getCatalogSearch(index: Int, input: String): Response<PagedList<BookResult>> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
+                withSourceContext {
                     luaEngine.resetShowError()
-                    val json = nativeEngine.callFunctionJson("getCatalogSearch", index.toString(), input)
-                    checkShowError() ?: parseBooksFromJson(json)
-                } catch (e: Exception) {
-                    checkShowError() ?: Response.Error(e.message ?: "Native Lua getCatalogSearch error", e)
+                    try {
+                        val json = luaEngine.withForceNetwork {
+                            nativeEngine.call("getCatalogSearch", index, input)
+                        }
+                        checkShowError() ?: parseBooksFromJson(json, index)
+                    } catch (e: Exception) {
+                        checkShowError() ?: Response.Error(e.message ?: "Native Lua getCatalogSearch error", e)
+                    }
                 }
             }
         }
@@ -148,10 +170,12 @@ open class NativeLuaSourceAdapter(
     override suspend fun getBookTitle(bookUrl: String): Response<String?> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
-                    Response.Success(nativeEngine.callFunction("getBookTitle", bookUrl))
-                } catch (e: Exception) {
-                    Response.Error(e.message ?: "Native Lua getBookTitle error", e)
+                withSourceContext {
+                    try {
+                        Response.Success(nativeEngine.call("getBookTitle", bookUrl))
+                    } catch (e: Exception) {
+                        Response.Error(e.message ?: "Native Lua getBookTitle error", e)
+                    }
                 }
             }
         }
@@ -159,10 +183,12 @@ open class NativeLuaSourceAdapter(
     override suspend fun getBookCoverImageUrl(bookUrl: String): Response<String?> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
-                    Response.Success(nativeEngine.callFunction("getBookCoverImageUrl", bookUrl))
-                } catch (e: Exception) {
-                    Response.Error(e.message ?: "Native Lua getBookCoverImageUrl error", e)
+                withSourceContext {
+                    try {
+                        Response.Success(nativeEngine.call("getBookCoverImageUrl", bookUrl))
+                    } catch (e: Exception) {
+                        Response.Error(e.message ?: "Native Lua getBookCoverImageUrl error", e)
+                    }
                 }
             }
         }
@@ -170,10 +196,12 @@ open class NativeLuaSourceAdapter(
     override suspend fun getBookDescription(bookUrl: String): Response<String?> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
-                    Response.Success(nativeEngine.callFunction("getBookDescription", bookUrl))
-                } catch (e: Exception) {
-                    Response.Error(e.message ?: "Native Lua getBookDescription error", e)
+                withSourceContext {
+                    try {
+                        Response.Success(nativeEngine.call("getBookDescription", bookUrl))
+                    } catch (e: Exception) {
+                        Response.Error(e.message ?: "Native Lua getBookDescription error", e)
+                    }
                 }
             }
         }
@@ -181,17 +209,20 @@ open class NativeLuaSourceAdapter(
     override suspend fun getBookGenres(bookUrl: String): Response<List<String>> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
-                    val json = nativeEngine.callFunctionJson("getBookGenres", bookUrl)
-                    if (json == null || json == "null") return@withLock Response.Success(emptyList())
-                    val parsed = JsonParser.parseString(json)
-                    if (parsed.isJsonArray) {
-                        Response.Success(parsed.asJsonArray.mapNotNull { it.asString })
-                    } else {
-                        Response.Success(emptyList())
+                withSourceContext {
+                    try {
+                        if (!nativeEngine.hasFunction("getBookGenres")) return@withSourceContext Response.Success(emptyList())
+                        val json = nativeEngine.call("getBookGenres", bookUrl)
+                        if (json.isNullOrBlank() || json == "null") return@withSourceContext Response.Success(emptyList())
+                        val parsed = JsonParser.parseString(json)
+                        if (parsed.isJsonArray) {
+                            Response.Success(parsed.asJsonArray.mapNotNull { it.asString })
+                        } else {
+                            Response.Success(emptyList())
+                        }
+                    } catch (e: Exception) {
+                        Response.Error(e.message ?: "Native Lua getBookGenres error", e)
                     }
-                } catch (e: Exception) {
-                    Response.Error(e.message ?: "Native Lua getBookGenres error", e)
                 }
             }
         }
@@ -199,10 +230,14 @@ open class NativeLuaSourceAdapter(
     override suspend fun getBookStatus(bookUrl: String): Response<String?> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
-                    Response.Success(nativeEngine.callFunction("getBookStatus", bookUrl))
-                } catch (e: Exception) {
-                    Response.Error(e.message ?: "Native Lua getBookStatus error", e)
+                withSourceContext {
+                    try {
+                        if (!nativeEngine.hasFunction("getBookStatus")) return@withSourceContext Response.Success(null)
+                        val status = nativeEngine.call("getBookStatus", bookUrl)?.takeIf { it.isNotBlank() }
+                        Response.Success(status)
+                    } catch (e: Exception) {
+                        Response.Error(e.message ?: "Native Lua getBookStatus error", e)
+                    }
                 }
             }
         }
@@ -210,22 +245,29 @@ open class NativeLuaSourceAdapter(
     override suspend fun getBookLastUpdate(bookUrl: String): Response<String?> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
-                    Response.Success(nativeEngine.callFunction("getBookLastUpdate", bookUrl))
-                } catch (e: Exception) {
-                    Response.Error(e.message ?: "Native Lua getBookLastUpdate error", e)
+                withSourceContext {
+                    try {
+                        if (!nativeEngine.hasFunction("getBookLastUpdate")) return@withSourceContext Response.Success(null)
+                        val lastUpdate = nativeEngine.call("getBookLastUpdate", bookUrl)?.takeIf { it.isNotBlank() }
+                        Response.Success(lastUpdate)
+                    } catch (e: Exception) {
+                        Response.Error(e.message ?: "Native Lua getBookLastUpdate error", e)
+                    }
                 }
             }
         }
 
-    override suspend fun getBookRating(bookUrl: String): Response<Float?> =
+    override suspend fun getBookRating(bookUrl: String): Response<String?> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
-                    val ratingStr = nativeEngine.callFunction("getBookRating", bookUrl)
-                    Response.Success(ratingStr?.toFloatOrNull())
-                } catch (e: Exception) {
-                    Response.Error(e.message ?: "Native Lua getBookRating error", e)
+                withSourceContext {
+                    try {
+                        if (!nativeEngine.hasFunction("getBookRating")) return@withSourceContext Response.Success(null)
+                        val rating = nativeEngine.call("getBookRating", bookUrl)?.takeIf { it.isNotBlank() }
+                        Response.Success(rating)
+                    } catch (e: Exception) {
+                        Response.Error(e.message ?: "Native Lua getBookRating error", e)
+                    }
                 }
             }
         }
@@ -233,58 +275,151 @@ open class NativeLuaSourceAdapter(
     override suspend fun getChapterList(bookUrl: String): Response<List<ChapterResult>> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
-                    luaEngine.resetShowError()
-                    val json = nativeEngine.callFunctionJson("getChapterList", bookUrl)
-                    checkShowError() ?: parseChaptersFromJson(json)
-                } catch (e: Exception) {
-                    checkShowError() ?: Response.Error(e.message ?: "Native Lua getChapterList error", e)
+                withSourceContext {
+                    try {
+                        luaEngine.resetShowError()
+                        val json = nativeEngine.call("getChapterList", bookUrl)
+                        checkShowError() ?: parseChaptersFromJson(json)
+                    } catch (e: Exception) {
+                        checkShowError() ?: Response.Error(e.message ?: "Native Lua getChapterList error", e)
+                    }
                 }
             }
         }
 
-    override suspend fun getChapterText(chapterUrl: String): Response<String> =
+    override suspend fun getChapterText(doc: Document): String? =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
+                withSourceContext {
                     luaEngine.resetShowError()
-                    val text = nativeEngine.callFunction("getChapterText", chapterUrl)
-                    checkShowError() ?: Response.Success(text.orEmpty())
-                } catch (e: Exception) {
-                    checkShowError() ?: Response.Error(e.message ?: "Native Lua getChapterText error", e)
+                    val html = doc.outerHtml()
+                    val url = doc.location()
+                    val result = nativeEngine.call("getChapterText", html, url)
+                    luaEngine.getPendingShowError()?.let { (title, message, authUrl) ->
+                        throw PluginShowErrorException(title, message, authUrl)
+                    }
+                    result
                 }
             }
         }
 
-    override suspend fun getVideoList(chapterUrl: String): Response<List<VideoSource>> =
+    override suspend fun getChapterPages(doc: Document): List<String>? =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
+                withSourceContext {
+                    if (!nativeEngine.hasFunction("getPageList")) return@withSourceContext null
                     luaEngine.resetShowError()
-                    val json = nativeEngine.callFunctionJson("getVideoList", chapterUrl)
-                    checkShowError() ?: parseVideosFromJson(json)
-                } catch (e: Exception) {
-                    checkShowError() ?: Response.Error(e.message ?: "Native Lua getVideoList error", e)
+                    try {
+                        val html = doc.outerHtml()
+                        val url = doc.location()
+                        val json = nativeEngine.call("getPageList", html, url)
+                        luaEngine.getPendingShowError()?.let { (title, message, authUrl) ->
+                            throw PluginShowErrorException(title, message, authUrl)
+                        }
+                        if (json.isNullOrBlank() || json == "null") return@withSourceContext emptyList()
+                        val element = JsonParser.parseString(json)
+                        if (element.isJsonArray) {
+                            element.asJsonArray.mapNotNull { it.asString.takeIf { s -> s.isNotBlank() } }
+                        } else emptyList()
+                    } catch (e: Exception) {
+                        luaEngine.getPendingShowError()?.let { (title, message, authUrl) ->
+                            throw PluginShowErrorException(title, message, authUrl)
+                        }
+                        Timber.e(e, "NativeLua getPageList error [$id]")
+                        emptyList()
+                    }
                 }
             }
         }
 
-    private fun parseBooksFromJson(json: String?): Response<PagedList<BookResult>> {
-        if (json == null || json == "null") return Response.Success(PagedList(emptyList(), false))
+    override suspend fun getVideoList(episodeUrl: String): Response<List<VideoSource>>? =
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                withSourceContext {
+                    if (!nativeEngine.hasFunction("getVideoList")) return@withSourceContext null
+                    luaEngine.resetShowError()
+                    try {
+                        val json = nativeEngine.call("getVideoList", episodeUrl)
+                        checkShowError() ?: parseVideosFromJson(json)
+                    } catch (e: Exception) {
+                        checkShowError() ?: Response.Error(e.message ?: "Native Lua getVideoList error", e)
+                    }
+                }
+            }
+        }
+
+    override suspend fun getChapterListHash(bookUrl: String): Response<String?> =
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                withSourceContext {
+                    if (!nativeEngine.hasFunction("getChapterListHash")) return@withSourceContext Response.Success(null)
+                    try {
+                        val hash = nativeEngine.call("getChapterListHash", bookUrl)
+                        Response.Success(hash)
+                    } catch (e: Exception) {
+                        Response.Error(e.message ?: "Native Lua getChapterListHash error", e)
+                    }
+                }
+            }
+        }
+
+    override suspend fun parsePage(bookUrl: String, page: Int): Response<SourceInterface.Catalog.PagedChapterResult>? =
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                withSourceContext {
+                    if (!nativeEngine.hasFunction("parsePage")) return@withSourceContext null
+                    luaEngine.resetShowError()
+                    try {
+                        val json = nativeEngine.call("parsePage", bookUrl, page)
+                        val err = checkShowError()
+                        if (err != null) return@withSourceContext err
+                        if (json.isNullOrBlank() || json == "null") {
+                            return@withSourceContext Response.Success(
+                                SourceInterface.Catalog.PagedChapterResult(emptyList(), 1)
+                            )
+                        }
+                        val element = JsonParser.parseString(json)
+                        if (!element.isJsonObject) {
+                            return@withSourceContext Response.Success(
+                                SourceInterface.Catalog.PagedChapterResult(emptyList(), 1)
+                            )
+                        }
+                        val obj = element.asJsonObject
+                        val chaptersRes = parseChaptersFromJson(obj.get("chapters")?.toString())
+                        val chapters = when (chaptersRes) {
+                            is Response.Success -> chaptersRes.data
+                            is Response.Error -> emptyList()
+                        }
+                        val totalPages = obj.get("totalPages")?.asInt ?: 1
+                        Response.Success(SourceInterface.Catalog.PagedChapterResult(chapters, totalPages))
+                    } catch (e: Exception) {
+                        checkShowError() ?: Response.Error(e.message ?: "Native Lua parsePage error", e)
+                    }
+                }
+            }
+        }
+
+    private fun parseBooksFromJson(json: String?, pageIndex: Int): Response<PagedList<BookResult>> {
+        if (json.isNullOrBlank() || json == "null") return Response.Success(PagedList(emptyList(), pageIndex, true))
         return try {
             val element = JsonParser.parseString(json)
-            if (element.isJsonArray) {
-                val books = element.asJsonArray.mapNotNull { parseBookElement(it.asJsonObject) }
-                Response.Success(PagedList(books, false))
-            } else if (element.isJsonObject) {
+            val items = mutableListOf<BookResult>()
+            var hasNext = false
+            if (element.isJsonObject) {
                 val obj = element.asJsonObject
-                val listArr = obj.getAsJsonArray("list") ?: obj.getAsJsonArray("books") ?: JsonArray()
-                val hasNext = obj.get("hasNextPage")?.asBoolean ?: (listArr.size() > 0)
-                val books = listArr.mapNotNull { parseBookElement(it.asJsonObject) }
-                Response.Success(PagedList(books, hasNext))
-            } else {
-                Response.Success(PagedList(emptyList(), false))
+                val itemsArr = obj.getAsJsonArray("items") ?: obj.getAsJsonArray("list")
+                if (itemsArr != null) {
+                    for (item in itemsArr) {
+                        if (item.isJsonObject) items.add(parseBookElement(item.asJsonObject))
+                    }
+                }
+                hasNext = obj.get("hasNext")?.asBoolean ?: false
+            } else if (element.isJsonArray) {
+                for (item in element.asJsonArray) {
+                    if (item.isJsonObject) items.add(parseBookElement(item.asJsonObject))
+                }
             }
+            Response.Success(PagedList(items, pageIndex, !hasNext))
         } catch (e: Exception) {
             Response.Error("Failed to parse catalog JSON: ${e.message}", e)
         }
@@ -294,27 +429,39 @@ open class NativeLuaSourceAdapter(
         return BookResult(
             title = obj.get("title")?.asString.orEmpty(),
             url = obj.get("url")?.asString.orEmpty(),
-            coverImageUrl = obj.get("coverImageUrl")?.asString
-                ?: obj.get("cover")?.asString
+            coverImageUrl = obj.get("cover")?.asString
+                ?: obj.get("coverImageUrl")?.asString
                 ?: obj.get("image")?.asString.orEmpty(),
-            status = obj.get("status")?.asString.orEmpty(),
+            description = obj.get("description")?.asString.orEmpty(),
+            rating = obj.get("rating")?.let {
+                if (it.isJsonNull) null
+                else if (it.isJsonPrimitive) it.asString.takeIf { s -> s.isNotBlank() }
+                else null
+            },
+            contentType = metadata.contentType
         )
     }
 
     private fun parseChaptersFromJson(json: String?): Response<List<ChapterResult>> {
-        if (json == null || json == "null") return Response.Success(emptyList())
+        if (json.isNullOrBlank() || json == "null") return Response.Success(emptyList())
         return try {
             val element = JsonParser.parseString(json)
-            val arr = if (element.isJsonArray) element.asJsonArray else element.asJsonObject.getAsJsonArray("chapters") ?: JsonArray()
-            val chapters = arr.mapIndexed { idx, item ->
+            val arr = if (element.isJsonArray) {
+                element.asJsonArray
+            } else if (element.isJsonObject) {
+                element.asJsonObject.getAsJsonArray("chapters") ?: JsonArray()
+            } else {
+                JsonArray()
+            }
+            val chapters = mutableListOf<ChapterResult>()
+            for (item in arr) {
+                if (!item.isJsonObject) continue
                 val obj = item.asJsonObject
-                ChapterResult(
-                    name = obj.get("title")?.asString
-                        ?: obj.get("name")?.asString.orEmpty(),
-                    url = obj.get("url")?.asString.orEmpty(),
-                    date = obj.get("date")?.asString.orEmpty(),
-                    order = obj.get("order")?.asInt ?: idx
-                )
+                val title = obj.get("title")?.asString.orEmpty()
+                val url = obj.get("url")?.asString.orEmpty()
+                val volume = obj.get("volume")?.takeIf { !it.isJsonNull }?.asString
+                val uploaded = obj.get("uploaded")?.takeIf { !it.isJsonNull && it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asLong
+                chapters.add(ChapterResult(title = title, url = url, volume = volume, uploaded = uploaded))
             }
             Response.Success(chapters)
         } catch (e: Exception) {
@@ -322,17 +469,61 @@ open class NativeLuaSourceAdapter(
         }
     }
 
+    private fun normalizeVideoMime(raw: String?): String? {
+        if (raw.isNullOrBlank()) return null
+        val mime = raw.trim().lowercase()
+        return when (mime) {
+            "hls", "m3u8",
+            "application/x-mpegurl",
+            "application/vnd.apple.mpegurl" -> "application/x-mpegURL"
+            "mp4", "video/mp4" -> "video/mp4"
+            "mpd", "application/dash+xml" -> "application/dash+xml"
+            else -> mime.takeIf {
+                it.startsWith("video/") ||
+                    it == "application/vnd.ms-sstr+xml" ||
+                    it == "application/x-rtsp"
+            }
+        }
+    }
+
     private fun parseVideosFromJson(json: String?): Response<List<VideoSource>> {
-        if (json == null || json == "null") return Response.Success(emptyList())
+        if (json.isNullOrBlank() || json == "null") return Response.Success(emptyList())
         return try {
             val element = JsonParser.parseString(json)
             val arr = if (element.isJsonArray) element.asJsonArray else JsonArray()
             val videos = arr.mapNotNull { item ->
                 if (!item.isJsonObject) return@mapNotNull null
                 val obj = item.asJsonObject
+                val url = obj.get("url")?.asString.orEmpty()
+                if (url.isBlank()) return@mapNotNull null
+                val quality = obj.get("quality")?.asString.orEmpty()
+                val headers = mutableMapOf<String, String>()
+                obj.getAsJsonObject("headers")?.entrySet()?.forEach { (k, v) ->
+                    headers[k] = v.asString
+                }
+                val subtitles = mutableListOf<VideoSubtitle>()
+                obj.getAsJsonArray("subtitles")?.forEach { sItem ->
+                    if (sItem.isJsonObject) {
+                        val sObj = sItem.asJsonObject
+                        val sUrl = sObj.get("url")?.asString.orEmpty()
+                        if (sUrl.isNotBlank()) {
+                            subtitles.add(
+                                VideoSubtitle(
+                                    url = sUrl,
+                                    label = sObj.get("label")?.asString.orEmpty(),
+                                    lang = sObj.get("lang")?.asString.orEmpty()
+                                )
+                            )
+                        }
+                    }
+                }
+                val mime = normalizeVideoMime(obj.get("mime")?.asString)
                 VideoSource(
-                    url = obj.get("url")?.asString.orEmpty(),
-                    quality = obj.get("quality")?.asString.orEmpty().ifEmpty { "Default" }
+                    url = url,
+                    quality = quality,
+                    headers = headers,
+                    subtitles = subtitles,
+                    mime = mime
                 )
             }
             Response.Success(videos)

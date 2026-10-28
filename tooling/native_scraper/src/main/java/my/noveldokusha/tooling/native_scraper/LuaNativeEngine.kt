@@ -21,6 +21,52 @@ class LuaNativeEngine(bridge: LuaNativeBridge? = null) : Closeable {
         }
     }
 
+    fun hasFunction(functionName: String): Boolean {
+        return LuaNative.nativeHasFunction(statePtr, functionName)
+    }
+
+    fun call(functionName: String, vararg args: Any?): String? {
+        val argsJson = if (args.isNotEmpty()) {
+            buildString {
+                append("[")
+                args.forEachIndexed { i, arg ->
+                    if (i > 0) append(",")
+                    when (arg) {
+                        null -> append("null")
+                        is Number -> append(arg.toString())
+                        is Boolean -> append(if (arg) "true" else "false")
+                        else -> {
+                            append("\"")
+                            val s = arg.toString()
+                            for (c in s) {
+                                when (c) {
+                                    '\\' -> append("\\\\")
+                                    '"' -> append("\\\"")
+                                    '\b' -> append("\\b")
+                                    '\u000C' -> append("\\f")
+                                    '\n' -> append("\\n")
+                                    '\r' -> append("\\r")
+                                    '\t' -> append("\\t")
+                                    else -> {
+                                        if (c.code in 0x00..0x1F) {
+                                            append("\\u")
+                                            append(c.code.toString(16).padStart(4, '0'))
+                                        } else {
+                                            append(c)
+                                        }
+                                    }
+                                }
+                            }
+                            append("\"")
+                        }
+                    }
+                }
+                append("]")
+            }
+        } else null
+        return LuaNative.nativeCall(statePtr, functionName, argsJson)
+    }
+
     fun callFunction(functionName: String, arg: String? = null): String? {
         return LuaNative.nativeCallFunctionString(statePtr, functionName, arg)
     }

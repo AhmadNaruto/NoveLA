@@ -588,6 +588,10 @@ static int lua_api_http_get(lua_State *L) {
     if (config_json) free(config_json);
 
     jstring res = (jstring) (*env)->CallObjectMethod(env, holder->bridge_ref, holder->http_get_mid, j_url, j_config);
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        res = NULL;
+    }
 
     if (j_url) (*env)->DeleteLocalRef(env, j_url);
     if (j_config) (*env)->DeleteLocalRef(env, j_config);
@@ -659,6 +663,10 @@ static int lua_api_http_post(lua_State *L) {
     if (config_json) free(config_json);
 
     jstring res = (jstring) (*env)->CallObjectMethod(env, holder->bridge_ref, holder->http_post_mid, j_url, j_body, j_config);
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        res = NULL;
+    }
 
     if (j_url) (*env)->DeleteLocalRef(env, j_url);
     if (j_body) (*env)->DeleteLocalRef(env, j_body);
@@ -718,6 +726,10 @@ static int lua_api_http_get_batch(lua_State *L) {
     if (config_json) free(config_json);
 
     jstring res = (jstring) (*env)->CallObjectMethod(env, holder->bridge_ref, holder->http_get_batch_mid, j_items, j_config);
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        res = NULL;
+    }
 
     if (j_items) (*env)->DeleteLocalRef(env, j_items);
     if (j_config) (*env)->DeleteLocalRef(env, j_config);
@@ -1099,6 +1111,98 @@ Java_my_noveldokusha_tooling_native_1scraper_LuaNative_nativeExecuteString(
     }
 
     return NULL;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_my_noveldokusha_tooling_native_1scraper_LuaNative_nativeHasFunction(
+    JNIEnv *env, jclass clazz, jlong state_ptr, jstring fn_name)
+{
+    if (!state_ptr || !fn_name) return JNI_FALSE;
+    lua_State *L = (lua_State *) (intptr_t) state_ptr;
+    const char *name = (*env)->GetStringUTFChars(env, fn_name, NULL);
+    if (!name) return JNI_FALSE;
+    lua_getglobal(L, name);
+    int is_fn = lua_isfunction(L, -1);
+    lua_pop(L, 1);
+    (*env)->ReleaseStringUTFChars(env, fn_name, name);
+    return is_fn ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jstring JNICALL
+Java_my_noveldokusha_tooling_native_1scraper_LuaNative_nativeCall(
+    JNIEnv *env, jclass clazz, jlong state_ptr, jstring fn_name, jstring args_json)
+{
+    if (!state_ptr || !fn_name) return NULL;
+    lua_State *L = (lua_State *) (intptr_t) state_ptr;
+
+    const char *name = (*env)->GetStringUTFChars(env, fn_name, NULL);
+    if (!name) return NULL;
+    lua_getglobal(L, name);
+    (*env)->ReleaseStringUTFChars(env, fn_name, name);
+
+    if (!lua_isfunction(L, -1)) {
+        lua_pop(L, 1);
+        return NULL;
+    }
+
+    int nargs = 0;
+    if (args_json) {
+        const char *json_str = (*env)->GetStringUTFChars(env, args_json, NULL);
+        if (json_str) {
+            int top_before = lua_gettop(L);
+            if (json_to_lua(L, json_str) && lua_istable(L, -1)) {
+                int tbl_idx = lua_gettop(L);
+                nargs = (int) lua_rawlen(L, tbl_idx);
+                for (int i = 1; i <= nargs; i++) {
+                    lua_rawgeti(L, tbl_idx, i);
+                }
+                lua_remove(L, tbl_idx);
+            } else {
+                while (lua_gettop(L) > top_before) {
+                    lua_pop(L, 1);
+                }
+            }
+            (*env)->ReleaseStringUTFChars(env, args_json, json_str);
+        }
+    }
+
+    if (lua_pcall(L, nargs, 1, 0) != LUA_OK) {
+        const char *err = lua_tostring(L, -1);
+        LOGE("Lua call failed: %s", err ? err : "unknown");
+        lua_pop(L, 1);
+        return NULL;
+    }
+
+    int res_type = lua_type(L, -1);
+    jstring res = NULL;
+
+    if (res_type == LUA_TNIL) {
+        lua_pop(L, 1);
+        return NULL;
+    } else if (res_type == LUA_TTABLE) {
+        json_buf_t buf;
+        json_buf_init(&buf);
+        lua_to_json(L, -1, &buf);
+        lua_pop(L, 1);
+        res = (*env)->NewStringUTF(env, buf.data ? buf.data : "{}");
+        if (buf.data) free(buf.data);
+    } else if (res_type == LUA_TSTRING) {
+        size_t len = 0;
+        const char *s = lua_tolstring(L, -1, &len);
+        res = s ? (*env)->NewStringUTF(env, s) : NULL;
+        lua_pop(L, 1);
+    } else if (res_type == LUA_TNUMBER) {
+        const char *s = lua_tostring(L, -1);
+        res = s ? (*env)->NewStringUTF(env, s) : NULL;
+        lua_pop(L, 1);
+    } else if (res_type == LUA_TBOOLEAN) {
+        res = (*env)->NewStringUTF(env, lua_toboolean(L, -1) ? "true" : "false");
+        lua_pop(L, 1);
+    } else {
+        lua_pop(L, 1);
+    }
+
+    return res;
 }
 
 JNIEXPORT jstring JNICALL

@@ -19,6 +19,12 @@ object LuaNative {
     external fun nativeExecuteString(statePtr: Long, code: String): String?
 
     @JvmStatic
+    external fun nativeHasFunction(statePtr: Long, functionName: String): Boolean
+
+    @JvmStatic
+    external fun nativeCall(statePtr: Long, functionName: String, argsJson: String? = null): String?
+
+    @JvmStatic
     external fun nativeCallFunctionJson(statePtr: Long, functionName: String, args: Array<String>?): String?
 
     @JvmStatic

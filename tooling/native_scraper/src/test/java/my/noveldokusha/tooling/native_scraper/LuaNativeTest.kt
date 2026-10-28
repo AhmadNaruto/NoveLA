@@ -182,4 +182,38 @@ class LuaNativeTest {
 
         luaEngine.close()
     }
+
+    @Test
+    fun testHasFunctionAndTypedCall() {
+        val luaEngine = LuaNativeEngine()
+
+        val script = """
+            function greet(name, count)
+                -- %d format requires integer count in Lua 5.4!
+                return string.format("Hello %s, you have %d notifications!\nLine 2", name, count)
+            end
+            
+            function getItems(page)
+                return { page = page, items = { "Item 1", "Item 2" } }
+            end
+        """.trimIndent()
+
+        luaEngine.execute(script)
+
+        assertTrue(luaEngine.hasFunction("greet"))
+        assertTrue(luaEngine.hasFunction("getItems"))
+        org.junit.Assert.assertFalse(luaEngine.hasFunction("nonExistentFunction"))
+
+        // Raw string return with preserved newlines
+        val rawResult = luaEngine.call("greet", "Alice", 5)
+        assertEquals("Hello Alice, you have 5 notifications!\nLine 2", rawResult)
+
+        // JSON table return
+        val jsonResult = luaEngine.call("getItems", 2)
+        assertNotNull(jsonResult)
+        assertTrue(jsonResult!!.contains("\"page\":2"))
+        assertTrue(jsonResult.contains("Item 1"))
+
+        luaEngine.close()
+    }
 }
