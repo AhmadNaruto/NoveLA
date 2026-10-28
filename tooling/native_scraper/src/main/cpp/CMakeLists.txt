@@ -17,6 +17,7 @@ add_subdirectory(lexbor)
 # Configure Lua 5.4 static library
 file(GLOB LUA_SOURCES "lua/*.c")
 add_library(lua_static STATIC ${LUA_SOURCES})
+target_compile_definitions(lua_static PRIVATE LUA_USE_POSIX)
 target_include_directories(lua_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lua)
 
 # Main Native Scraper shared library
