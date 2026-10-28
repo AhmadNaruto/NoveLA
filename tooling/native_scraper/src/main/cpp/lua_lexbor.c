@@ -63,7 +63,8 @@ static int lua_node_gc(lua_State *L) {
 }
 
 // Forward declaration
-static void push_element_table(lua_State *L, lxb_dom_node_t *node, int doc_idx);
+static void push_element_table(lua_State *L, lxb_dom_node_t *node, int doc_idx, int existing_doc_ref);
+static int execute_select(lua_State *L, lxb_dom_node_t *root_node, const char *css_query, bool find_first, int doc_idx, int existing_doc_ref);
 
 // Helper: Extract text from node
 static void push_node_text(lua_State *L, lxb_dom_node_t *node) {
@@ -129,15 +130,36 @@ static void push_node_attr(lua_State *L, lxb_dom_node_t *node, const char *name)
     }
 }
 
-// Method: element:attr(name)
-static int lua_el_attr(lua_State *L) {
-    // Handle colon or dot call: self can be arg 1
-    int arg_offset = lua_istable(L, 1) ? 1 : 0;
-    const char *attr_name = luaL_checkstring(L, arg_offset + 1);
+static int get_element_node(lua_State *L, lexbor_node_ud_t **out_nud) {
+    int tbl_idx = lua_upvalueindex(1);
+    if (!lua_istable(L, tbl_idx)) {
+        if (lua_istable(L, 1)) {
+            tbl_idx = 1;
+        } else {
+            return 0;
+        }
+    }
+    lua_getfield(L, tbl_idx, "__node");
+    *out_nud = (lexbor_node_ud_t *) luaL_testudata(L, -1, LEXBOR_NODE_MT);
+    lua_pop(L, 1);
+    return (*out_nud && (*out_nud)->node) ? 1 : 0;
+}
 
-    lua_getfield(L, 1, "__node");
-    lexbor_node_ud_t *nud = (lexbor_node_ud_t *) luaL_testudata(L, -1, LEXBOR_NODE_MT);
-    if (nud && nud->node) {
+// Method: element:attr(name) or element.attr(name)
+static int lua_el_attr(lua_State *L) {
+    lexbor_node_ud_t *nud = NULL;
+    if (!get_element_node(L, &nud)) {
+        lua_pushliteral(L, "");
+        return 1;
+    }
+    int top = lua_gettop(L);
+    const char *attr_name = NULL;
+    if (top >= 2 && lua_istable(L, 1)) {
+        attr_name = luaL_checkstring(L, 2);
+    } else if (top >= 1) {
+        attr_name = luaL_checkstring(L, 1);
+    }
+    if (attr_name) {
         push_node_attr(L, nud->node, attr_name);
     } else {
         lua_pushliteral(L, "");
@@ -145,11 +167,10 @@ static int lua_el_attr(lua_State *L) {
     return 1;
 }
 
-// Method: element:text()
+// Method: element:text() or element.text()
 static int lua_el_text(lua_State *L) {
-    lua_getfield(L, 1, "__node");
-    lexbor_node_ud_t *nud = (lexbor_node_ud_t *) luaL_testudata(L, -1, LEXBOR_NODE_MT);
-    if (nud && nud->node) {
+    lexbor_node_ud_t *nud = NULL;
+    if (get_element_node(L, &nud)) {
         push_node_text(L, nud->node);
     } else {
         lua_pushliteral(L, "");
@@ -157,11 +178,10 @@ static int lua_el_text(lua_State *L) {
     return 1;
 }
 
-// Method: element:html()
+// Method: element:html() or element.html()
 static int lua_el_html(lua_State *L) {
-    lua_getfield(L, 1, "__node");
-    lexbor_node_ud_t *nud = (lexbor_node_ud_t *) luaL_testudata(L, -1, LEXBOR_NODE_MT);
-    if (nud && nud->node) {
+    lexbor_node_ud_t *nud = NULL;
+    if (get_element_node(L, &nud)) {
         push_node_inner_html(L, nud->node);
     } else {
         lua_pushliteral(L, "");
@@ -171,12 +191,53 @@ static int lua_el_html(lua_State *L) {
 
 // Method: element:remove()
 static int lua_el_remove(lua_State *L) {
-    lua_getfield(L, 1, "__node");
-    lexbor_node_ud_t *nud = (lexbor_node_ud_t *) luaL_testudata(L, -1, LEXBOR_NODE_MT);
-    if (nud && nud->node) {
+    lexbor_node_ud_t *nud = NULL;
+    if (get_element_node(L, &nud)) {
         lxb_dom_node_remove(nud->node);
     }
     return 0;
+}
+
+// Method: element:select(query) or element.select(query)
+static int lua_el_select(lua_State *L) {
+    lexbor_node_ud_t *nud = NULL;
+    if (!get_element_node(L, &nud)) {
+        lua_newtable(L);
+        return 1;
+    }
+    int top = lua_gettop(L);
+    const char *query = NULL;
+    if (top >= 2 && lua_istable(L, 1)) {
+        query = luaL_checkstring(L, 2);
+    } else if (top >= 1) {
+        query = luaL_checkstring(L, 1);
+    }
+    if (query) {
+        return execute_select(L, nud->node, query, false, 0, nud->doc_ref);
+    }
+    lua_newtable(L);
+    return 1;
+}
+
+// Method: element:select_first(query) or element.select_first(query)
+static int lua_el_select_first(lua_State *L) {
+    lexbor_node_ud_t *nud = NULL;
+    if (!get_element_node(L, &nud)) {
+        lua_pushnil(L);
+        return 1;
+    }
+    int top = lua_gettop(L);
+    const char *query = NULL;
+    if (top >= 2 && lua_istable(L, 1)) {
+        query = luaL_checkstring(L, 2);
+    } else if (top >= 1) {
+        query = luaL_checkstring(L, 1);
+    }
+    if (query) {
+        return execute_select(L, nud->node, query, true, 0, nud->doc_ref);
+    }
+    lua_pushnil(L);
+    return 1;
 }
 
 // Element metatable __index for lazy evaluation & methods
@@ -215,16 +276,28 @@ static int lua_el_index(lua_State *L) {
         push_node_attr(L, nud->node, "id");
         return 1;
     } else if (strcmp(key, "attr") == 0) {
-        lua_pushcfunction(L, lua_el_attr);
+        lua_pushvalue(L, 1);
+        lua_pushcclosure(L, lua_el_attr, 1);
+        return 1;
+    } else if (strcmp(key, "select") == 0) {
+        lua_pushvalue(L, 1);
+        lua_pushcclosure(L, lua_el_select, 1);
+        return 1;
+    } else if (strcmp(key, "select_first") == 0) {
+        lua_pushvalue(L, 1);
+        lua_pushcclosure(L, lua_el_select_first, 1);
         return 1;
     } else if (strcmp(key, "get_text") == 0) {
-        lua_pushcfunction(L, lua_el_text);
+        lua_pushvalue(L, 1);
+        lua_pushcclosure(L, lua_el_text, 1);
         return 1;
     } else if (strcmp(key, "get_html") == 0) {
-        lua_pushcfunction(L, lua_el_html);
+        lua_pushvalue(L, 1);
+        lua_pushcclosure(L, lua_el_html, 1);
         return 1;
     } else if (strcmp(key, "remove") == 0) {
-        lua_pushcfunction(L, lua_el_remove);
+        lua_pushvalue(L, 1);
+        lua_pushcclosure(L, lua_el_remove, 1);
         return 1;
     }
 
@@ -232,7 +305,7 @@ static int lua_el_index(lua_State *L) {
     return 1;
 }
 
-static void push_element_table(lua_State *L, lxb_dom_node_t *node, int doc_idx) {
+static void push_element_table(lua_State *L, lxb_dom_node_t *node, int doc_idx, int existing_doc_ref) {
     lua_createtable(L, 0, 4);
 
     // Create node userdata
@@ -240,7 +313,10 @@ static void push_element_table(lua_State *L, lxb_dom_node_t *node, int doc_idx) 
     nud->node = node;
     nud->doc_ref = LUA_NOREF;
 
-    if (doc_idx != 0) {
+    if (existing_doc_ref != LUA_NOREF) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, existing_doc_ref);
+        nud->doc_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    } else if (doc_idx != 0) {
         lua_pushvalue(L, doc_idx);
         nud->doc_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     }
@@ -257,7 +333,7 @@ static void push_element_table(lua_State *L, lxb_dom_node_t *node, int doc_idx) 
 }
 
 // Core selector query execution
-static int execute_select(lua_State *L, lxb_dom_node_t *root_node, const char *css_query, bool find_first, int doc_idx) {
+static int execute_select(lua_State *L, lxb_dom_node_t *root_node, const char *css_query, bool find_first, int doc_idx, int existing_doc_ref) {
     if (!root_node || !css_query) {
         if (find_first) lua_pushnil(L);
         else lua_createtable(L, 0, 0);
@@ -295,14 +371,14 @@ static int execute_select(lua_State *L, lxb_dom_node_t *root_node, const char *c
     }
 
     if (find_first) {
-        push_element_table(L, ctx.nodes[0], doc_idx);
+        push_element_table(L, ctx.nodes[0], doc_idx, existing_doc_ref);
         free(ctx.nodes);
         return 1;
     }
 
     lua_createtable(L, (int) ctx.count, 0);
     for (size_t i = 0; i < ctx.count; i++) {
-        push_element_table(L, ctx.nodes[i], doc_idx);
+        push_element_table(L, ctx.nodes[i], doc_idx, existing_doc_ref);
         lua_rawseti(L, -2, (lua_Integer) (i + 1));
     }
     free(ctx.nodes);
@@ -355,7 +431,7 @@ static int lua_html_parse(lua_State *L) {
     }
     lua_setfield(L, -2, "title");
 
-    push_element_table(L, body_node, doc_idx);
+    push_element_table(L, body_node, doc_idx, LUA_NOREF);
     lua_setfield(L, -2, "body");
 
     return 1;
@@ -370,7 +446,7 @@ static int lua_html_select(lua_State *L) {
         lexbor_node_ud_t *nud = (lexbor_node_ud_t *) luaL_testudata(L, -1, LEXBOR_NODE_MT);
         lua_pop(L, 1);
         if (nud && nud->node) {
-            return execute_select(L, nud->node, query, false, 0);
+            return execute_select(L, nud->node, query, false, 0, nud->doc_ref);
         }
     }
 
@@ -390,7 +466,7 @@ static int lua_html_select(lua_State *L) {
     lua_setmetatable(L, -2);
     int doc_idx = lua_gettop(L);
 
-    return execute_select(L, lxb_dom_interface_node(document), query, false, doc_idx);
+    return execute_select(L, lxb_dom_interface_node(document), query, false, doc_idx, LUA_NOREF);
 }
 
 // Global: html_select_first(html_or_el, css_query)
@@ -402,7 +478,7 @@ static int lua_html_select_first(lua_State *L) {
         lexbor_node_ud_t *nud = (lexbor_node_ud_t *) luaL_testudata(L, -1, LEXBOR_NODE_MT);
         lua_pop(L, 1);
         if (nud && nud->node) {
-            return execute_select(L, nud->node, query, true, 0);
+            return execute_select(L, nud->node, query, true, 0, nud->doc_ref);
         }
     }
 
@@ -421,7 +497,7 @@ static int lua_html_select_first(lua_State *L) {
     lua_setmetatable(L, -2);
     int doc_idx = lua_gettop(L);
 
-    return execute_select(L, lxb_dom_interface_node(document), query, true, doc_idx);
+    return execute_select(L, lxb_dom_interface_node(document), query, true, doc_idx, LUA_NOREF);
 }
 
 // Global: html_attr(html_or_el, css_query, attr_name)

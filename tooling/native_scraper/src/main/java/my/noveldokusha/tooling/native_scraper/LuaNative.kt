@@ -10,7 +10,7 @@ object LuaNative {
     }
 
     @JvmStatic
-    external fun nativeCreateState(): Long
+    external fun nativeCreateState(bridge: LuaNativeBridge? = null): Long
 
     @JvmStatic
     external fun nativeCloseState(statePtr: Long)

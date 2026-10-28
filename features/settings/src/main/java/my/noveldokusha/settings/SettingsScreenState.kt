@@ -33,6 +33,7 @@ data class SettingsScreenState(
     val scraperUserAgent: MutableState<String>,
     val cloudflareBypassEnabled: MutableState<Boolean>,
     val cloudflareChallengeTimeoutSeconds: MutableState<Int>,
+    val useNativeLuaEngine: MutableState<Boolean>? = null,
     // OpenAI-compatible
     val openAiBaseUrl: State<String>,
     val openAiApiKeys: State<String>,

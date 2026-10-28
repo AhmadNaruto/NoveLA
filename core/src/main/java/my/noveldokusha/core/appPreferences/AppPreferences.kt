@@ -651,6 +651,9 @@ class AppPreferences @Inject constructor(
             "https://raw.githubusercontent.com/HnDK0/external-sources/refs/heads/main/index.yaml"
         )
     }
+    val USE_NATIVE_LUA_ENGINE = object : Preference<Boolean>("USE_NATIVE_LUA_ENGINE") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
     val EXTENSIONS_AVAILABLE_CACHE = object : Preference<List<ExtensionInfoCached>>("EXTENSIONS_AVAILABLE_CACHE") {
         override var value by SharedPreference_Serializable<List<ExtensionInfoCached>>(
             name = name,

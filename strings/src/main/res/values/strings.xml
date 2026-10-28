@@ -458,6 +458,8 @@
     <string name="cloudflare_bypass">Cloudflare bypass</string>
     <string name="cloudflare_bypass_description">Enable automatic Cloudflare challenge bypass</string>
     <string name="cloudflare_bypass_restart_required">Cloudflare bypass setting will be applied after app restart</string>
+    <string name="use_native_lua_engine">Native Lua 5.4 Engine</string>
+    <string name="use_native_lua_engine_description">Use native C Lua 5.4 + Lexbor engine instead of LuaJ for scraping</string>
     <string name="cloudflare_challenge_timeout">Challenge timeout</string>
     <string name="timeout_seconds">Timeout (seconds)</string>
     <string name="seconds_format">%d seconds</string>

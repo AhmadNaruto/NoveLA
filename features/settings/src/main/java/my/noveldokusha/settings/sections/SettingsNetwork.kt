@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Http
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.FilterChip
@@ -51,7 +52,8 @@ internal fun SettingsNetwork(
     onMassAddDelayChange: (Long) -> Unit,
     downloadDelayMs: State<Long>,
     onDownloadDelayChange: (Long) -> Unit,
-    @Suppress("UNUSED_PARAMETER") onCloudflareBypassChanged: (() -> Unit)? = null
+    @Suppress("UNUSED_PARAMETER") onCloudflareBypassChanged: (() -> Unit)? = null,
+    useNativeLuaEngine: MutableState<Boolean>? = null
 ) {
     Column {
         Text(
@@ -192,6 +194,33 @@ internal fun SettingsNetwork(
                 )
             }
         )
+
+        // Native Lua engine toggle
+        if (useNativeLuaEngine != null) {
+            SlimListItem(
+                headlineContent = {
+                    Text(text = stringResource(R.string.use_native_lua_engine))
+                },
+                supportingContent = {
+                    Text(text = stringResource(R.string.use_native_lua_engine_description))
+                },
+                leadingContent = {
+                    Icon(Icons.Outlined.Code, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                },
+                trailingContent = {
+                    androidx.compose.material3.Switch(
+                        checked = useNativeLuaEngine.value,
+                        onCheckedChange = {
+                            useNativeLuaEngine.value = it
+                        },
+                        colors = androidx.compose.material3.SwitchDefaults.colors(
+                            checkedThumbColor = colorAccent(),
+                            checkedTrackColor = colorAccent().copy(alpha = 0.4f),
+                        )
+                    )
+                }
+            )
+        }
 
         // Download delay setting
         SlimListItem(

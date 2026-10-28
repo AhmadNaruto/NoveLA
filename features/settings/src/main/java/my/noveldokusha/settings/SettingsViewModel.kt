@@ -105,6 +105,7 @@ internal class SettingsViewModel @Inject constructor(
         scraperUserAgent = appPreferences.SCRAPER_USER_AGENT.state(viewModelScope),
         cloudflareBypassEnabled = appPreferences.CLOUDFLARE_BYPASS_ENABLED.state(viewModelScope),
         cloudflareChallengeTimeoutSeconds = appPreferences.CLOUDFLARE_CHALLENGE_TIMEOUT_SECONDS.state(viewModelScope),
+        useNativeLuaEngine = appPreferences.USE_NATIVE_LUA_ENGINE.state(viewModelScope),
         openAiBaseUrl          = appPreferences.TRANSLATION_OPENAI_BASE_URL.state(viewModelScope),
         openAiApiKeys          = appPreferences.TRANSLATION_OPENAI_API_KEYS.state(viewModelScope),
         openAiModel            = appPreferences.TRANSLATION_OPENAI_MODEL.state(viewModelScope),

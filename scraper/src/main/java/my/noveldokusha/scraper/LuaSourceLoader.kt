@@ -25,6 +25,8 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import my.noveldokusha.tooling.native_scraper.LexborJsoupFacade
 import my.noveldokusha.tooling.native_scraper.LexborElement
+import my.noveldokusha.tooling.native_scraper.LuaNativeBridge
+import my.noveldokusha.core.appPreferences.AppPreferences
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.luaj.vm2.*
@@ -62,8 +64,9 @@ import my.noveldokusha.network.getRequest
 @Singleton
 class LuaEngine @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val networkClient: NetworkClient
-) {
+    private val networkClient: NetworkClient,
+    private val appPreferences: AppPreferences? = null
+) : LuaNativeBridge {
     private val gson = Gson()
     private val luaPrefs by lazy { context.getSharedPreferences("lua_preferences", Context.MODE_PRIVATE) }
     val currentSourceId = ThreadLocal<String?>()
@@ -235,6 +238,196 @@ class LuaEngine @Inject constructor(
         }
     }
 
+    // ── LuaNativeBridge implementation ───────────────────────────────────────
+
+    override fun httpGet(url: String, configJson: String?): String? {
+        val config = if (!configJson.isNullOrBlank()) {
+            runCatching { JsonParser.parseString(configJson).asJsonObject }.getOrNull()
+        } else null
+
+        val headers = mutableMapOf<String, String>()
+        config?.getAsJsonObject("headers")?.entrySet()?.forEach { (k, v) ->
+            headers[k] = v.asString
+        }
+
+        val charset = config?.get("charset")?.asString ?: "UTF-8"
+        val followRedirects = config?.get("followRedirects")?.asBoolean ?: true
+        val method = config?.get("method")?.asString?.uppercase(Locale.ROOT) ?: "GET"
+        val timeoutMs = config?.get("timeout")?.asLong?.takeIf { it > 0 }
+
+        val params = HttpGetParams(
+            url = url,
+            pluginHeaders = headers,
+            charset = charset,
+            binary = false,
+            followRedirects = followRedirects,
+            method = if (method == "HEAD") "HEAD" else "GET",
+            timeoutMs = timeoutMs,
+            logTag = "NativeHttpGet"
+        )
+
+        return runCatching {
+            runBlocking(Dispatchers.IO) {
+                val sourceId = currentSourceId.get()
+                val forceNetwork = forceNetworkFlag.get()
+                val isHead = params.method == "HEAD"
+                val mergedHeaders = defaultHeaders(params.url) + params.pluginHeaders
+
+                if (!isSsrfSafe(params.url)) {
+                    return@runBlocking """{"success":false,"code":403,"body":"SSRF blocked"}"""
+                }
+
+                val builder = getRequest(params.url)
+                mergedHeaders.forEach { (k, v) -> builder.header(k, v) }
+                if (isHead) {
+                    builder.head()
+                    builder.header("Cache-Control", "no-cache")
+                }
+                if (forceNetwork) builder.header("Cache-Control", "no-cache")
+                sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
+
+                val response = if (params.timeoutMs != null) {
+                    networkClient.callWithTimeout(builder, params.timeoutMs, followRedirects = params.followRedirects)
+                } else {
+                    networkClient.call(builder, followRedirects = params.followRedirects)
+                }
+
+                response.use { r ->
+                    val bytes = if (isHead) ByteArray(0) else r.body.bytes()
+                    val body = String(bytes, java.nio.charset.Charset.forName(params.charset))
+
+                    val headersMap = r.headers.toMultimap().mapValues { it.value.joinToString(", ") }
+                    val headersJson = gson.toJson(headersMap)
+                    val escapedBody = gson.toJson(body)
+
+                    """{"success":${r.isSuccessful},"code":${r.code},"body":$escapedBody,"headers":$headersJson}"""
+                }
+            }
+        }.getOrElse { e ->
+            Timber.w(e, "Native httpGet failed: $url")
+            val escapedErr = gson.toJson(e.message ?: "Network error")
+            """{"success":false,"code":0,"body":$escapedErr}"""
+        }
+    }
+
+    override fun httpPost(url: String, body: String?, configJson: String?): String? {
+        val config = if (!configJson.isNullOrBlank()) {
+            runCatching { JsonParser.parseString(configJson).asJsonObject }.getOrNull()
+        } else null
+
+        val headers = mutableMapOf<String, String>()
+        config?.getAsJsonObject("headers")?.entrySet()?.forEach { (k, v) ->
+            headers[k] = v.asString
+        }
+
+        val charset = config?.get("charset")?.asString ?: "UTF-8"
+        val followRedirects = config?.get("followRedirects")?.asBoolean ?: true
+        val timeoutMs = config?.get("timeout")?.asLong?.takeIf { it > 0 }
+
+        return runCatching {
+            runBlocking(Dispatchers.IO) {
+                val sourceId = currentSourceId.get()
+                if (!isSsrfSafe(url)) {
+                    return@runBlocking """{"success":false,"code":403,"body":"SSRF blocked"}"""
+                }
+
+                val mediaType = headers["Content-Type"]?.toMediaType()
+                    ?: "application/x-www-form-urlencoded; charset=utf-8".toMediaType()
+                val requestBody = (body ?: "").toRequestBody(mediaType)
+
+                val builder = postRequest(url, requestBody)
+                headers.forEach { (k, v) -> builder.header(k, v) }
+                sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
+
+                val response = if (timeoutMs != null) {
+                    networkClient.callWithTimeout(builder, timeoutMs, followRedirects = followRedirects)
+                } else {
+                    networkClient.call(builder, followRedirects = followRedirects)
+                }
+
+                response.use { r ->
+                    val respBytes = r.body.bytes()
+                    val respBody = String(respBytes, java.nio.charset.Charset.forName(charset))
+                    val headersMap = r.headers.toMultimap().mapValues { it.value.joinToString(", ") }
+                    val headersJson = gson.toJson(headersMap)
+                    val escapedBody = gson.toJson(respBody)
+
+                    """{"success":${r.isSuccessful},"code":${r.code},"body":$escapedBody,"headers":$headersJson}"""
+                }
+            }
+        }.getOrElse { e ->
+            Timber.w(e, "Native httpPost failed: $url")
+            val escapedErr = gson.toJson(e.message ?: "Network error")
+            """{"success":false,"code":0,"body":$escapedErr}"""
+        }
+    }
+
+    override fun httpGetBatch(itemsJson: String, configJson: String?): String? {
+        return runCatching {
+            val itemsArr = JsonParser.parseString(itemsJson).asJsonArray
+            runBlocking(Dispatchers.IO) {
+                val results = itemsArr.map { item ->
+                    async {
+                        val url = if (item.isJsonObject) item.asJsonObject.get("url")?.asString.orEmpty() else item.asString
+                        httpGet(url, configJson)
+                    }
+                }.awaitAll()
+                "[" + results.filterNotNull().joinToString(",") + "]"
+            }
+        }.getOrDefault("[]")
+    }
+
+    override fun getPreference(key: String): String? = luaPrefs.getString(key, null)
+
+    override fun setPreference(key: String, value: String?) {
+        if (value != null) luaPrefs.edit().putString(key, value).apply()
+        else luaPrefs.edit().remove(key).apply()
+    }
+
+    override fun getCookies(url: String): String? {
+        return runCatching {
+            val cookies = networkClient.client.cookieJar.loadForRequest(url.toHttpUrl())
+            cookies.joinToString("; ") { "${it.name}=${it.value}" }
+        }.getOrNull()
+    }
+
+    override fun setCookies(url: String, cookiesJson: String) {
+        runCatching {
+            val obj = JsonParser.parseString(cookiesJson).asJsonObject
+            val httpUrl = url.toHttpUrl()
+            val cookieList = obj.entrySet().mapNotNull { (name, value) ->
+                okhttp3.Cookie.Builder()
+                    .domain(httpUrl.host)
+                    .path("/")
+                    .name(name)
+                    .value(value.asString)
+                    .build()
+            }
+            networkClient.client.cookieJar.saveFromResponse(httpUrl, cookieList)
+        }
+    }
+
+    override fun getLocalStorage(url: String, key: String): String? {
+        return runCatching {
+            val domain = URI(url).host ?: url
+            val prefs = context.getSharedPreferences("lua_storage_$domain", Context.MODE_PRIVATE)
+            prefs.getString(key, null)
+        }.getOrNull()
+    }
+
+    override fun showError(title: String, message: String, authUrl: String?) {
+        setPendingShowError(title, message, authUrl)
+    }
+
+    override fun log(level: Int, message: String) {
+        if (level == 2) Timber.e("NativeLua: %s", message)
+        else Timber.d("NativeLua: %s", message)
+    }
+
+    override fun sleep(ms: Long) {
+        try { Thread.sleep(ms) } catch (_: InterruptedException) {}
+    }
+
     /**
      * Начинает новый цикл байткод-кэша: обнуляет usedBytecodeCache, чтобы
      * pruneBytecodeCache() после загрузки удалял .lbc расширений, которые были
@@ -253,6 +446,9 @@ class LuaEngine @Inject constructor(
     }
 
     suspend fun loadFromScript(scriptContent: String, iconUrl: String? = null): SourceInterface.Catalog {
+        if (appPreferences?.USE_NATIVE_LUA_ENGINE?.value == true) {
+            return NativeLuaSourceAdapter(context, scriptContent, this, iconUrl, null)
+        }
         val globals = createSandboxGlobals()
         registerApi(globals)
         val result = withTimeout(10_000) { globals.load(scriptContent).call() }
@@ -267,6 +463,9 @@ class LuaEngine @Inject constructor(
     }
 
     suspend fun loadFromScriptWithFileName(scriptContent: String, fileName: String, iconUrl: String? = null): SourceInterface.Catalog {
+        if (appPreferences?.USE_NATIVE_LUA_ENGINE?.value == true) {
+            return NativeLuaSourceAdapter(context, scriptContent, this, iconUrl, fileName)
+        }
         val globals = createSandboxGlobals()
         registerApi(globals)
         val result = withTimeout(10_000) { globals.load(scriptContent).call() }
@@ -1507,7 +1706,8 @@ class LuaSourceLoader @Inject constructor(
     @ApplicationContext private val context: Context,
     private val networkClient: NetworkClient,
     private val luaEngine: LuaEngine,
-    private val extensionRepository: ExtensionManager
+    private val extensionRepository: ExtensionManager,
+    private val appPreferences: AppPreferences? = null
 ) {
     // ponytail: LRU cache with fixed max size. Evicts least recently used VMs to keep native heap bounded.
     // Cost: ~100ms reload from disk .lua file on cache miss.
@@ -1646,9 +1846,14 @@ class LuaSourceLoader @Inject constructor(
         val file = luaFile(id)
         if (!file.exists()) return null
         return try {
-            val script = luaEngine.loadScript(file.readText(Charsets.UTF_8))
-            createLuaSourceAdapter(context, script, luaEngine, iconUrl, id)
-                .also { cache.put(id, it); Timber.d("Loaded from disk: $id") }
+            val content = file.readText(Charsets.UTF_8)
+            val adapter = if (appPreferences?.USE_NATIVE_LUA_ENGINE?.value == true) {
+                NativeLuaSourceAdapter(context, content, luaEngine, iconUrl, id)
+            } else {
+                val script = luaEngine.loadScript(content)
+                createLuaSourceAdapter(context, script, luaEngine, iconUrl, id)
+            }
+            adapter.also { cache.put(id, it); Timber.d("Loaded from disk: $id (native=${appPreferences?.USE_NATIVE_LUA_ENGINE?.value})") }
         } catch (e: Exception) {
             Timber.e(e, "Compile error for $id")
             null

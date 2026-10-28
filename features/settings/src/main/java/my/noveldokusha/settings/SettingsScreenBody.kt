@@ -169,7 +169,8 @@ internal fun SettingsScreenBody(
             massAddDelayMs = state.massAddDelayMs,
             onMassAddDelayChange = onMassAddDelayChange,
             downloadDelayMs = state.downloadDelayMs,
-            onDownloadDelayChange = onDownloadDelayChange
+            onDownloadDelayChange = onDownloadDelayChange,
+            useNativeLuaEngine = state.useNativeLuaEngine
         )
         HorizontalDivider()
         SettingsBackup(

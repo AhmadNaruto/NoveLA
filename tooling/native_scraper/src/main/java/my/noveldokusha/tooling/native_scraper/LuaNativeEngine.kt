@@ -4,9 +4,9 @@ import java.io.Closeable
 import java.lang.ref.Cleaner
 import java.util.concurrent.atomic.AtomicBoolean
 
-class LuaNativeEngine : Closeable {
+class LuaNativeEngine(bridge: LuaNativeBridge? = null) : Closeable {
 
-    private val statePtr: Long = LuaNative.nativeCreateState()
+    private val statePtr: Long = LuaNative.nativeCreateState(bridge)
     private val cleanerAction = LuaStateCleanerAction(statePtr)
     private val cleanable: Cleaner.Cleanable = cleaner.register(this, cleanerAction)
 
