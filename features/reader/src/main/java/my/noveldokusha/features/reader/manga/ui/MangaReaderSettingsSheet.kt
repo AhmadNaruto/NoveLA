@@ -113,6 +113,7 @@ internal fun MangaReaderSettingsSheet(
                         )
                     }
                 }
+                @Suppress("DEPRECATION")
                 TabRow(selectedTabIndex = pagerState.currentPage) {
                     Tab(
                         selected = pagerState.currentPage == 0,

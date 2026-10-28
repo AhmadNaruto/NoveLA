@@ -28,10 +28,12 @@ import my.noveldokusha.feature.local_database.tables.DownloadedPageChapter
 import my.noveldokusha.core.utils.decodePages
 import my.noveldokusha.core.utils.normalizeBookUrl
 import timber.log.Timber
+import kotlinx.coroutines.FlowPreview
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@OptIn(FlowPreview::class)
 @Singleton
 internal class ChaptersRepository @Inject constructor(
     @ApplicationContext private val context: Context,

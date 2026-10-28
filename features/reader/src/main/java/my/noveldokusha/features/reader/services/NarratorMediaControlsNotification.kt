@@ -56,8 +56,10 @@ import my.noveldokusha.features.reader.manager.ReaderManager
 import my.noveldokusha.navigation.NavigationRoutes
 import my.noveldokusha.reader.R
 import timber.log.Timber
+import kotlinx.coroutines.FlowPreview
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class)
 internal class NarratorMediaControlsNotification @Inject constructor(
     @ApplicationContext private val context: Context,
     private val notificationsCenter: NotificationsCenter,

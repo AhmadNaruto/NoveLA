@@ -31,6 +31,7 @@ internal fun SettingsAbout(
     appVersion: String,
 ) {
     val context = LocalContext.current
+    @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
     val copiedMessage = stringResource(R.string.copied_to_clipboard)
 

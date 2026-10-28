@@ -201,6 +201,7 @@ fun CatalogExplorerScreen(
                     R.string.title_extensions to Icons.Outlined.Extension,
                     R.string.migration_tab to Icons.AutoMirrored.Outlined.AltRoute,
                 )
+                @Suppress("DEPRECATION")
                 TabRow(
                     selectedTabIndex = uiState.selectedTabIndex,
                     containerColor = MaterialTheme.colorScheme.background,

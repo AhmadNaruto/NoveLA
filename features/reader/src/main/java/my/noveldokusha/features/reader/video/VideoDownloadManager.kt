@@ -64,6 +64,7 @@ internal const val STOP_REASON_PAUSED = 1
  *
  * Кэш — в filesDir (D6): «Очистить кэш» не трогает скачанные эпизоды.
  */
+@Suppress("DEPRECATION")
 @UnstableApi
 @Singleton
 class VideoDownloadManager @Inject constructor(

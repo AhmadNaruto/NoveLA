@@ -65,7 +65,7 @@ class CoverRepository @Inject constructor(
                     }
                     return@withLock false
                 }
-                if (bytes == null || bytes.isEmpty() || !isImage(bytes)) {
+                if (bytes.isEmpty() || !isImage(bytes)) {
                     if (attempt < maxAttempts) {
                         delay(500L * attempt)
                         continue

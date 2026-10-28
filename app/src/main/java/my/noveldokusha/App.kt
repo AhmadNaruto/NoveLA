@@ -106,12 +106,14 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
         }
     }
 
+    @OptIn(ExperimentalCoilApi::class)
     override fun newImageLoader(context: Context): ImageLoader {
         val diskCache = coil3.disk.DiskCache.Builder()
             .directory("${context.cacheDir.absolutePath}/${AppCacheConfig.IMAGE_DISK_CACHE_DIR}".toPath())
             .maxSizeBytes(AppCacheConfig.IMAGE_DISK_CACHE_BYTES)
             .build()
 
+        @Suppress("DEPRECATION")
         val animatorDurationScale = Settings.System.getFloat(
             contentResolver, Settings.System.ANIMATOR_DURATION_SCALE, 1f
         )
