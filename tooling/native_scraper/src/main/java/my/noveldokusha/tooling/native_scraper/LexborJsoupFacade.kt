@@ -43,14 +43,14 @@ object LexborJsoupFacade {
         sb.append(string, lastEnd, string.length)
 
         var result = sb.toString()
-        result = result
+        if (!result.contains('&')) return result
+
+        return result
             .replace("&amp;", "&")
             .replace("&lt;", "<")
             .replace("&gt;", ">")
             .replace("&quot;", "\"")
             .replace("&apos;", "'")
             .replace("&nbsp;", "\u00A0")
-
-        return result
     }
 }

@@ -106,6 +106,7 @@ class DnsOverHttps : Dns {
         private const val CACHE_TTL_MS = AppCacheConfig.DNS_CACHE_TTL_MS
         private const val NEGATIVE_TTL_MS = AppCacheConfig.DNS_NEGATIVE_TTL_MS
         private const val NEGATIVE_MAX_SIZE = AppCacheConfig.DNS_NEGATIVE_MAX_SIZE
+        private val ANSWER_REGEX = Regex("\"data\":\"(\\d+\\.\\d+\\.\\d+\\.\\d+)\"")
     }
 
     override fun lookup(hostname: String): List<InetAddress> {
@@ -183,8 +184,7 @@ class DnsOverHttps : Dns {
             }
 
             val addresses = mutableListOf<InetAddress>()
-            val answerRegex = Regex("\"data\":\"(\\d+\\.\\d+\\.\\d+\\.\\d+)\"")
-            for (match in answerRegex.findAll(body)) {
+            for (match in ANSWER_REGEX.findAll(body)) {
                 try {
                     addresses.add(InetAddress.getByName(match.groupValues[1]))
                 } catch (_: Exception) { /* skip invalid IPs */ }

@@ -19,8 +19,8 @@ object BudgetedCall
  * Ретраит только GET-запросы (идемпотентные).
  */
 class ServerErrorRetryInterceptor(
-    private val maxRetries: Int = 4,
-    private val initialBackoffMs: Long = 500
+    private val maxRetries: Int = 2,
+    private val initialBackoffMs: Long = 250
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {

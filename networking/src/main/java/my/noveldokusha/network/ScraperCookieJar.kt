@@ -71,7 +71,7 @@ class ScraperCookieJar : CookieJar {
 
                 if (cookie.expiresAt != Long.MIN_VALUE && cookie.expiresAt != Long.MAX_VALUE) {
                     val date = java.util.Date(cookie.expiresAt)
-                    val fmt = java.text.SimpleDateFormat(
+                    val fmt = GMT_DATE_FORMAT.get() ?: java.text.SimpleDateFormat(
                         "EEE, dd MMM yyyy HH:mm:ss zzz",
                         java.util.Locale.US
                     ).apply { timeZone = java.util.TimeZone.getTimeZone("GMT") }
@@ -89,5 +89,14 @@ class ScraperCookieJar : CookieJar {
         }
         // flush() один раз после батча
         cm.flush()
+    }
+
+    companion object {
+        private val GMT_DATE_FORMAT = ThreadLocal.withInitial {
+            java.text.SimpleDateFormat(
+                "EEE, dd MMM yyyy HH:mm:ss zzz",
+                java.util.Locale.US
+            ).apply { timeZone = java.util.TimeZone.getTimeZone("GMT") }
+        }
     }
 }

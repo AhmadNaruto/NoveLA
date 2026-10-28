@@ -8,10 +8,81 @@
 #include <lexbor/selectors/selectors.h>
 #include <lexbor/dom/interfaces/element.h>
 #include <lexbor/dom/interfaces/node.h>
+#include <lexbor/dom/interfaces/text.h>
 #include <lexbor/html/interfaces/document.h>
+#include <lexbor/tag/const.h>
 
 #define LOG_TAG "LexborJNI"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+typedef struct {
+    lxb_css_parser_t *parser;
+    lxb_selectors_t *selectors;
+} tl_css_engine_t;
+
+static _Thread_local tl_css_engine_t tl_engine = {NULL, NULL};
+
+static tl_css_engine_t* get_tl_engine(void) {
+    if (!tl_engine.parser) {
+        tl_engine.parser = lxb_css_parser_create();
+        if (tl_engine.parser) {
+            if (lxb_css_parser_init(tl_engine.parser, NULL) != LXB_STATUS_OK) {
+                lxb_css_parser_destroy(tl_engine.parser, true);
+                tl_engine.parser = NULL;
+                return NULL;
+            }
+        }
+    }
+    if (!tl_engine.selectors) {
+        tl_engine.selectors = lxb_selectors_create();
+        if (tl_engine.selectors) {
+            if (lxb_selectors_init(tl_engine.selectors) != LXB_STATUS_OK) {
+                lxb_selectors_destroy(tl_engine.selectors, true);
+                tl_engine.selectors = NULL;
+                return NULL;
+            }
+        }
+    }
+    return (tl_engine.parser && tl_engine.selectors) ? &tl_engine : NULL;
+}
+
+typedef struct {
+    char *data;
+    size_t length;
+    size_t capacity;
+} text_buf_t;
+
+static void text_buf_init(text_buf_t *buf, size_t initial_cap) {
+    buf->capacity = initial_cap > 0 ? initial_cap : 4096;
+    buf->length = 0;
+    buf->data = malloc(buf->capacity);
+    if (buf->data) buf->data[0] = '\0';
+}
+
+static void text_buf_append_len(text_buf_t *buf, const char *str, size_t slen) {
+    if (!str || slen == 0 || !buf->data) return;
+    if (buf->length + slen + 1 >= buf->capacity) {
+        size_t new_cap = (buf->capacity + slen) * 2;
+        char *new_data = realloc(buf->data, new_cap);
+        if (!new_data) return;
+        buf->data = new_data;
+        buf->capacity = new_cap;
+    }
+    memcpy(buf->data + buf->length, str, slen);
+    buf->length += slen;
+    buf->data[buf->length] = '\0';
+}
+
+static void text_buf_append(text_buf_t *buf, const char *str) {
+    if (str) text_buf_append_len(buf, str, strlen(str));
+}
+
+static void text_buf_free(text_buf_t *buf) {
+    free(buf->data);
+    buf->data = NULL;
+    buf->length = 0;
+    buf->capacity = 0;
+}
 
 typedef struct {
     lxb_dom_node_t **nodes;
@@ -123,6 +194,132 @@ Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeFreeDocument(
     lxb_html_document_destroy(document);
 }
 
+static void append_img_entry(text_buf_t *buf, lxb_dom_node_t *node) {
+    if (node->type != LXB_DOM_NODE_TYPE_ELEMENT) return;
+    lxb_dom_element_t *el = lxb_dom_interface_element(node);
+    size_t val_len = 0;
+    const lxb_char_t *src = lxb_dom_element_get_attribute(el, (const lxb_char_t *) "src", 3, &val_len);
+    if (!src || val_len == 0) return;
+    text_buf_append(buf, "\n\n<img src=\"");
+    text_buf_append_len(buf, (const char *) src, val_len);
+    text_buf_append(buf, "\" yrel=\"1.45\">\n\n");
+}
+
+static void inner_p_traverse(text_buf_t *buf, lxb_dom_node_t *node) {
+    for (lxb_dom_node_t *child = node->first_child; child != NULL; child = child->next) {
+        if (child->type == LXB_DOM_NODE_TYPE_ELEMENT) {
+            if (child->local_name == LXB_TAG_BR) {
+                text_buf_append(buf, "\n");
+            } else if (child->local_name == LXB_TAG_IMG) {
+                append_img_entry(buf, child);
+            } else {
+                inner_p_traverse(buf, child);
+            }
+        } else if (child->type == LXB_DOM_NODE_TYPE_TEXT) {
+            lxb_dom_character_data_t *ch_data = &lxb_dom_interface_text(child)->char_data;
+            text_buf_append_len(buf, (const char *) ch_data->data.data, ch_data->data.length);
+        }
+    }
+}
+
+static void get_p_traverse(text_buf_t *buf, lxb_dom_node_t *p_node) {
+    text_buf_t p_buf;
+    text_buf_init(&p_buf, 512);
+    inner_p_traverse(&p_buf, p_node);
+    char *start = p_buf.data;
+    size_t len = p_buf.length;
+    while (len > 0 && (unsigned char)*start <= ' ') {
+        start++;
+        len--;
+    }
+    while (len > 0 && (unsigned char)start[len - 1] <= ' ') {
+        len--;
+    }
+    if (len > 0) {
+        text_buf_append_len(buf, start, len);
+        text_buf_append(buf, "\n\n");
+    }
+    text_buf_free(&p_buf);
+}
+
+static void get_node_text_traverse(text_buf_t *buf, lxb_dom_node_t *node) {
+    for (lxb_dom_node_t *child = node->first_child; child != NULL; child = child->next) {
+        if (child->type == LXB_DOM_NODE_TYPE_ELEMENT) {
+            if (child->local_name == LXB_TAG_P) {
+                get_p_traverse(buf, child);
+            } else if (child->local_name == LXB_TAG_BR) {
+                text_buf_append(buf, "\n");
+            } else if (child->local_name == LXB_TAG_HR) {
+                text_buf_append(buf, "\n\n");
+            } else if (child->local_name == LXB_TAG_IMG) {
+                append_img_entry(buf, child);
+            } else {
+                get_node_text_traverse(buf, child);
+            }
+        } else if (child->type == LXB_DOM_NODE_TYPE_TEXT) {
+            lxb_dom_character_data_t *ch_data = &lxb_dom_interface_text(child)->char_data;
+            const char *start = (const char *) ch_data->data.data;
+            size_t len = ch_data->data.length;
+            while (len > 0 && (unsigned char)*start <= ' ') {
+                start++;
+                len--;
+            }
+            while (len > 0 && (unsigned char)start[len - 1] <= ' ') {
+                len--;
+            }
+            if (len > 0) {
+                text_buf_append_len(buf, start, len);
+                text_buf_append(buf, "\n\n");
+            }
+        }
+    }
+}
+
+JNIEXPORT jstring JNICALL
+Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeExtractContentText(
+    JNIEnv *env, jclass clazz, jlong node_ptr)
+{
+    if (!node_ptr) return (*env)->NewStringUTF(env, "");
+    lxb_dom_node_t *root = (lxb_dom_node_t *) (intptr_t) node_ptr;
+
+    text_buf_t buf;
+    text_buf_init(&buf, 16384);
+
+    for (lxb_dom_node_t *child = root->first_child; child != NULL; child = child->next) {
+        if (child->type == LXB_DOM_NODE_TYPE_ELEMENT) {
+            if (child->local_name == LXB_TAG_P) {
+                get_p_traverse(&buf, child);
+            } else if (child->local_name == LXB_TAG_BR) {
+                text_buf_append(&buf, "\n");
+            } else if (child->local_name == LXB_TAG_HR) {
+                text_buf_append(&buf, "\n\n");
+            } else if (child->local_name == LXB_TAG_IMG) {
+                append_img_entry(&buf, child);
+            } else {
+                get_node_text_traverse(&buf, child);
+            }
+        } else if (child->type == LXB_DOM_NODE_TYPE_TEXT) {
+            lxb_dom_character_data_t *ch_data = &lxb_dom_interface_text(child)->char_data;
+            const char *start = (const char *) ch_data->data.data;
+            size_t len = ch_data->data.length;
+            while (len > 0 && (unsigned char)*start <= ' ') {
+                start++;
+                len--;
+            }
+            while (len > 0 && (unsigned char)start[len - 1] <= ' ') {
+                len--;
+            }
+            if (len > 0) {
+                text_buf_append_len(&buf, start, len);
+            }
+        }
+    }
+
+    jstring result = (*env)->NewStringUTF(env, buf.data ? buf.data : "");
+    text_buf_free(&buf);
+    return result;
+}
+
 JNIEXPORT jlongArray JNICALL
 Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeSelect(
     JNIEnv *env, jclass clazz, jlong node_ptr, jstring css_query)
@@ -134,35 +331,25 @@ Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeSelect(
     if (!query_c) return NULL;
     size_t query_len = (*env)->GetStringUTFLength(env, css_query);
 
-    lxb_css_parser_t *parser = lxb_css_parser_create();
-    lxb_status_t status = lxb_css_parser_init(parser, NULL);
-    if (status != LXB_STATUS_OK) {
+    tl_css_engine_t *engine = get_tl_engine();
+    if (!engine) {
         (*env)->ReleaseStringUTFChars(env, css_query, query_c);
         return NULL;
     }
 
-    lxb_selectors_t *selectors = lxb_selectors_create();
-    status = lxb_selectors_init(selectors);
-    if (status != LXB_STATUS_OK) {
-        lxb_css_parser_destroy(parser, true);
-        (*env)->ReleaseStringUTFChars(env, css_query, query_c);
-        return NULL;
-    }
-
-    lxb_css_selector_list_t *list = lxb_css_selectors_parse(parser, (const lxb_char_t *) query_c, query_len);
+    lxb_css_selector_list_t *list = lxb_css_selectors_parse(engine->parser, (const lxb_char_t *) query_c, query_len);
     (*env)->ReleaseStringUTFChars(env, css_query, query_c);
 
-    if (!list || parser->status != LXB_STATUS_OK) {
-        lxb_selectors_destroy(selectors, true);
-        lxb_css_parser_destroy(parser, true);
+    if (!list || engine->parser->status != LXB_STATUS_OK) {
+        lxb_css_parser_clean(engine->parser);
         return NULL;
     }
 
     lexbor_select_ctx_t ctx = { .nodes = NULL, .count = 0, .capacity = 0, .find_first_only = false };
-    status = lxb_selectors_find(selectors, root_node, list, select_callback, &ctx);
+    lxb_status_t status = lxb_selectors_find(engine->selectors, root_node, list, select_callback, &ctx);
 
-    lxb_selectors_destroy(selectors, true);
-    lxb_css_parser_destroy(parser, true);
+    lxb_selectors_clean(engine->selectors);
+    lxb_css_parser_clean(engine->parser);
     lxb_css_selector_list_destroy_memory(list);
 
     if (status != LXB_STATUS_OK || ctx.count == 0) {
@@ -195,35 +382,25 @@ Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeSelectFirst(
     if (!query_c) return 0;
     size_t query_len = (*env)->GetStringUTFLength(env, css_query);
 
-    lxb_css_parser_t *parser = lxb_css_parser_create();
-    lxb_status_t status = lxb_css_parser_init(parser, NULL);
-    if (status != LXB_STATUS_OK) {
+    tl_css_engine_t *engine = get_tl_engine();
+    if (!engine) {
         (*env)->ReleaseStringUTFChars(env, css_query, query_c);
         return 0;
     }
 
-    lxb_selectors_t *selectors = lxb_selectors_create();
-    status = lxb_selectors_init(selectors);
-    if (status != LXB_STATUS_OK) {
-        lxb_css_parser_destroy(parser, true);
-        (*env)->ReleaseStringUTFChars(env, css_query, query_c);
-        return 0;
-    }
-
-    lxb_css_selector_list_t *list = lxb_css_selectors_parse(parser, (const lxb_char_t *) query_c, query_len);
+    lxb_css_selector_list_t *list = lxb_css_selectors_parse(engine->parser, (const lxb_char_t *) query_c, query_len);
     (*env)->ReleaseStringUTFChars(env, css_query, query_c);
 
-    if (!list || parser->status != LXB_STATUS_OK) {
-        lxb_selectors_destroy(selectors, true);
-        lxb_css_parser_destroy(parser, true);
+    if (!list || engine->parser->status != LXB_STATUS_OK) {
+        lxb_css_parser_clean(engine->parser);
         return 0;
     }
 
     lexbor_select_ctx_t ctx = { .nodes = NULL, .count = 0, .capacity = 0, .find_first_only = true };
-    status = lxb_selectors_find(selectors, root_node, list, select_callback, &ctx);
+    lxb_status_t status = lxb_selectors_find(engine->selectors, root_node, list, select_callback, &ctx);
 
-    lxb_selectors_destroy(selectors, true);
-    lxb_css_parser_destroy(parser, true);
+    lxb_selectors_clean(engine->selectors);
+    lxb_css_parser_clean(engine->parser);
     lxb_css_selector_list_destroy_memory(list);
 
     jlong res = 0;
@@ -269,14 +446,20 @@ Java_my_noveldokusha_tooling_native_1scraper_LexborNative_nativeGetAttr(
 
     if (!val) return (*env)->NewStringUTF(env, "");
 
-    char *buf = malloc(value_len + 1);
-    if (!buf) return (*env)->NewStringUTF(env, "");
-    memcpy(buf, val, value_len);
-    buf[value_len] = '\0';
-
-    jstring res = (*env)->NewStringUTF(env, buf);
-    free(buf);
-    return res;
+    if (value_len < 256) {
+        char stack_buf[256];
+        memcpy(stack_buf, val, value_len);
+        stack_buf[value_len] = '\0';
+        return (*env)->NewStringUTF(env, stack_buf);
+    } else {
+        char *buf = malloc(value_len + 1);
+        if (!buf) return (*env)->NewStringUTF(env, "");
+        memcpy(buf, val, value_len);
+        buf[value_len] = '\0';
+        jstring res = (*env)->NewStringUTF(env, buf);
+        free(buf);
+        return res;
+    }
 }
 
 JNIEXPORT void JNICALL

@@ -28,8 +28,14 @@ open class LexborElement(
     fun className(): String = attr("class")
 
     fun hasClass(className: String): Boolean {
-        val classes = className().split(Regex("""\s+"""))
+        val classAttr = className()
+        if (classAttr.isEmpty()) return false
+        val classes = WHITESPACE_REGEX.split(classAttr)
         return classes.contains(className)
+    }
+
+    companion object {
+        private val WHITESPACE_REGEX = Regex("""\s+""")
     }
 
     fun nextElementSiblings(): LexborElements {

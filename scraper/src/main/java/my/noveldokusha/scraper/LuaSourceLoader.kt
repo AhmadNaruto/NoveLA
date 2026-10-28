@@ -1059,14 +1059,12 @@ class LuaEngine @Inject constructor(
         return null
     }
 
-    private fun elementToTable(el: LexborElement): LuaTable {
-        val t = LuaTable()
-        t.set("__element", org.luaj.vm2.LuaUserdata(el))
-
+    private val elementMetatable: LuaTable by lazy {
         val mt = LuaTable()
         mt.set(LuaValue.INDEX, object : TwoArgFunction() {
             override fun call(table: LuaValue, key: LuaValue): LuaValue {
                 val keyStr = key.optjstring(null) ?: return LuaValue.NIL
+                val el = lexborElementFromValue(table) ?: return LuaValue.NIL
                 val value = when (keyStr) {
                     "text" -> LuaValue.valueOf(el.text())
                     "html" -> LuaValue.valueOf(el.html())
@@ -1114,7 +1112,13 @@ class LuaEngine @Inject constructor(
                 return value
             }
         })
-        t.setmetatable(mt)
+        mt
+    }
+
+    private fun elementToTable(el: LexborElement): LuaTable {
+        val t = LuaTable()
+        t.set("__element", org.luaj.vm2.LuaUserdata(el))
+        t.setmetatable(elementMetatable)
         return t
     }
 

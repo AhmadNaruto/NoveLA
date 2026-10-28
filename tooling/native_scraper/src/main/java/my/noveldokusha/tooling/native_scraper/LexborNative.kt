@@ -74,4 +74,7 @@ object LexborNative {
 
     @JvmStatic
     external fun nativeGetPrevElementSibling(nodePtr: Long): Long
+
+    @JvmStatic
+    external fun nativeExtractContentText(nodePtr: Long): String
 }
