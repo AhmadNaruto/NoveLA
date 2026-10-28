@@ -8,8 +8,26 @@ android {
     defaultConfig {
         externalNativeBuild {
             cmake {
-                cFlags("-O3", "-std=c11")
-                cppFlags("-O3", "-std=c++17")
+                cFlags(
+                    "-O3",
+                    "-std=c11",
+                    "-flto",
+                    "-fvisibility=hidden",
+                    "-ffunction-sections",
+                    "-fdata-sections",
+                )
+                cppFlags(
+                    "-O3",
+                    "-std=c++17",
+                    "-flto",
+                    "-fvisibility=hidden",
+                    "-ffunction-sections",
+                    "-fdata-sections",
+                )
+                arguments(
+                    "-DANDROID_STL=c++_static",
+                    "-DCMAKE_SHARED_LINKER_FLAGS=-flto -Wl,--gc-sections -Wl,--exclude-libs,ALL",
+                )
             }
         }
     }
