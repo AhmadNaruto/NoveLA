@@ -1031,6 +1031,16 @@ static void register_bridge_apis(lua_State *L) {
     lua_pop(L, 1);
 }
 
+static jmethodID safe_get_method_id(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
+    jmethodID mid = (*env)->GetMethodID(env, clazz, name, sig);
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        LOGE("Failed to find bridge method %s%s", name, sig);
+        return NULL;
+    }
+    return mid;
+}
+
 // -----------------------------------------------------------------------------
 // JNI Exported Functions
 // -----------------------------------------------------------------------------
@@ -1051,17 +1061,18 @@ Java_my_noveldokusha_tooling_native_1scraper_LuaNative_nativeCreateState(
         holder->bridge_ref = (*env)->NewGlobalRef(env, bridge);
         jclass bclass = (*env)->GetObjectClass(env, bridge);
         if (bclass) {
-            holder->http_get_mid       = (*env)->GetMethodID(env, bclass, "httpGet", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
-            holder->http_post_mid      = (*env)->GetMethodID(env, bclass, "httpPost", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
-            holder->http_get_batch_mid = (*env)->GetMethodID(env, bclass, "httpGetBatch", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
-            holder->get_pref_mid       = (*env)->GetMethodID(env, bclass, "getPreference", "(Ljava/lang/String;)Ljava/lang/String;");
-            holder->set_pref_mid       = (*env)->GetMethodID(env, bclass, "setPreference", "(Ljava/lang/String;Ljava/lang/String;)V");
-            holder->get_cookies_mid    = (*env)->GetMethodID(env, bclass, "getCookies", "(Ljava/lang/String;)Ljava/lang/String;");
-            holder->set_cookies_mid    = (*env)->GetMethodID(env, bclass, "setCookies", "(Ljava/lang/String;Ljava/lang/String;)V");
-            holder->get_storage_mid    = (*env)->GetMethodID(env, bclass, "getLocalStorage", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
-            holder->show_error_mid     = (*env)->GetMethodID(env, bclass, "showError", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
-            holder->log_mid            = (*env)->GetMethodID(env, bclass, "log", "(ILjava/lang/String;)V");
-            holder->sleep_mid          = (*env)->GetMethodID(env, bclass, "sleep", "(J)V");
+            holder->http_get_mid       = safe_get_method_id(env, bclass, "httpGet", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
+            holder->http_post_mid      = safe_get_method_id(env, bclass, "httpPost", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
+            holder->http_get_batch_mid = safe_get_method_id(env, bclass, "httpGetBatch", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
+            holder->get_pref_mid       = safe_get_method_id(env, bclass, "getPreference", "(Ljava/lang/String;)Ljava/lang/String;");
+            holder->set_pref_mid       = safe_get_method_id(env, bclass, "setPreference", "(Ljava/lang/String;Ljava/lang/String;)V");
+            holder->get_cookies_mid    = safe_get_method_id(env, bclass, "getCookies", "(Ljava/lang/String;)Ljava/lang/String;");
+            holder->set_cookies_mid    = safe_get_method_id(env, bclass, "setCookies", "(Ljava/lang/String;Ljava/lang/String;)V");
+            holder->get_storage_mid    = safe_get_method_id(env, bclass, "getLocalStorage", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
+            holder->show_error_mid     = safe_get_method_id(env, bclass, "showError", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+            holder->log_mid            = safe_get_method_id(env, bclass, "log", "(ILjava/lang/String;)V");
+            holder->sleep_mid          = safe_get_method_id(env, bclass, "sleep", "(J)V");
+            (*env)->DeleteLocalRef(env, bclass);
         }
     }
 

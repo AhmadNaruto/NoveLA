@@ -1,16 +1,16 @@
 package my.noveldokusha.tooling.native_scraper
 
 import java.io.Closeable
-import java.lang.ref.Cleaner
 import java.util.concurrent.atomic.AtomicBoolean
 
 class LuaNativeEngine(bridge: LuaNativeBridge? = null) : Closeable {
 
-    private val statePtr: Long = LuaNative.nativeCreateState(bridge)
-    private val cleanerAction = LuaStateCleanerAction(statePtr)
-    private val cleanable: Cleaner.Cleanable = cleaner.register(this, cleanerAction)
+    private val closed = AtomicBoolean(false)
+    private val statePtr: Long
 
     init {
+        check(LuaNative.isAvailable) { "libnative_scraper.so is not available on this device" }
+        statePtr = LuaNative.nativeCreateState(bridge)
         require(statePtr != 0L) { "Failed to initialize Lua native state" }
     }
 
@@ -77,22 +77,14 @@ class LuaNativeEngine(bridge: LuaNativeBridge? = null) : Closeable {
     }
 
     override fun close() {
-        cleanable.clean()
-    }
-
-    private class LuaStateCleanerAction(private val ptr: Long) : Runnable {
-        private val closed = AtomicBoolean(false)
-
-        override fun run() {
-            if (closed.compareAndSet(false, true)) {
-                if (ptr != 0L) {
-                    LuaNative.nativeCloseState(ptr)
-                }
+        if (closed.compareAndSet(false, true)) {
+            if (statePtr != 0L) {
+                LuaNative.nativeCloseState(statePtr)
             }
         }
     }
 
-    companion object {
-        private val cleaner = Cleaner.create()
+    protected fun finalize() {
+        close()
     }
 }

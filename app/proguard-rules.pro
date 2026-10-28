@@ -24,10 +24,23 @@
 
 -keep class org.luaj.vm2.** { *; }
 
+-keep class my.noveldokusha.scraper.LuaEngine { *; }
 -keep class my.noveldokusha.scraper.LuaEngine$* { *; }
 -keep class my.noveldokusha.scraper.LuaSourceAdapter { *; }
 -keep class my.noveldokusha.scraper.LuaSourceAdapterConfigurable { *; }
+-keep class my.noveldokusha.scraper.NativeLuaSourceAdapter { *; }
 -keep interface my.noveldokusha.scraper.SourceInterface** { *; }
+
+# =============================================================================
+# NATIVE SCRAPER (Lua 5.4 + Lexbor JNI)
+# =============================================================================
+
+-keep class my.noveldokusha.tooling.native_scraper.** { *; }
+-keepclassmembers class my.noveldokusha.tooling.native_scraper.** { *; }
+-keep interface my.noveldokusha.tooling.native_scraper.LuaNativeBridge { *; }
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
 
 # =============================================================================
 # МОДЕЛИ ДАННЫХ — цели Gson/SnakeYAML-рефлексии (имена полей должны сохраниться)

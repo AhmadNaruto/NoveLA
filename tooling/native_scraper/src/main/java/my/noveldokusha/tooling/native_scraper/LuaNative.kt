@@ -1,12 +1,19 @@
 package my.noveldokusha.tooling.native_scraper
 
 object LuaNative {
+    val isAvailable: Boolean
+
     init {
+        var loaded = false
         try {
             System.loadLibrary("native_scraper")
+            loaded = true
         } catch (e: UnsatisfiedLinkError) {
             e.printStackTrace()
+        } catch (e: SecurityException) {
+            e.printStackTrace()
         }
+        isAvailable = loaded
     }
 
     @JvmStatic

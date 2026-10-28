@@ -218,6 +218,9 @@ internal fun SettingsNetwork(
                             checkedTrackColor = colorAccent().copy(alpha = 0.4f),
                         )
                     )
+                },
+                onClick = {
+                    useNativeLuaEngine.value = !useNativeLuaEngine.value
                 }
             )
         }

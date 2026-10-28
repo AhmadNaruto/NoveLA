@@ -447,7 +447,11 @@ class LuaEngine @Inject constructor(
 
     suspend fun loadFromScript(scriptContent: String, iconUrl: String? = null): SourceInterface.Catalog {
         if (appPreferences?.USE_NATIVE_LUA_ENGINE?.value == true) {
-            return NativeLuaSourceAdapter(context, scriptContent, this, iconUrl, null)
+            try {
+                return NativeLuaSourceAdapter(context, scriptContent, this, iconUrl, null)
+            } catch (t: Throwable) {
+                Timber.e(t, "Failed to load script with NativeLuaSourceAdapter, falling back to LuaJ")
+            }
         }
         val globals = createSandboxGlobals()
         registerApi(globals)
@@ -464,7 +468,11 @@ class LuaEngine @Inject constructor(
 
     suspend fun loadFromScriptWithFileName(scriptContent: String, fileName: String, iconUrl: String? = null): SourceInterface.Catalog {
         if (appPreferences?.USE_NATIVE_LUA_ENGINE?.value == true) {
-            return NativeLuaSourceAdapter(context, scriptContent, this, iconUrl, fileName)
+            try {
+                return NativeLuaSourceAdapter(context, scriptContent, this, iconUrl, fileName)
+            } catch (t: Throwable) {
+                Timber.e(t, "Failed to load script with NativeLuaSourceAdapter, falling back to LuaJ")
+            }
         }
         val globals = createSandboxGlobals()
         registerApi(globals)
@@ -1848,13 +1856,19 @@ class LuaSourceLoader @Inject constructor(
         return try {
             val content = file.readText(Charsets.UTF_8)
             val adapter = if (appPreferences?.USE_NATIVE_LUA_ENGINE?.value == true) {
-                NativeLuaSourceAdapter(context, content, luaEngine, iconUrl, id)
+                try {
+                    NativeLuaSourceAdapter(context, content, luaEngine, iconUrl, id)
+                } catch (t: Throwable) {
+                    Timber.e(t, "Native Lua engine failed for $id, falling back to LuaJ")
+                    val script = luaEngine.loadScript(content)
+                    createLuaSourceAdapter(context, script, luaEngine, iconUrl, id)
+                }
             } else {
                 val script = luaEngine.loadScript(content)
                 createLuaSourceAdapter(context, script, luaEngine, iconUrl, id)
             }
             adapter.also { cache.put(id, it); Timber.d("Loaded from disk: $id (native=${appPreferences?.USE_NATIVE_LUA_ENGINE?.value})") }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Timber.e(e, "Compile error for $id")
             null
         }
