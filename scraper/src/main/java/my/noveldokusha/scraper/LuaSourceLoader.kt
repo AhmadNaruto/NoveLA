@@ -335,7 +335,7 @@ class LuaEngine @Inject constructor(
                     ?: "application/x-www-form-urlencoded; charset=utf-8".toMediaType()
                 val requestBody = (body ?: "").toRequestBody(mediaType)
 
-                val builder = postRequest(url, requestBody)
+                val builder = Request.Builder().url(url).post(requestBody)
                 headers.forEach { (k, v) -> builder.header(k, v) }
                 sourceId?.let { sid -> if (sid.isNotBlank()) builder.tag(String::class.java, "source:$sid") }
 
@@ -386,7 +386,7 @@ class LuaEngine @Inject constructor(
 
     override fun getCookies(url: String): String? {
         return runCatching {
-            val cookies = networkClient.client.cookieJar.loadForRequest(url.toHttpUrl())
+            val cookies = networkClient.cookieJar.loadForRequest(url.toHttpUrl())
             cookies.joinToString("; ") { "${it.name}=${it.value}" }
         }.getOrNull()
     }
@@ -403,7 +403,7 @@ class LuaEngine @Inject constructor(
                     .value(value.asString)
                     .build()
             }
-            networkClient.client.cookieJar.saveFromResponse(httpUrl, cookieList)
+            networkClient.cookieJar.saveFromResponse(httpUrl, cookieList)
         }
     }
 

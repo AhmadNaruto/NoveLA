@@ -52,7 +52,8 @@ open class NativeLuaSourceAdapter(
     override val catalogUrl: String get() = baseUrl
     override val charset: String get() = metadata.charset ?: "UTF-8"
     override val contentType: String get() = metadata.contentType
-    override val referer: String get() = metadata.referer
+    private var refererVal: String = ""
+    override val referer: String get() = refererVal
 
     override val language: LanguageCode? = when (metadata.language.lowercase().trim()) {
         "mtl", "multi" -> LanguageCode.MTL
@@ -86,7 +87,8 @@ open class NativeLuaSourceAdapter(
                     content_type = content_type or contentType or "",
                     icon = icon or "",
                     referer = referer or "",
-                    version = version or "1.0.0"
+                    version = version or "1.0.0",
+                    description = description or ""
                 }
             end
         """.trimIndent()
@@ -97,15 +99,17 @@ open class NativeLuaSourceAdapter(
                 val obj = JsonParser.parseString(json).asJsonObject
                 val rawContentType = obj.get("content_type")?.asString.orEmpty().lowercase()
                 val ct = rawContentType.takeIf { it == "manga" || it == "novel" || it == "video" } ?: ""
+                refererVal = obj.get("referer")?.asString.orEmpty().trim()
                 return SourceMetadata(
                     id = obj.get("id")?.asString.orEmpty().ifEmpty { fileName?.let { "lua_$it" } ?: "lua_native" },
                     name = obj.get("name")?.asString.orEmpty().ifEmpty { fileName?.substringBeforeLast('.') ?: "Native Source" },
+                    version = obj.get("version")?.asString.orEmpty().ifEmpty { "1.0.0" },
+                    description = obj.get("description")?.asString.orEmpty(),
                     url = obj.get("baseUrl")?.asString.orEmpty(),
+                    icon = obj.get("icon")?.asString.orEmpty(),
                     language = obj.get("language")?.asString.orEmpty().ifEmpty { "en" },
                     charset = obj.get("charset")?.asString.orEmpty().ifEmpty { "UTF-8" },
                     contentType = ct,
-                    icon = obj.get("icon")?.asString.orEmpty(),
-                    referer = obj.get("referer")?.asString.orEmpty().trim(),
                 )
             } catch (e: Exception) {
                 Timber.w(e, "Failed to parse native metadata JSON: $json")
@@ -114,7 +118,10 @@ open class NativeLuaSourceAdapter(
         return SourceMetadata(
             id = fileName?.let { "lua_$it" } ?: "lua_native",
             name = fileName?.substringBeforeLast('.') ?: "Native Source",
+            version = "1.0.0",
+            description = "",
             url = "",
+            icon = "",
             language = "en",
             charset = "UTF-8",
             contentType = "",

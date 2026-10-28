@@ -1,5 +1,6 @@
 package my.noveldokusha.scraper
 
+import my.noveldokusha.core.BookTextMapper
 import my.noveldokusha.tooling.native_scraper.LexborNative
 import my.noveldokusha.tooling.native_scraper.LexborNode
 import org.jsoup.nodes.Element
