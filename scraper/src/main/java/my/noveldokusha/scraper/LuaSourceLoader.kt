@@ -128,6 +128,13 @@ class LuaEngine @Inject constructor(
     }
 
     /**
+     * Membersihkan cache memori respon HTTP Lua saat sistem Android menerima sinyal low memory / trim memory.
+     */
+    fun clearMemoryCache() {
+        httpGetCache.clear()
+    }
+
+    /**
      * Каталог кэша скомпилированного байткода. Загрузка .lbc вместо текстовой
      * компиляции — главный выигрыш холодного старта: ~1.5-2с на все плагины
      * превращаются в чтение десятков КБ с диска.
@@ -859,6 +866,9 @@ class LuaEngine @Inject constructor(
         override fun call(arg: LuaValue): LuaValue = try {
             val doc = Jsoup.parse(arg.checkjstring())
             LuaTable().also { t ->
+                // Simpan __element dari Document (turunan Element) agar kueri turunan (html_select, dsb)
+                // dapat mencari di seluruh DOM tree (head & body) langsung tanpa re-parsing HTML string.
+                t.set("__element", org.luaj.vm2.LuaUserdata(doc))
                 t.set("text",  LuaValue.valueOf(doc.text()))
                 t.set("html",  LuaValue.valueOf(doc.html()))
                 t.set("title", LuaValue.valueOf(doc.title()))
@@ -991,16 +1001,14 @@ class LuaEngine @Inject constructor(
         return null
     }
 
-    // Converts a Jsoup Element to a LuaTable lazily using Lua metatables.
-    // Eagerly extracting text/html for all elements on every select call created severe GC pressure
-    // and slow JVM execution. Now properties are evaluated on-demand and cached in the table.
-    private fun elementToTable(el: Element): LuaTable {
-        val t = LuaTable()
-        t.set("__element", org.luaj.vm2.LuaUserdata(el))
-
+    // Shared singleton metatable for Jsoup Element LuaTable.
+    // Mengurangi alokasi heap secara drastis: menghilangkan pembuatan tabel metatable dan closure baru
+    // untuk setiap node/elemen HTML yang diproses oleh Lua.
+    private val sharedElementMetatable: LuaTable by lazy {
         val mt = LuaTable()
         mt.set(LuaValue.INDEX, object : TwoArgFunction() {
             override fun call(table: LuaValue, key: LuaValue): LuaValue {
+                val el = elementFromValue(table) ?: return LuaValue.NIL
                 val keyStr = key.optjstring(null) ?: return LuaValue.NIL
                 val value = when (keyStr) {
                     "text" -> LuaValue.valueOf(el.text())
@@ -1012,13 +1020,13 @@ class LuaEngine @Inject constructor(
                     "id" -> LuaValue.valueOf(el.attr("id"))
                     "get_text" -> object : ZeroArgFunction() { override fun call() = LuaValue.valueOf(el.text()) }
                     "get_html" -> object : ZeroArgFunction() { override fun call() = LuaValue.valueOf(el.html()) }
-                    // Lua `el:attr("x")` == `el.attr(el, "x")` — колонический вызов добавляет self
-                    // первым аргументом. Берём последний аргумент, чтобы поддерживать оба стиля.
+                    // Lua `el:attr("x")` == `el.attr(el, "x")` — kolonisasi menambahkan self sebagai argumen pertama
                     "attr" -> object : VarArgFunction() {
                         override fun invoke(args: Varargs): Varargs {
+                            val targetEl = (if (args.narg() >= 2) elementFromValue(args.arg(1)) else null) ?: el
                             val name = if (args.narg() >= 2) args.arg(2) else args.arg(1)
                             return try {
-                                LuaValue.valueOf(el.attr(name.checkjstring()))
+                                LuaValue.valueOf(targetEl.attr(name.checkjstring()))
                             } catch (_: Exception) { LuaValue.valueOf("") }
                         }
                     }
@@ -1027,9 +1035,10 @@ class LuaEngine @Inject constructor(
                     }
                     "select" -> object : VarArgFunction() {
                         override fun invoke(args: Varargs): Varargs {
+                            val targetEl = (if (args.narg() >= 2) elementFromValue(args.arg(1)) else null) ?: el
                             val selector = if (args.narg() >= 2) args.arg(2) else args.arg(1)
                             return try {
-                                val elems = el.select(selector.checkjstring())
+                                val elems = targetEl.select(selector.checkjstring())
                                 LuaTable().also { t2 -> elems.forEachIndexed { i, e -> t2.set(i + 1, elementToTable(e)) } }
                             } catch (_: Exception) { LuaTable() }
                         }
@@ -1042,7 +1051,15 @@ class LuaEngine @Inject constructor(
                 return value
             }
         })
-        t.setmetatable(mt)
+        mt
+    }
+
+    // Converts a Jsoup Element to a LuaTable lazily using the shared singleton Lua metatable.
+    // Menghilangkan alokasi ganda metatable per elemen yang sebelumnya memicu GC churn parah.
+    private fun elementToTable(el: Element): LuaTable {
+        val t = LuaTable()
+        t.set("__element", org.luaj.vm2.LuaUserdata(el))
+        t.setmetatable(sharedElementMetatable)
         return t
     }
 
@@ -1310,6 +1327,15 @@ class LuaSourceLoader @Inject constructor(
         cache.evictAll()
         luaEngine.clearBytecodeCache()
         Timber.d("Lua source cache cleared")
+    }
+
+    /**
+     * Membebaskan referensi cache skrip dan respon Lua saat sistem Android kekurangan memori (onTrimMemory).
+     */
+    fun trimMemory() {
+        cache.evictAll()
+        luaEngine.clearMemoryCache()
+        Timber.d("LuaSourceLoader: memory trimmed via onTrimMemory")
     }
 
     fun scriptFile(id: String): File = luaFile(id)
