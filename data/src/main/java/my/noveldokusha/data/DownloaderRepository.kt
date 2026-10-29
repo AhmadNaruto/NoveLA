@@ -37,7 +37,7 @@ class DownloaderRepository @Inject constructor(
         this is Response.Error && exception is my.noveldokusha.scraper.domain.PluginShowErrorException -> {
             val e = exception as my.noveldokusha.scraper.domain.PluginShowErrorException
             Response.Error(
-                message = e.message ?: "Error",
+                message = e.message,
                 exception = e,
                 pluginErrorTitle = e.errorTitle,
                 pluginErrorMessage = e.message,
@@ -258,7 +258,7 @@ class DownloaderRepository @Inject constructor(
 
                         Timber.d("bookChapter: setting tag=source:${source.id} for url=$chapterPageUrl (reusedDoc=$canReuseDoc)")
                         // Gunakan doc yang sudah diunduh jika direct match valid, jika tidak baru fetch chapterPageUrl
-                        val doc = if (canReuseDoc) docFromDirectFetch!! else networkClient.call(
+                        val doc = if (canReuseDoc) docFromDirectFetch else networkClient.call(
                             getRequest(chapterPageUrl).apply {
                                 headers.forEach { (k, v) -> header(k, v) }
                                 cacheControl(CacheControl.FORCE_NETWORK)
@@ -354,7 +354,7 @@ class DownloaderRepository @Inject constructor(
             val finalResult = if (result is Response.Error && result.exception is my.noveldokusha.scraper.domain.PluginShowErrorException) {
                 val e = result.exception as my.noveldokusha.scraper.domain.PluginShowErrorException
                 Response.Error(
-                    message = e.message ?: "Error",
+                    message = e.message,
                     exception = e,
                     pluginErrorTitle = e.errorTitle,
                     pluginErrorMessage = e.message,

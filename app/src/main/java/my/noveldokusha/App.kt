@@ -70,10 +70,6 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
             // Membebaskan alokasi memori Coil saat background atau memori kritis
             if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
                 SingletonImageLoader.get(this).memoryCache?.clear()
-            } else if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
-                SingletonImageLoader.get(this).memoryCache?.let { cache ->
-                    cache.trimToSize(cache.size / 2)
-                }
             }
         }
         // Pangkas LRU cache sumber dan respons Lua
@@ -138,6 +134,7 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
         }
     }
 
+    @OptIn(ExperimentalCoilApi::class)
     override fun newImageLoader(context: Context): ImageLoader {
         val diskCache = coil3.disk.DiskCache.Builder()
             .directory("${context.cacheDir.absolutePath}/${AppCacheConfig.IMAGE_DISK_CACHE_DIR}".toPath())
@@ -154,8 +151,8 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
             .maxSizePercent(context, memPercent)
             .build()
 
-        val animatorDurationScale = Settings.System.getFloat(
-            contentResolver, Settings.System.ANIMATOR_DURATION_SCALE, 1f
+        val animatorDurationScale = Settings.Global.getFloat(
+            contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f
         )
 
         val sharedBuilder = ImageLoader.Builder(context)

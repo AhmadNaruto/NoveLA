@@ -897,7 +897,7 @@ internal class MangaReaderActivity : ComponentActivity() {
                         modifier = Modifier.size(36.dp),
                     ) {
                         Icon(
-                            Icons.Filled.List,
+                            Icons.AutoMirrored.Filled.List,
                             contentDescription = stringResource(R.string.manga_reader_chapter_list),
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
