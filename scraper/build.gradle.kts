@@ -26,6 +26,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     // Lua and YAML support
+    implementation(files("libs/lua-android-release.aar"))
     implementation(libs.luajvm)
     implementation(libs.snakeyaml)
 

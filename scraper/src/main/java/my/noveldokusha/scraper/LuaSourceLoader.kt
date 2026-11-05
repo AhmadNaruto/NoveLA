@@ -1545,6 +1545,7 @@ class LuaSourceLoader @Inject constructor(
     @ApplicationContext private val context: Context,
     private val networkClient: NetworkClient,
     private val luaEngine: LuaEngine,
+    private val nativeLuaEngine: NativeLuaEngine,
     private val extensionRepository: ExtensionManager
 ) {
     // ponytail: LRU cache with fixed max size. Evicts least recently used VMs to keep native heap bounded.
@@ -1562,6 +1563,7 @@ class LuaSourceLoader @Inject constructor(
     fun clearCache() {
         cache.evictAll()
         luaEngine.clearBytecodeCache()
+        nativeLuaEngine.clearBytecodeCache()
         Timber.d("Lua source cache cleared")
     }
 
@@ -1571,6 +1573,7 @@ class LuaSourceLoader @Inject constructor(
     fun trimMemory() {
         cache.evictAll()
         luaEngine.clearMemoryCache()
+        nativeLuaEngine.clearMemoryCache()
         Timber.d("LuaSourceLoader: memory trimmed via onTrimMemory")
     }
 
@@ -1693,9 +1696,15 @@ class LuaSourceLoader @Inject constructor(
         val file = luaFile(id)
         if (!file.exists()) return null
         return try {
-            val script = luaEngine.loadScript(file.readText(Charsets.UTF_8))
-            createLuaSourceAdapter(context, script, luaEngine, iconUrl, id)
-                .also { cache.put(id, it); Timber.d("Loaded from disk: $id") }
+            val scriptContent = file.readText(Charsets.UTF_8)
+            val source = try {
+                nativeLuaEngine.loadSourceFromScript(scriptContent, id, iconUrl)
+            } catch (e: Throwable) {
+                Timber.w(e, "NativeLuaEngine failed for $id, falling back to LuaJ")
+                val script = luaEngine.loadScript(scriptContent)
+                createLuaSourceAdapter(context, script, luaEngine, iconUrl, id)
+            }
+            source.also { cache.put(id, it); Timber.d("Loaded from disk (native/fallback): $id") }
         } catch (e: Exception) {
             Timber.e(e, "Compile error for $id")
             null
