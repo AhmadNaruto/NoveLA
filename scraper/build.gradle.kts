@@ -9,6 +9,10 @@ plugins {
 
 android {
     namespace = "my.noveldokusha.scraper"
+
+    defaultConfig {
+        consumerProguardFiles("consumer-rules.pro")
+    }
 }
 
 dependencies {
@@ -26,7 +30,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     // Lua and YAML support
-    implementation(files("libs/lua-android-release.aar"))
+    implementation(files("libs/lua-android.jar"))
     implementation(libs.luajvm)
     implementation(libs.snakeyaml)
 
