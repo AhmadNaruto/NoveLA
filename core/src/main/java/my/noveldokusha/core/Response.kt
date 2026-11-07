@@ -11,7 +11,7 @@ sealed class Response<out T> {
     data class Success<out T>(val data: T) : Response<T>()
     data class Error(
         val message: String,
-        val exception: Exception,
+        val exception: Exception = Exception(message),
         val pluginErrorTitle: String? = null,
         val pluginErrorMessage: String? = null,
         val pluginAuthUrl: String? = null

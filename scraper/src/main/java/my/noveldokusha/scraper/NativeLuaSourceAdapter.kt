@@ -165,7 +165,7 @@ public open class NativeLuaSourceAdapter(
                     engine.resetShowError()
                     try {
                         val fn = lua.getGlobal("getCatalogList") as? LuaValue.Function
-                            ?: return@withSourceContext Response.Error("getCatalogList not found")
+                            ?: return@withSourceContext Response.Error("getCatalogList not found", Exception("getCatalogList not found"))
                         val results = engine.withForceNetwork {
                             lua.call(fn, listOf(LuaValue.Integer(index.toLong())))
                         }
@@ -187,7 +187,7 @@ public open class NativeLuaSourceAdapter(
                     engine.resetShowError()
                     try {
                         val fn = lua.getGlobal("getCatalogSearch") as? LuaValue.Function
-                            ?: return@withSourceContext Response.Error("getCatalogSearch not found")
+                            ?: return@withSourceContext Response.Error("getCatalogSearch not found", Exception("getCatalogSearch not found"))
                         val results = lua.call(fn, listOf(LuaValue.Integer(index.toLong()), LuaValue.Str(input)))
                         checkShowError() ?: convertLuaResultToPagedList(results.getOrNull(0))
                     } catch (e: Exception) {
@@ -206,7 +206,7 @@ public open class NativeLuaSourceAdapter(
                 withSourceContext {
                     try {
                         val fn = lua.getGlobal("getBookTitle") as? LuaValue.Function
-                            ?: return@withSourceContext Response.Error("getBookTitle not found")
+                            ?: return@withSourceContext Response.Error("getBookTitle not found", Exception("getBookTitle not found"))
                         val res = lua.call(fn, listOf(LuaValue.Str(bookUrl))).getOrNull(0)
                         Response.Success(res?.optString())
                     } catch (e: Exception) {
@@ -223,7 +223,7 @@ public open class NativeLuaSourceAdapter(
                 withSourceContext {
                     try {
                         val fn = lua.getGlobal("getBookCoverImageUrl") as? LuaValue.Function
-                            ?: return@withSourceContext Response.Error("getBookCoverImageUrl not found")
+                            ?: return@withSourceContext Response.Error("getBookCoverImageUrl not found", Exception("getBookCoverImageUrl not found"))
                         val res = lua.call(fn, listOf(LuaValue.Str(bookUrl))).getOrNull(0)
                         Response.Success(res?.optString())
                     } catch (e: Exception) {
@@ -240,7 +240,7 @@ public open class NativeLuaSourceAdapter(
                 withSourceContext {
                     try {
                         val fn = lua.getGlobal("getBookDescription") as? LuaValue.Function
-                            ?: return@withSourceContext Response.Error("getBookDescription not found")
+                            ?: return@withSourceContext Response.Error("getBookDescription not found", Exception("getBookDescription not found"))
                         val res = lua.call(fn, listOf(LuaValue.Str(bookUrl))).getOrNull(0)
                         Response.Success(res?.optString())
                     } catch (e: Exception) {
@@ -327,7 +327,7 @@ public open class NativeLuaSourceAdapter(
                     engine.resetShowError()
                     try {
                         val fn = lua.getGlobal("getChapterList") as? LuaValue.Function
-                            ?: return@withSourceContext Response.Error("getChapterList not found")
+                            ?: return@withSourceContext Response.Error("getChapterList not found", Exception("getChapterList not found"))
                         val results = lua.call(fn, listOf(LuaValue.Str(bookUrl)))
                         checkShowError() ?: run {
                             val chapters = mutableListOf<ChapterResult>()
@@ -523,7 +523,7 @@ public open class NativeLuaSourceAdapter(
 
     internal fun convertLuaVideoList(luaResult: LuaValue?): Response<List<VideoSource>> {
         if (luaResult == null || luaResult.isNil()) return Response.Success(emptyList())
-        val table = luaResult as? LuaValue.Table ?: return Response.Error("getVideoList must return table")
+        val table = luaResult as? LuaValue.Table ?: return Response.Error("getVideoList must return table", Exception("getVideoList must return table"))
         val videos = mutableListOf<VideoSource>()
         for (i in 1..table.size) {
             val item = table[i] as? LuaValue.Table ?: continue

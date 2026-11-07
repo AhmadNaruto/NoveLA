@@ -229,7 +229,7 @@ public class NativeLuaEngine @Inject constructor(
         }
         t["headers"] = h
 
-        val toHtmlFn = lua.load("return function(self) return html_parse(type(self) == 'table' and self.body or self) end").call()[0]
+        val toHtmlFn = lua.call(lua.load("return function(self) return html_parse(type(self) == 'table' and self.body or self) end")).getOrNull(0) ?: LuaValue.Nil
         t["toHtml"] = toHtmlFn
         t["to_html"] = toHtmlFn
         return t
