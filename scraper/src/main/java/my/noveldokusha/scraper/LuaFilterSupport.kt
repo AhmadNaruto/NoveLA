@@ -3,8 +3,8 @@ package my.noveldokusha.scraper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import org.luaj.vm2.LuaTable
-import org.luaj.vm2.LuaValue
+import com.github.anaruto.lua.LuaTable
+import com.github.anaruto.lua.LuaValue
 import timber.log.Timber
 
 /**

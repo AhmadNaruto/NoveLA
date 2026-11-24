@@ -19,10 +19,14 @@
 -dontwarn org.yaml.snakeyaml.**
 
 # =============================================================================
-# LUA И СИСТЕМА ПЛАГИНОВ (LuaJ) — грузится динамически, держим целиком
+# LUA И СИСТЕМА ПЛАГИНОВ (Lua Native + LuaJ) — грузится динамически, держим целиком
 # =============================================================================
 
 -keep class org.luaj.vm2.** { *; }
+-keep class com.github.anaruto.lua.** { *; }
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
 
 -keep class my.noveldokusha.scraper.LuaEngine$* { *; }
 -keep class my.noveldokusha.scraper.LuaSourceAdapter { *; }

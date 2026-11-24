@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.luaj.vm2.LuaTable
+import com.github.anaruto.lua.LuaTable
 import org.mockito.kotlin.mock
 
 /**

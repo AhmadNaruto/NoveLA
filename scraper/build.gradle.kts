@@ -26,7 +26,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     // Lua and YAML support
-    implementation(libs.luajvm)
+    implementation(projects.tooling.luaEngine)
     implementation(libs.snakeyaml)
 
     // Hilt

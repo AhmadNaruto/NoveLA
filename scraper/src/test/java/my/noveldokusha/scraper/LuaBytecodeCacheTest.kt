@@ -56,7 +56,7 @@ class LuaBytecodeCacheTest {
         // перекомпиляцией из текста.
         bytes[0] = 0x00
 
-        assertThrows(org.luaj.vm2.LuaError::class.java) {
+        assertThrows(com.github.anaruto.lua.LuaError::class.java) {
             loadLuaBytecodeChunk(globals, bytes, "script")
         }
     }

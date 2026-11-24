@@ -4,7 +4,7 @@ import kotlinx.coroutines.runBlocking
 import my.noveldokusha.core.Response
 import org.junit.Assert.*
 import org.junit.Test
-import org.luaj.vm2.LuaValue
+import com.github.anaruto.lua.LuaValue
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 

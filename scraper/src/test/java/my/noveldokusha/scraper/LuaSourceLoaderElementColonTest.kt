@@ -10,7 +10,8 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import org.luaj.vm2.LuaValue
+import com.github.anaruto.lua.LuaValue
+import com.github.anaruto.lua.Globals
 import java.io.File
 import java.nio.file.Files
 import java.util.Locale
@@ -29,7 +30,7 @@ class LuaSourceLoaderElementColonTest {
 
     private val tempDir: File = Files.createTempDirectory("lua-element-colon").toFile()
 
-    private fun globals(): org.luaj.vm2.Globals {
+    private fun globals(): Globals {
         val networkClient = mock<NetworkClient>()
         runBlocking {
             whenever(networkClient.call(any(), any())).thenThrow(AssertionError("http_get not expected in this test"))
@@ -43,7 +44,7 @@ class LuaSourceLoaderElementColonTest {
         whenever(context.resources).thenReturn(resources)
 
         val engine = LuaEngine(context, networkClient)
-        return runBlocking { engine.loadScript("-- element colon probe") as org.luaj.vm2.Globals }
+        return runBlocking { engine.loadScript("-- element colon probe") as Globals }
     }
 
     // Фрагмент каталога bacakomik: карточка .animepost > .animposx с .limit и img-ленивым placeholder'ом
@@ -54,7 +55,7 @@ class LuaSourceLoaderElementColonTest {
         </div></a></div></div>
     """.trimIndent()
 
-    private fun probe(globals: org.luaj.vm2.Globals, fn: String, html: String): String =
+    private fun probe(globals: Globals, fn: String, html: String): String =
         globals.get(fn).call(LuaValue.valueOf(html)).tojstring()
 
     @Test

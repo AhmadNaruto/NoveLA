@@ -16,8 +16,8 @@ import my.noveldokusha.scraper.domain.ChapterResult
 import my.noveldokusha.scraper.domain.PluginShowErrorException
 import my.noveldokusha.scraper.domain.VideoSource
 import my.noveldokusha.scraper.domain.VideoSubtitle
-import org.luaj.vm2.LuaValue
-import org.luaj.vm2.LuaTable
+import com.github.anaruto.lua.LuaValue
+import com.github.anaruto.lua.LuaTable
 import org.jsoup.nodes.Document
 import timber.log.Timber
 
@@ -131,7 +131,7 @@ open class LuaSourceAdapter(
         val markersTable = t.get("ignore_markers").opttable(null)
         if (markersTable != null) {
             for (i in 1..markersTable.length()) {
-                val m = markersTable.get(org.luaj.vm2.LuaValue.valueOf(i)).optjstring(null)
+                val m = markersTable.get(LuaValue.valueOf(i)).optjstring(null)
                 if (!m.isNullOrBlank()) ignoreMarkers.add(m)
             }
         }
@@ -140,7 +140,7 @@ open class LuaSourceAdapter(
         val triggerTable = t.get("trigger_markers").opttable(null)
         if (triggerTable != null) {
             for (i in 1..triggerTable.length()) {
-                val m = triggerTable.get(org.luaj.vm2.LuaValue.valueOf(i)).optjstring(null)
+                val m = triggerTable.get(LuaValue.valueOf(i)).optjstring(null)
                 if (!m.isNullOrBlank()) triggerMarkers.add(m)
             }
         }

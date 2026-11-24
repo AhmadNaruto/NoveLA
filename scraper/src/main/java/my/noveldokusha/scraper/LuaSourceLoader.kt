@@ -25,14 +25,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import org.luaj.vm2.*
-import org.luaj.vm2.lib.OneArgFunction
-import org.luaj.vm2.lib.ThreeArgFunction
-import org.luaj.vm2.lib.TwoArgFunction
-import org.luaj.vm2.compiler.DumpState
-import org.luaj.vm2.lib.VarArgFunction
-import org.luaj.vm2.lib.ZeroArgFunction
-import org.luaj.vm2.lib.jse.JsePlatform
+import com.github.anaruto.lua.*
 import org.yaml.snakeyaml.Yaml
 import androidx.core.os.ConfigurationCompat
 import timber.log.Timber
@@ -996,7 +989,7 @@ class LuaEngine @Inject constructor(
     // and slow JVM execution. Now properties are evaluated on-demand and cached in the table.
     private fun elementToTable(el: Element): LuaTable {
         val t = LuaTable()
-        t.set("__element", org.luaj.vm2.LuaUserdata(el))
+        t.set("__element", LuaUserdata(el))
 
         val mt = LuaTable()
         mt.set(LuaValue.INDEX, object : TwoArgFunction() {
@@ -1229,7 +1222,7 @@ class LuaEngine @Inject constructor(
 
         // Тег версии LuaJ в имени .lbc-файла: апгрейд движка меняет формат байткода,
         // поэтому все закэшированные файлы инвалидируются автоматически.
-        private const val LUAC_TAG = "3.0.1"
+        private const val LUAC_TAG = "5.5.1-native"
     }
 }
 

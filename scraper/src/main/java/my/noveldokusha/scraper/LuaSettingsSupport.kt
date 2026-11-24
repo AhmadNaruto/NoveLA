@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import my.noveldokusha.coreui.theme.colorAccent
-import org.luaj.vm2.LuaValue
+import com.github.anaruto.lua.LuaValue
 
 /**
  * Расширение LuaSourceAdapter для поддержки настроек плагина через getSettingsSchema().
@@ -70,7 +70,7 @@ fun parseLuaSettingsSchema(luaScript: LuaValue): List<LuaSetting>? {
     val table = result.checktable()
 
     for (i in 1..table.length()) {
-        val item = table.get(org.luaj.vm2.LuaValue.valueOf(i))
+        val item = table.get(LuaValue.valueOf(i))
         if (!item.istable()) continue
         val t = item.checktable()
 
@@ -85,7 +85,7 @@ fun parseLuaSettingsSchema(luaScript: LuaValue): List<LuaSetting>? {
             val options = mutableListOf<LuaSettingOption>()
 
             for (j in 1..optTable.length()) {
-                val opt = optTable.get(org.luaj.vm2.LuaValue.valueOf(j))
+                val opt = optTable.get(LuaValue.valueOf(j))
                 if (!opt.istable()) continue
                 val ot = opt.checktable()
                 val v = ot.get("value").optjstring("")

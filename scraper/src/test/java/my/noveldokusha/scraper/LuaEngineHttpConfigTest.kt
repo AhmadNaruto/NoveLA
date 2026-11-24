@@ -23,8 +23,8 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.luaj.vm2.LuaTable
-import org.luaj.vm2.LuaValue
+import com.github.anaruto.lua.LuaTable
+import com.github.anaruto.lua.LuaValue
 import java.io.File
 import java.nio.file.Files
 import java.util.Locale
