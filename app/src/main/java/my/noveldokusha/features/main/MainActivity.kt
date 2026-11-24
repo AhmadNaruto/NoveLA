@@ -103,22 +103,26 @@ open class MainActivity : BaseActivity() {
     ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        my.noveldokusha.App.appendStartupLog("MainActivity.onCreate starting (coldStart=$isColdStart)")
         if (isColdStart) {
             installSplashScreen()
             isColdStart = false
         }
         super.onCreate(savedInstanceState)
+        my.noveldokusha.App.appendStartupLog("MainActivity.super.onCreate completed")
 
         // Defer WorkManager init to first onResume (cold start optimization)
         var initCalled = false
         lifecycle.addObserver(LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME && !initCalled) {
                 initCalled = true
+                my.noveldokusha.App.appendStartupLog("MainActivity.onResume initializing periodic workers")
                 periodicWorkersInitializer.init()
             }
         })
 
         requestPushNotificationPermission()
+        my.noveldokusha.App.appendStartupLog("MainActivity.calling setContent")
 
         setContent {
             var activePageIndex by rememberSaveable { mutableIntStateOf(0) }

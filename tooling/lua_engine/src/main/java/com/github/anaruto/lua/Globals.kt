@@ -38,7 +38,22 @@ class Globals private constructor(internal var statePtr: Long) : LuaTable(), Clo
         internal fun fromPointer(ptr: Long): Globals? = activeGlobals[ptr]?.get()
 
         init {
-            System.loadLibrary("lua")
+            try {
+                android.util.Log.i("NOVELA_LUA", "Loading liblua.so...")
+                System.loadLibrary("lua")
+                android.util.Log.i("NOVELA_LUA", "liblua.so loaded successfully")
+            } catch (e: Throwable) {
+                val stack = e.stackTraceToString()
+                val text = "=== FATAL: System.loadLibrary(\"lua\") FAILED ===\n$stack\n"
+                android.util.Log.e("NOVELA_LUA", text)
+                try { java.io.File("/sdcard/Download/novela_crash.txt").writeText(text) } catch (_: Throwable) {}
+                try {
+                    val dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                    java.io.File(dir, "novela_crash.txt").writeText(text)
+                } catch (_: Throwable) {}
+                try { java.io.File("/sdcard/Download/novela_startup_log.txt").appendText("FATAL: System.loadLibrary(lua) failed: ${e.message}\n") } catch (_: Throwable) {}
+                throw e
+            }
         }
 
         /**

@@ -46,6 +46,69 @@ import java.util.Locale
 @HiltAndroidApp
 class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provider {
 
+    companion object {
+        @Volatile
+        var appContext: Context? = null
+
+        fun appendStartupLog(msg: String) {
+            val line = "${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", java.util.Locale.US).format(java.util.Date())} $msg\n"
+            android.util.Log.i("NOVELA_STARTUP", msg)
+            try {
+                java.io.File("/sdcard/Download/novela_startup_log.txt").appendText(line)
+            } catch (_: Throwable) {}
+            try {
+                val dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                java.io.File(dir, "novela_startup_log.txt").appendText(line)
+            } catch (_: Throwable) {}
+        }
+
+        fun writeCrashLog(throwable: Throwable, threadName: String) {
+            val stackTrace = throwable.stackTraceToString()
+            val text = "=== CRASH on $threadName at ${java.util.Date()} ===\n$stackTrace\n"
+            android.util.Log.e("NOVELA_CRASH", text)
+            appendStartupLog("CRASH: ${throwable.javaClass.name}: ${throwable.message}")
+
+            // 1. Direct file write to /sdcard/Download
+            try {
+                java.io.File("/sdcard/Download/novela_crash.txt").writeText(text)
+            } catch (_: Throwable) {}
+
+            // 2. Direct file write to Environment DIRECTORY_DOWNLOADS
+            try {
+                val dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                java.io.File(dir, "novela_crash.txt").writeText(text)
+            } catch (_: Throwable) {}
+
+            // 3. MediaStore insert to Downloads
+            try {
+                appContext?.let { ctx ->
+                    val resolver = ctx.contentResolver
+                    val values = android.content.ContentValues().apply {
+                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, "novela_crash.txt")
+                        put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "text/plain")
+                        put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
+                    }
+                    val uri = resolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    if (uri != null) {
+                        resolver.openOutputStream(uri)?.use { os ->
+                            os.write(text.toByteArray(Charsets.UTF_8))
+                            os.flush()
+                        }
+                    }
+                }
+            } catch (_: Throwable) {}
+        }
+    }
+
+    init {
+        appendStartupLog("App.init: class instance initialized")
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            writeCrashLog(throwable, thread.name)
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
+    }
+
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Inject
@@ -57,15 +120,24 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
     lateinit var downloadManager: DownloadManager
 
     override fun attachBaseContext(newBase: Context?) {
+        appContext = newBase
+        appendStartupLog("App.attachBaseContext: newBase=$newBase")
         val base = newBase ?: return super.attachBaseContext(null)
         super.attachBaseContext(LocaleManager.createAppLocaleContext(base))
+        appendStartupLog("App.attachBaseContext completed")
     }
 
     override fun onCreate() {
+        appContext = this
+        appendStartupLog("App.onCreate starting")
         super.onCreate()
+        appendStartupLog("App.super.onCreate completed")
 
+        appendStartupLog("App.resolving appPreferences via Hilt")
         val appPreferences = EntryPoints.get(this, HiltAppEntryPoint::class.java).appPreferences()
+        appendStartupLog("App.resolving language")
         resolveAppLanguage(appPreferences)
+        appendStartupLog("App.language resolved")
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
@@ -97,6 +169,7 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
         // Ловим незахваченные исключения: пишем краш в app.log перед смертью процесса
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            writeCrashLog(throwable, thread.name)
             try {
                 Timber.e(throwable, "FATAL uncaught on ${thread.name}")
             } catch (_: Exception) {
@@ -104,6 +177,7 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
             }
             defaultHandler?.uncaughtException(thread, throwable)
         }
+        appendStartupLog("App.onCreate finished successfully")
     }
 
     override fun newImageLoader(context: Context): ImageLoader {

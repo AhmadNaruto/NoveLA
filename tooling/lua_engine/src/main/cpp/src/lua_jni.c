@@ -281,16 +281,30 @@ static int jni_callback_dispatcher(lua_State *L) {
     return resultCount;
 }
 
+static void log_jni(const char *msg) {
+    __android_log_print(ANDROID_LOG_INFO, "NOVELA_LUA_JNI", "%s", msg);
+    FILE *f = fopen("/sdcard/Download/novela_startup_log.txt", "a");
+    if (f) {
+        fprintf(f, "JNI: %s\n", msg);
+        fclose(f);
+    }
+}
+
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     (void)reserved;
+    log_jni("JNI_OnLoad started");
     g_vm = vm;
     JNIEnv *env = NULL;
     if ((*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_6) != JNI_OK) {
+        log_jni("JNI_OnLoad: GetEnv failed");
         return JNI_ERR;
     }
 
     jclass local_LuaValue = (*env)->FindClass(env, "com/github/anaruto/lua/LuaValue");
-    if (local_LuaValue == NULL) return JNI_ERR;
+    if (local_LuaValue == NULL) {
+        log_jni("JNI_OnLoad: FindClass com/github/anaruto/lua/LuaValue failed!");
+        return JNI_ERR;
+    }
     g_class_LuaValue = (jclass)(*env)->NewGlobalRef(env, local_LuaValue);
     (*env)->DeleteLocalRef(env, local_LuaValue);
 
@@ -427,6 +441,12 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
         g_mid_Varargs_toArray = (*env)->GetMethodID(env, g_class_Varargs, "toArray", "()[Lcom/github/anaruto/lua/LuaValue;");
     }
 
+    if ((*env)->ExceptionCheck(env)) {
+        log_jni("WARNING: Exception occurred during JNI_OnLoad, clearing...");
+        (*env)->ExceptionClear(env);
+    }
+
+    log_jni("JNI_OnLoad completed successfully");
     return JNI_VERSION_1_6;
 }
 
