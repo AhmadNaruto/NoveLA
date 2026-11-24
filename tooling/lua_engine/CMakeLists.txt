@@ -37,10 +37,41 @@ add_library(${PROJECT_NAME} SHARED
     ${CPP_DIR}/src/lutf8lib.c
     ${CPP_DIR}/src/lvm.c
     ${CPP_DIR}/src/lzio.c
-    # Third-party and built-in extensions (JSON, Regex, Util/Crypto, HTML/Lexbor)
+    # Third-party and built-in extensions (JSON, PCRE2 Regex, Util/Crypto, HTML/Lexbor)
     ${CPP_DIR}/src/extensions/json/cJSON.c
     ${CPP_DIR}/src/extensions/json/ljsonlib.c
-    ${CPP_DIR}/src/extensions/regex/lregexlib.c
+    ${CPP_DIR}/src/extensions/pcre2/lpcre2lib.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_auto_possess.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_chartables.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_chkdint.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_compile.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_compile_cgroup.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_compile_class.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_config.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_context.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_convert.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_dfa_match.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_error.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_extuni.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_find_bracket.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_jit_compile.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_maketables.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_match.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_match_data.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_match_next.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_newline.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_ord2utf.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_pattern_info.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_script_run.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_serialize.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_string_utils.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_study.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_substitute.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_substring.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_tables.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_ucd.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_valid_utf.c
+    ${CPP_DIR}/src/extensions/pcre2/src/pcre2_xclass.c
     ${CPP_DIR}/src/extensions/util/aes.c
     ${CPP_DIR}/src/extensions/util/b64_buffer.c
     ${CPP_DIR}/src/extensions/util/b64_encode.c
@@ -60,13 +91,17 @@ target_include_directories(${PROJECT_NAME}
     PRIVATE
         ${CPP_DIR}/src
         ${CPP_DIR}/src/extensions/json
-        ${CPP_DIR}/src/extensions/regex
+        ${CPP_DIR}/src/extensions/pcre2
+        ${CPP_DIR}/src/extensions/pcre2/src
         ${CPP_DIR}/src/extensions/util
         ${CPP_DIR}/src/extensions/html
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     LUA_USE_LINUX
+    HAVE_CONFIG_H
+    PCRE2_CODE_UNIT_WIDTH=8
+    SUPPORT_UNICODE=1
 )
 
 # Compiler & Linker optimizations for ARM64 (high-performance vectorization, LTO, 16KB page alignment)

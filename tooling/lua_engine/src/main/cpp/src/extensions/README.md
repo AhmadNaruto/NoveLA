@@ -7,9 +7,17 @@ Direktori ini berisi pustaka dan modul native pihak ketiga yang diintegrasikan l
 - **Lisensi**: MIT License
 - **Fungsi Global**: `json.encode(table)`, `json.decode(string)`
 
-## 2. Regular Expressions (`src/extensions/regex/`)
-- **Pustaka Sumber**: POSIX Regex engine dengan pcre shorthand pre-processor (`\d`, `\D`, `\w`, `\W`, `\s`, `\S`)
-- **Fungsi Global**: `regex.test(str, pat)`, `regex.match(str, pat)`, `regex.replace(str, pat, repl)`, `regex.split(str, pat)`
+## 2. Regular Expressions (`src/extensions/pcre2/`)
+- **Pustaka Sumber**: [PCRE2 (Perl Compatible Regular Expressions 2)](https://github.com/PCRE2Project/pcre2) 8-bit native C dengan UTF-8 & UCP (Unicode Properties) support.
+- **Fungsi Global (tanpa `require`)**:
+  - `regex_match(str, pat)`: Menghasilkan tabel string hasil match (kompatibel penuh dengan Kotlin/Java `Regex.findAll`).
+  - `regex_replace(str, pat, repl)`: Mengganti substring sesuai pola regex (kompatibel penuh dengan `Regex.replace` termasuk `(?i)`, non-greedy quantifiers `.*?`, dan `$1` group backreferences).
+- **Modul `regex`**:
+  - `regex.test(str, pat)`
+  - `regex.match(str, pat)` / `regex.find_all(str, pat)`
+  - `regex.replace(str, pat, repl)`
+  - `regex.find(str, pat, [init])`
+  - `regex.split(str, pat, [limit])`
 
 ## 3. Cryptography & Encoding Utilities (`src/extensions/util/`)
 - **AES-128-CBC**: [kokke/tiny-AES-c](https://github.com/kokke/tiny-AES-c) (Public Domain / The Unlicense)
