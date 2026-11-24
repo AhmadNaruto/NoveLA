@@ -53,7 +53,6 @@ private fun Project.configureKotlin() {
                 "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
                 "-opt-in=kotlinx.coroutines.FlowPreview",
                 "-opt-in=coil3.annotation.ExperimentalCoilApi",
-                "-jvm-default=all-compatibility",
             )
         }
     }
