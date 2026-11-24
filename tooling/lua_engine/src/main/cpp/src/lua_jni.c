@@ -45,11 +45,6 @@ static jfieldID g_fid_NIL = NULL;
 static jfieldID g_fid_TRUE = NULL;
 static jfieldID g_fid_FALSE = NULL;
 
-static jobject g_val_NIL = NULL;
-static jobject g_val_TRUE = NULL;
-static jobject g_val_FALSE = NULL;
-static jobject g_val_EMPTY_STRING = NULL;
-
 static jmethodID g_mid_valueOf_long = NULL;
 static jmethodID g_mid_valueOf_double = NULL;
 static jmethodID g_mid_valueOf_string = NULL;
@@ -80,33 +75,33 @@ typedef struct {
 static lua_State **g_active_states = NULL;
 static size_t g_active_states_count = 0;
 static size_t g_active_states_cap = 0;
-static pthread_rwlock_t g_states_rwlock = PTHREAD_RWLOCK_INITIALIZER;
+static pthread_mutex_t g_states_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int register_active_state(lua_State *L) {
     if (L == NULL) return 0;
-    pthread_rwlock_wrlock(&g_states_rwlock);
+    pthread_mutex_lock(&g_states_mutex);
     for (size_t i = 0; i < g_active_states_count; i++) {
         if (g_active_states[i] == L) {
-            pthread_rwlock_unlock(&g_states_rwlock);
+            pthread_mutex_unlock(&g_states_mutex);
             return 1;
         }
     }
     for (size_t i = 0; i < g_active_states_count; i++) {
         if (g_active_states[i] == NULL) {
             g_active_states[i] = L;
-            pthread_rwlock_unlock(&g_states_rwlock);
+            pthread_mutex_unlock(&g_states_mutex);
             return 1;
         }
     }
     if (g_active_states_count < g_active_states_cap) {
         g_active_states[g_active_states_count++] = L;
-        pthread_rwlock_unlock(&g_states_rwlock);
+        pthread_mutex_unlock(&g_states_mutex);
         return 1;
     }
     size_t new_cap = (g_active_states_cap == 0) ? 16 : (g_active_states_cap * 2);
     lua_State **new_arr = (lua_State **)realloc(g_active_states, new_cap * sizeof(lua_State *));
     if (new_arr == NULL) {
-        pthread_rwlock_unlock(&g_states_rwlock);
+        pthread_mutex_unlock(&g_states_mutex);
         return 0;
     }
     for (size_t i = g_active_states_cap; i < new_cap; i++) {
@@ -115,13 +110,13 @@ static int register_active_state(lua_State *L) {
     g_active_states = new_arr;
     g_active_states_cap = new_cap;
     g_active_states[g_active_states_count++] = L;
-    pthread_rwlock_unlock(&g_states_rwlock);
+    pthread_mutex_unlock(&g_states_mutex);
     return 1;
 }
 
 static void unregister_active_state(lua_State *L) {
     if (L == NULL) return;
-    pthread_rwlock_wrlock(&g_states_rwlock);
+    pthread_mutex_lock(&g_states_mutex);
     for (size_t i = 0; i < g_active_states_count; i++) {
         if (g_active_states[i] == L) {
             g_active_states[i] = NULL;
@@ -131,20 +126,20 @@ static void unregister_active_state(lua_State *L) {
     while (g_active_states_count > 0 && g_active_states[g_active_states_count - 1] == NULL) {
         g_active_states_count--;
     }
-    pthread_rwlock_unlock(&g_states_rwlock);
+    pthread_mutex_unlock(&g_states_mutex);
 }
 
 static int is_active_state(lua_State *L) {
     if (L == NULL) return 0;
     int found = 0;
-    pthread_rwlock_rdlock(&g_states_rwlock);
+    pthread_mutex_lock(&g_states_mutex);
     for (size_t i = 0; i < g_active_states_count; i++) {
         if (g_active_states[i] == L) {
             found = 1;
             break;
         }
     }
-    pthread_rwlock_unlock(&g_states_rwlock);
+    pthread_mutex_unlock(&g_states_mutex);
     return found;
 }
 
@@ -305,6 +300,11 @@ static int jni_callback_dispatcher(lua_State *L) {
 
 static void log_jni(const char *msg) {
     __android_log_print(ANDROID_LOG_INFO, "NOVELA_LUA_JNI", "%s", msg);
+    FILE *f = fopen("/sdcard/Download/novela_startup_log.txt", "a");
+    if (f) {
+        fprintf(f, "JNI: %s\n", msg);
+        fclose(f);
+    }
 }
 
 static void native_crash_handler(int sig, siginfo_t *info, void *ucontext) {
@@ -454,33 +454,10 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
         (*env)->DeleteLocalRef(env, local_utf8);
     }
 
-    // Cache field IDs & pre-instantiate singleton GlobalRefs for zero-allocation JNI returns
+    // Cache field IDs
     g_fid_NIL = (*env)->GetStaticFieldID(env, g_class_LuaValue, "NIL", "Lcom/github/anaruto/lua/LuaNil;");
-    if (g_fid_NIL) {
-        jobject o = (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
-        if (o) {
-            g_val_NIL = (*env)->NewGlobalRef(env, o);
-            (*env)->DeleteLocalRef(env, o);
-        }
-    }
-
     g_fid_TRUE = (*env)->GetStaticFieldID(env, g_class_LuaValue, "TRUE", "Lcom/github/anaruto/lua/LuaBoolean;");
-    if (g_fid_TRUE) {
-        jobject o = (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_TRUE);
-        if (o) {
-            g_val_TRUE = (*env)->NewGlobalRef(env, o);
-            (*env)->DeleteLocalRef(env, o);
-        }
-    }
-
     g_fid_FALSE = (*env)->GetStaticFieldID(env, g_class_LuaValue, "FALSE", "Lcom/github/anaruto/lua/LuaBoolean;");
-    if (g_fid_FALSE) {
-        jobject o = (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_FALSE);
-        if (o) {
-            g_val_FALSE = (*env)->NewGlobalRef(env, o);
-            (*env)->DeleteLocalRef(env, o);
-        }
-    }
 
     // Cache method IDs
     if (g_class_LuaInteger != NULL) {
@@ -493,17 +470,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     }
     if (g_class_LuaString != NULL) {
         g_mid_valueOf_string = (*env)->GetStaticMethodID(env, g_class_LuaString, "valueOf", "(Ljava/lang/String;)Lcom/github/anaruto/lua/LuaString;");
-        if (g_mid_valueOf_string != NULL) {
-            jstring empty_js = (*env)->NewStringUTF(env, "");
-            if (empty_js) {
-                jobject o = (*env)->CallStaticObjectMethod(env, g_class_LuaString, g_mid_valueOf_string, empty_js);
-                if (o) {
-                    g_val_EMPTY_STRING = (*env)->NewGlobalRef(env, o);
-                    (*env)->DeleteLocalRef(env, o);
-                }
-                (*env)->DeleteLocalRef(env, empty_js);
-            }
-        }
     }
     if (g_class_LuaBoolean != NULL) {
         g_mid_LuaBoolean_booleanValue = (*env)->GetMethodID(env, g_class_LuaBoolean, "booleanValue", "()Z");
@@ -572,11 +538,6 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
     if (g_class_LuaError) (*env)->DeleteGlobalRef(env, g_class_LuaError);
     if (g_class_String) (*env)->DeleteGlobalRef(env, g_class_String);
     if (g_str_utf8) (*env)->DeleteGlobalRef(env, g_str_utf8);
-
-    if (g_val_NIL) (*env)->DeleteGlobalRef(env, g_val_NIL);
-    if (g_val_TRUE) (*env)->DeleteGlobalRef(env, g_val_TRUE);
-    if (g_val_FALSE) (*env)->DeleteGlobalRef(env, g_val_FALSE);
-    if (g_val_EMPTY_STRING) (*env)->DeleteGlobalRef(env, g_val_EMPTY_STRING);
 }
 
 // Convert a Lua stack value to a polymorphic jobject (LuaValue)
@@ -585,12 +546,12 @@ static jobject lua_value_from_stack(JNIEnv *env, lua_State *L, int index, jlong 
     switch (type) {
         case LUA_TNIL:
         case LUA_TNONE:
-            return g_val_NIL ? g_val_NIL : (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
+            return (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
 
         case LUA_TBOOLEAN:
             return lua_toboolean(L, index)
-                ? (g_val_TRUE ? g_val_TRUE : (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_TRUE))
-                : (g_val_FALSE ? g_val_FALSE : (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_FALSE));
+                ? (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_TRUE)
+                : (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_FALSE);
 
         case LUA_TNUMBER:
             if (lua_isinteger(L, index)) {
@@ -604,9 +565,6 @@ static jobject lua_value_from_stack(JNIEnv *env, lua_State *L, int index, jlong 
         case LUA_TSTRING: {
             size_t len = 0;
             const char *str = lua_tolstring(L, index, &len);
-            if (len == 0 && g_val_EMPTY_STRING != NULL) {
-                return g_val_EMPTY_STRING;
-            }
             jstring js = NULL;
             if (str != NULL && g_class_String != NULL && g_mid_String_init_bytes != NULL && g_str_utf8 != NULL) {
                 jbyteArray bytes = (*env)->NewByteArray(env, (jsize)len);
@@ -784,8 +742,6 @@ Java_com_github_anaruto_lua_Globals_nativeNewState(JNIEnv *env, jclass clazz) {
     if (L != NULL) {
         register_active_state(L);
         luaL_openlibs(L);
-        // Switch to Generational GC in Lua 5.5 for high-efficiency short-lived memory reclamation
-        lua_gc(L, LUA_GCGEN, 0, 0);
         // Hook print to Android Logcat
         lua_register(L, "print", android_lua_print);
 
@@ -1030,7 +986,7 @@ Java_com_github_anaruto_lua_Globals_nativeGetGlobal(JNIEnv *env, jclass clazz, j
     (void)clazz;
     lua_State *L = to_lua_state(ptr);
     if (L == NULL || jname == NULL) {
-        return g_val_NIL ? g_val_NIL : (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
+        return (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
     }
 
     const char *name = (*env)->GetStringUTFChars(env, jname, NULL);
@@ -1073,13 +1029,13 @@ Java_com_github_anaruto_lua_Globals_nativeTableGet(JNIEnv *env, jclass clazz, jl
     (void)clazz;
     lua_State *L = to_lua_state(ptr);
     if (L == NULL || tableRef == -1) {
-        return g_val_NIL ? g_val_NIL : (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
+        return (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
     }
 
     lua_rawgeti(L, LUA_REGISTRYINDEX, tableRef);
     if (!lua_istable(L, -1)) {
         lua_pop(L, 1);
-        return g_val_NIL ? g_val_NIL : (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
+        return (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
     }
 
     push_lua_value(env, L, jkey);
