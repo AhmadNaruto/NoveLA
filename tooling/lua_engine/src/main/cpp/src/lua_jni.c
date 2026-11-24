@@ -93,6 +93,11 @@ static int register_active_state(lua_State *L) {
             return 1;
         }
     }
+    if (g_active_states_count < g_active_states_cap) {
+        g_active_states[g_active_states_count++] = L;
+        pthread_mutex_unlock(&g_states_mutex);
+        return 1;
+    }
     size_t new_cap = (g_active_states_cap == 0) ? 16 : (g_active_states_cap * 2);
     lua_State **new_arr = (lua_State **)realloc(g_active_states, new_cap * sizeof(lua_State *));
     if (new_arr == NULL) {
@@ -117,6 +122,9 @@ static void unregister_active_state(lua_State *L) {
             g_active_states[i] = NULL;
             break;
         }
+    }
+    while (g_active_states_count > 0 && g_active_states[g_active_states_count - 1] == NULL) {
+        g_active_states_count--;
     }
     pthread_mutex_unlock(&g_states_mutex);
 }
