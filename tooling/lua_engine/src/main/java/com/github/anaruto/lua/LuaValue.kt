@@ -165,19 +165,19 @@ abstract class LuaValue : Varargs(), Comparable<LuaValue> {
     open fun optdouble(default: Double): Double = if (isnoneornil()) default else todouble()
 
     @JvmName("optjstringNullable")
-    open fun optjstring(default: String?): String? = if (isnoneornil()) default else tojstring()
+    fun optjstring(default: String?): String? = if (isnoneornil()) default else tojstring()
 
-    open fun optjstring(default: String): String = if (isnoneornil()) default else tojstring()
+    fun optjstring(default: String): String = if (isnoneornil()) default else tojstring()
 
     @JvmName("opttableNullable")
-    open fun opttable(default: LuaTable?): LuaTable? = if (isnoneornil()) default else checktable()
+    fun opttable(default: LuaTable?): LuaTable? = if (isnoneornil()) default else checktable()
 
-    open fun opttable(default: LuaTable): LuaTable = if (isnoneornil()) default else checktable()
+    fun opttable(default: LuaTable): LuaTable = if (isnoneornil()) default else checktable()
 
     @JvmName("optfunctionNullable")
-    open fun optfunction(default: LuaFunction?): LuaFunction? = if (isnoneornil()) default else checkfunction()
+    fun optfunction(default: LuaFunction?): LuaFunction? = if (isnoneornil()) default else checkfunction()
 
-    open fun optfunction(default: LuaFunction): LuaFunction = if (isnoneornil()) default else checkfunction()
+    fun optfunction(default: LuaFunction): LuaFunction = if (isnoneornil()) default else checkfunction()
 
     open fun checkboolean(): Boolean = throw LuaError("expected boolean, got " + typename())
     open fun checkint(): Int = throw LuaError("expected int, got " + typename())
