@@ -88,10 +88,10 @@ abstract class Varargs : Iterable<LuaValue> {
     open fun optint(i: Int, default: Int): Int = arg(i).optint(default)
     open fun optlong(i: Int, default: Long): Long = arg(i).optlong(default)
     open fun optdouble(i: Int, default: Double): Double = arg(i).optdouble(default)
-    open fun optjstring(i: Int, default: String): String = arg(i).optjstring(default)
-    open fun optjstring(i: Int, default: String?): String? = arg(i).optjstring(default)
-    open fun opttable(i: Int, default: LuaTable): LuaTable = arg(i).opttable(default)
-    open fun opttable(i: Int, default: LuaTable?): LuaTable? = arg(i).opttable(default)
+    @Suppress("UNCHECKED_CAST")
+    open fun <T : String?> optjstring(i: Int, default: T): T = arg(i).optjstring(default)
+    @Suppress("UNCHECKED_CAST")
+    open fun <T : LuaTable?> opttable(i: Int, default: T): T = arg(i).opttable(default)
 
     open fun toArray(): Array<LuaValue> {
         val n = narg()
