@@ -19,7 +19,7 @@ class CLICustomSettings(private val project: Project) {
 
     private fun propExist(key: String) = project.hasProperty(key)
     private fun propString(key: String, default: String) =
-        project.properties[key]?.toString()?.ifBlank { default } ?: default
+        project.findProperty(key)?.toString()?.ifBlank { default } ?: default
 }
 
 val cliCustomSettings = CLICustomSettings(project)

@@ -275,34 +275,40 @@ class Globals private constructor(internal var statePtr: Long) : LuaTable(), Clo
         phantomRefs[pRef] = true
     }
 
-    internal fun drainUnrefs() = synchronized(this) {
-        if (statePtr == 0L) {
-            phantomRefs.clear()
-            return
-        }
-        var p = unrefQueue.poll() as? PhantomRefKey
-        while (p != null) {
-            phantomRefs.remove(p)
-            if (p.globalsPtr == statePtr && statePtr != 0L && p.ref != -1) {
-                nativeUnref(statePtr, p.ref)
+    internal fun drainUnrefs() {
+        synchronized(this) {
+            if (statePtr == 0L) {
+                phantomRefs.clear()
+                return
             }
-            p = unrefQueue.poll() as? PhantomRefKey
+            var p = unrefQueue.poll() as? PhantomRefKey
+            while (p != null) {
+                phantomRefs.remove(p)
+                if (p.globalsPtr == statePtr && statePtr != 0L && p.ref != -1) {
+                    nativeUnref(statePtr, p.ref)
+                }
+                p = unrefQueue.poll() as? PhantomRefKey
+            }
         }
     }
 
-    internal fun manualUnref(ref: Int) = synchronized(this) {
-        if (statePtr != 0L && ref != -1) {
-            nativeUnref(statePtr, ref)
+    internal fun manualUnref(ref: Int) {
+        synchronized(this) {
+            if (statePtr != 0L && ref != -1) {
+                nativeUnref(statePtr, ref)
+            }
         }
     }
 
-    override fun close() = synchronized(this) {
-        if (statePtr != 0L) {
-            val ptr = statePtr
-            statePtr = 0L
-            activeGlobals.remove(ptr)
-            drainUnrefs()
-            nativeClose(ptr)
+    override fun close() {
+        synchronized(this) {
+            if (statePtr != 0L) {
+                val ptr = statePtr
+                statePtr = 0L
+                activeGlobals.remove(ptr)
+                drainUnrefs()
+                nativeClose(ptr)
+            }
         }
     }
 

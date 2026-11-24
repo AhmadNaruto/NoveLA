@@ -50,7 +50,10 @@ private fun Project.configureKotlin() {
             jvmTarget.set(JvmTarget.JVM_21)
             freeCompilerArgs.addAll(
                 "-opt-in=kotlin.RequiresOptIn",
-                "-Xjvm-default=all-compatibility",
+                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+                "-opt-in=kotlinx.coroutines.FlowPreview",
+                "-opt-in=coil3.annotation.ExperimentalCoilApi",
+                "-jvm-default=all-compatibility",
             )
         }
     }

@@ -15,7 +15,7 @@ android {
 
     sourceSets {
         // Экспортированные Room-схемы (27.json, 30.json) — вход для MigrationTestHelper
-        getByName("test").assets.srcDir("$projectDir/schemas")
+        getByName("test").assets.directories.add("$projectDir/schemas")
     }
 
     packaging {

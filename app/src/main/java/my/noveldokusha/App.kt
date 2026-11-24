@@ -190,8 +190,8 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
             .maxSizePercent(context, AppCacheConfig.IMAGE_MEMORY_CACHE_PERCENT) // ponytail: 25% — стандарт для сетевых грид-приложений (Mihon=20%, Coil Sample=25%)
             .build()
 
-        val animatorDurationScale = Settings.System.getFloat(
-            contentResolver, Settings.System.ANIMATOR_DURATION_SCALE, 1f
+        val animatorDurationScale = Settings.Global.getFloat(
+            contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f
         )
 
         val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager

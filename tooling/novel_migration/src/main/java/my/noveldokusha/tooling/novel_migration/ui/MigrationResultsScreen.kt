@@ -215,25 +215,26 @@ private fun MigrationResultItem(
                     Text(errorMsg, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 }
             } else if (migratingBook.result != null) {
+                val res = migratingBook.result
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
 
                 Spacer(Modifier.width(8.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        migratingBook.result!!.book.title,
+                        res.book.title,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        migratingBook.result!!.source.resolveName(context),
+                        res.source.resolveName(context),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        stringResource(R.string.migration_chapters_count, migratingBook.result!!.chapters.size),
+                        stringResource(R.string.migration_chapters_count, res.chapters.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

@@ -703,6 +703,8 @@
     <string name="download_resumed">Download resumed</string>
     <string name="download_already_queued">Already in queue</string>
     <string name="download_all_cached">All chapters already downloaded</string>
+    <string name="download_paused_count">%1$d downloads paused</string>
+    <string name="download_active_chapters_more">· %1$d more</string>
 
     <!-- Migration -->
     <string name="migration_no_sources_available">No sources available</string>
