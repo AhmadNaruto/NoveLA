@@ -2,6 +2,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -31,6 +34,9 @@ static jclass g_class_LuaError = NULL;
 static jclass g_class_String = NULL;
 static jmethodID g_mid_String_init_bytes = NULL;
 static jstring g_str_utf8 = NULL;
+
+static jmethodID g_mid_LuaTable_keysArray = NULL;
+static jmethodID g_mid_LuaTable_get = NULL;
 
 static jmethodID g_mid_LuaUserdata_init = NULL;
 static jfieldID g_fid_LuaUserdata_m_instance = NULL;
@@ -162,24 +168,27 @@ static void throw_lua_error(JNIEnv *env, const char *msg) {
 // Redirect Lua print() output to Android Logcat
 static int android_lua_print(lua_State *L) {
     int n = lua_gettop(L);
-    luaL_Buffer b;
-    luaL_buffinit(L, &b);
+    char buf[2048];
+    size_t offset = 0;
     for (int i = 1; i <= n; i++) {
-        if (i > 1) luaL_addchar(&b, '\t');
+        if (i > 1 && offset + 1 < sizeof(buf)) {
+            buf[offset++] = '\t';
+        }
         size_t len = 0;
         const char *s = luaL_tolstring(L, i, &len);
-        luaL_addlstring(&b, s, len);
+        if (s != NULL && offset + len < sizeof(buf)) {
+            memcpy(buf + offset, s, len);
+            offset += len;
+        }
         lua_pop(L, 1);
     }
-    luaL_pushresult(&b);
-    const char *msg = lua_tostring(L, -1);
+    buf[offset] = '\0';
 #ifdef __ANDROID__
-    __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "%s", msg ? msg : "");
+    __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "%s", buf);
 #else
-    printf("%s\n", msg ? msg : "");
+    printf("%s\n", buf);
     fflush(stdout);
 #endif
-    lua_pop(L, 1);
     return 0;
 }
 
@@ -290,8 +299,52 @@ static void log_jni(const char *msg) {
     }
 }
 
+static void native_crash_handler(int sig, siginfo_t *info, void *ucontext) {
+    (void)ucontext;
+    int fd = open("/sdcard/Download/novela_crash.txt", O_WRONLY | O_CREAT | O_APPEND, 0666);
+    if (fd >= 0) {
+        char msg[256];
+        int n = snprintf(msg, sizeof(msg),
+            "=== NATIVE SIGNAL CRASH ===\nSignal: %d (%s), Code: %d, Fault Address: %p\n",
+            sig,
+            sig == SIGSEGV ? "SIGSEGV" :
+            sig == SIGABRT ? "SIGABRT" :
+            sig == SIGBUS  ? "SIGBUS"  :
+            sig == SIGFPE  ? "SIGFPE"  :
+            sig == SIGILL  ? "SIGILL"  : "UNKNOWN",
+            info ? info->si_code : -1,
+            info ? info->si_addr : NULL);
+        write(fd, msg, (size_t)n);
+        close(fd);
+    }
+    int fd2 = open("/sdcard/Download/novela_startup_log.txt", O_WRONLY | O_CREAT | O_APPEND, 0666);
+    if (fd2 >= 0) {
+        char msg2[256];
+        int n2 = snprintf(msg2, sizeof(msg2),
+            "JNI CRASH: Signal %d received at %p\n", sig, info ? info->si_addr : NULL);
+        write(fd2, msg2, (size_t)n2);
+        close(fd2);
+    }
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
+static void install_crash_handlers(void) {
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_flags = SA_SIGINFO;
+    sa.sa_sigaction = native_crash_handler;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGABRT, &sa, NULL);
+    sigaction(SIGBUS, &sa, NULL);
+    sigaction(SIGFPE, &sa, NULL);
+    sigaction(SIGILL, &sa, NULL);
+}
+
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     (void)reserved;
+    install_crash_handlers();
     log_jni("JNI_OnLoad started");
     g_vm = vm;
     JNIEnv *env = NULL;
@@ -417,6 +470,11 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
         g_mid_LuaValue_tojstring = (*env)->GetMethodID(env, g_class_LuaValue, "tojstring", "()Ljava/lang/String;");
     }
 
+    if (g_class_LuaTable != NULL) {
+        g_mid_LuaTable_keysArray = (*env)->GetMethodID(env, g_class_LuaTable, "keysArray", "()[Lcom/github/anaruto/lua/LuaValue;");
+        g_mid_LuaTable_get = (*env)->GetMethodID(env, g_class_LuaTable, "get", "(Lcom/github/anaruto/lua/LuaValue;)Lcom/github/anaruto/lua/LuaValue;");
+    }
+
     if (g_class_NativeLuaTable != NULL) {
         g_mid_NativeLuaTable_init = (*env)->GetMethodID(env, g_class_NativeLuaTable, "<init>", "(JI)V");
         g_fid_NativeLuaTable_ref = (*env)->GetFieldID(env, g_class_NativeLuaTable, "ref", "I");
@@ -519,13 +577,29 @@ static jobject lua_value_from_stack(JNIEnv *env, lua_State *L, int index, jlong 
         case LUA_TTABLE: {
             lua_pushvalue(L, index);
             int ref = luaL_ref(L, LUA_REGISTRYINDEX);
-            return (*env)->NewObject(env, g_class_NativeLuaTable, g_mid_NativeLuaTable_init, statePtr, (jint)ref);
+            if (g_class_NativeLuaTable != NULL && g_mid_NativeLuaTable_init != NULL) {
+                jobject obj = (*env)->NewObject(env, g_class_NativeLuaTable, g_mid_NativeLuaTable_init, statePtr, (jint)ref);
+                if ((*env)->ExceptionCheck(env)) {
+                    (*env)->ExceptionClear(env);
+                    return (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
+                }
+                return obj;
+            }
+            return (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
         }
 
         case LUA_TFUNCTION: {
             lua_pushvalue(L, index);
             int ref = luaL_ref(L, LUA_REGISTRYINDEX);
-            return (*env)->NewObject(env, g_class_NativeLuaFunction, g_mid_NativeLuaFunction_init, statePtr, (jint)ref);
+            if (g_class_NativeLuaFunction != NULL && g_mid_NativeLuaFunction_init != NULL) {
+                jobject obj = (*env)->NewObject(env, g_class_NativeLuaFunction, g_mid_NativeLuaFunction_init, statePtr, (jint)ref);
+                if ((*env)->ExceptionCheck(env)) {
+                    (*env)->ExceptionClear(env);
+                    return (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
+                }
+                return obj;
+            }
+            return (*env)->GetStaticObjectField(env, g_class_LuaValue, g_fid_NIL);
         }
 
         case LUA_TUSERDATA: {
@@ -582,12 +656,39 @@ static void push_lua_value(JNIEnv *env, lua_State *L, jobject jval) {
         } else {
             lua_pushstring(L, "");
         }
-    } else if ((*env)->IsInstanceOf(env, jval, g_class_NativeLuaTable)) {
-        jint ref = (*env)->GetIntField(env, jval, g_fid_NativeLuaTable_ref);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
-    } else if ((*env)->IsInstanceOf(env, jval, g_class_NativeLuaFunction)) {
-        jint ref = (*env)->GetIntField(env, jval, g_fid_NativeLuaFunction_ref);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
+    } else if (g_class_NativeLuaTable != NULL && (*env)->IsInstanceOf(env, jval, g_class_NativeLuaTable)) {
+        jint ref = (g_fid_NativeLuaTable_ref != NULL) ? (*env)->GetIntField(env, jval, g_fid_NativeLuaTable_ref) : -1;
+        if (ref != -1) {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
+        } else {
+            lua_pushnil(L);
+        }
+    } else if (g_class_LuaTable != NULL && (*env)->IsInstanceOf(env, jval, g_class_LuaTable)) {
+        // Kotlin in-memory LuaTable: create new table in Lua and copy entries
+        lua_newtable(L);
+        if (g_mid_LuaTable_keysArray != NULL && g_mid_LuaTable_get != NULL) {
+            jobjectArray keys = (jobjectArray)(*env)->CallObjectMethod(env, jval, g_mid_LuaTable_keysArray);
+            if (keys != NULL) {
+                jsize len = (*env)->GetArrayLength(env, keys);
+                for (jsize i = 0; i < len; i++) {
+                    jobject k = (*env)->GetObjectArrayElement(env, keys, i);
+                    jobject v = (*env)->CallObjectMethod(env, jval, g_mid_LuaTable_get, k);
+                    push_lua_value(env, L, k);
+                    push_lua_value(env, L, v);
+                    lua_settable(L, -3);
+                    if (k) (*env)->DeleteLocalRef(env, k);
+                    if (v) (*env)->DeleteLocalRef(env, v);
+                }
+                (*env)->DeleteLocalRef(env, keys);
+            }
+        }
+    } else if (g_class_NativeLuaFunction != NULL && (*env)->IsInstanceOf(env, jval, g_class_NativeLuaFunction)) {
+        jint ref = (g_fid_NativeLuaFunction_ref != NULL) ? (*env)->GetIntField(env, jval, g_fid_NativeLuaFunction_ref) : -1;
+        if (ref != -1) {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
+        } else {
+            lua_pushnil(L);
+        }
     } else if ((*env)->IsInstanceOf(env, jval, g_class_LuaFunction)) {
         // Kotlin/Java host function callback registered into Lua
         register_sentinel_mt(L);
@@ -629,6 +730,7 @@ JNIEXPORT jlong JNICALL
 Java_com_github_anaruto_lua_Globals_nativeNewState(JNIEnv *env, jclass clazz) {
     (void)env;
     (void)clazz;
+    log_jni("nativeNewState: allocating luaL_newstate");
     lua_State *L = luaL_newstate();
     if (L != NULL) {
         register_active_state(L);
@@ -644,6 +746,7 @@ Java_com_github_anaruto_lua_Globals_nativeNewState(JNIEnv *env, jclass clazz) {
             lua_pop(L, 1);
         }
         lua_pop(L, 1);
+        log_jni("nativeNewState: openlibs & extensions registered successfully");
     }
     return (jlong)(uintptr_t)L;
 }
@@ -715,10 +818,25 @@ Java_com_github_anaruto_lua_Globals_nativeLoadBytes(JNIEnv *env, jclass clazz, j
     return (jint)ref;
 }
 
+typedef struct {
+    char *buf;
+    size_t size;
+    size_t cap;
+} DumpBuffer;
+
 static int dump_buffer_writer(lua_State *L, const void *p, size_t sz, void *ud) {
     (void)L;
-    luaL_Buffer *b = (luaL_Buffer *)ud;
-    luaL_addlstring(b, (const char *)p, sz);
+    DumpBuffer *db = (DumpBuffer *)ud;
+    if (db->size + sz > db->cap) {
+        size_t new_cap = (db->cap == 0) ? 4096 : (db->cap * 2);
+        while (new_cap < db->size + sz) new_cap *= 2;
+        char *new_buf = (char *)realloc(db->buf, new_cap);
+        if (!new_buf) return 1;
+        db->buf = new_buf;
+        db->cap = new_cap;
+    }
+    memcpy(db->buf + db->size, p, sz);
+    db->size += sz;
     return 0;
 }
 
@@ -734,25 +852,52 @@ Java_com_github_anaruto_lua_Globals_nativeDump(JNIEnv *env, jclass clazz, jlong 
         return NULL;
     }
 
-    luaL_Buffer b;
-    luaL_buffinit(L, &b);
-    int status = lua_dump(L, dump_buffer_writer, &b, 0);
+    DumpBuffer db = {0};
+    int status = lua_dump(L, dump_buffer_writer, &db, 0);
     lua_pop(L, 1); // pop function
 
-    if (status != 0) {
+    if (status != 0 || db.buf == NULL) {
+        if (db.buf) free(db.buf);
         return NULL;
     }
 
-    luaL_pushresult(&b);
-    size_t len = 0;
-    const char *data = lua_tolstring(L, -1, &len);
-
-    jbyteArray res = (*env)->NewByteArray(env, (jsize)len);
-    if (res != NULL && data != NULL) {
-        (*env)->SetByteArrayRegion(env, res, 0, (jsize)len, (const jbyte *)data);
+    jbyteArray res = (*env)->NewByteArray(env, (jsize)db.size);
+    if (res != NULL) {
+        (*env)->SetByteArrayRegion(env, res, 0, (jsize)db.size, (const jbyte *)db.buf);
     }
-    lua_pop(L, 1); // pop buffer string
+    free(db.buf);
+    log_jni("nativeDump: dumped bytecode successfully");
     return res;
+}
+
+JNIEXPORT void JNICALL
+Java_com_github_anaruto_lua_Globals_nativeSanitizeSandbox(JNIEnv *env, jclass clazz, jlong ptr) {
+    (void)env;
+    (void)clazz;
+    lua_State *L = to_lua_state(ptr);
+    if (!is_active_state(L)) return;
+
+    lua_pushnil(L); lua_setglobal(L, "luajava");
+    lua_pushnil(L); lua_setglobal(L, "io");
+    lua_pushnil(L); lua_setglobal(L, "load");
+    lua_pushnil(L); lua_setglobal(L, "loadfile");
+    lua_pushnil(L); lua_setglobal(L, "loadstring");
+    lua_pushnil(L); lua_setglobal(L, "dofile");
+    lua_pushnil(L); lua_setglobal(L, "require");
+    lua_pushnil(L); lua_setglobal(L, "package");
+    lua_pushnil(L); lua_setglobal(L, "debug");
+
+    lua_getglobal(L, "os");
+    if (lua_istable(L, -1)) {
+        lua_pushnil(L); lua_setfield(L, -2, "execute");
+        lua_pushnil(L); lua_setfield(L, -2, "exit");
+        lua_pushnil(L); lua_setfield(L, -2, "getenv");
+        lua_pushnil(L); lua_setfield(L, -2, "rename");
+        lua_pushnil(L); lua_setfield(L, -2, "remove");
+        lua_pushnil(L); lua_setfield(L, -2, "tmpname");
+    }
+    lua_pop(L, 1);
+    log_jni("nativeSanitizeSandbox: sandbox sanitized successfully");
 }
 
 JNIEXPORT jint JNICALL

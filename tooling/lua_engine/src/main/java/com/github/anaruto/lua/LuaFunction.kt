@@ -54,9 +54,10 @@ abstract class ThreeArgFunction : LuaFunction() {
  *
  * Keeps a registry reference in `LUA_REGISTRYINDEX` to ensure the function is retained until closed.
  */
+@androidx.annotation.Keep
 class NativeLuaFunction internal constructor(
-    internal val statePtr: Long,
-    internal val ref: Int
+    @JvmField internal val statePtr: Long,
+    @JvmField internal val ref: Int
 ) : LuaFunction(), AutoCloseable {
 
     private val closed = java.util.concurrent.atomic.AtomicBoolean(false)

@@ -139,6 +139,10 @@ class Globals private constructor(internal var statePtr: Long) : LuaTable(), Clo
         @JvmStatic
         @JvmName("nativeDoFile")
         external fun nativeDoFile(ptr: Long, filePath: String): Array<LuaValue>?
+
+        @JvmStatic
+        @JvmName("nativeSanitizeSandbox")
+        external fun nativeSanitizeSandbox(ptr: Long)
     }
 
     val isClosed: Boolean
@@ -148,6 +152,15 @@ class Globals private constructor(internal var statePtr: Long) : LuaTable(), Clo
         if (statePtr == 0L) {
             throw LuaError("Globals state has already been closed")
         }
+    }
+
+    /**
+     * Sanitizes this Lua state for safe sandbox execution: removes unsafe globals
+     * (io, debug, package, load, loadfile, dofile) and restricts `os` to safe helpers.
+     */
+    fun sanitizeSandbox() = synchronized(this) {
+        checkState()
+        nativeSanitizeSandbox(statePtr)
     }
 
     /**

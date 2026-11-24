@@ -75,6 +75,8 @@ open class LuaTable : LuaValue() {
         return ArrayList(map.keys)
     }
 
+    open fun keysArray(): Array<LuaValue> = keys().toTypedArray()
+
     open fun toMap(): Map<LuaValue, LuaValue> {
         return Collections.unmodifiableMap(map)
     }
@@ -93,9 +95,10 @@ open class LuaTable : LuaValue() {
  *
  * Keeps a registry reference in `LUA_REGISTRYINDEX` to ensure the table is not garbage-collected.
  */
+@androidx.annotation.Keep
 class NativeLuaTable internal constructor(
-    internal val statePtr: Long,
-    internal val ref: Int
+    @JvmField internal val statePtr: Long,
+    @JvmField internal val ref: Int
 ) : LuaTable(), AutoCloseable {
 
     private val closed = java.util.concurrent.atomic.AtomicBoolean(false)
