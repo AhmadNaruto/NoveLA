@@ -100,7 +100,7 @@ open class LuaSourceAdapter(
 
     override val language: LanguageCode? = when (metadata.language.lowercase().trim()) {
         "mtl", "multi" -> LanguageCode.MTL
-        else -> LanguageCode.values().find { it.iso639_1.equals(metadata.language, ignoreCase = true) }
+        else -> LanguageCode.entries.find { it.iso639_1.equals(metadata.language, ignoreCase = true) }
             ?: LanguageCode.ENGLISH
     }
 

@@ -109,6 +109,10 @@ class Globals private constructor(internal var statePtr: Long) : LuaTable(), Clo
         external fun nativeGetGlobal(ptr: Long, name: String): LuaValue
 
         @JvmStatic
+        @JvmName("nativeHasGlobal")
+        external fun nativeHasGlobal(ptr: Long, name: String): Boolean
+
+        @JvmStatic
         @JvmName("nativeSetGlobal")
         external fun nativeSetGlobal(ptr: Long, name: String, value: LuaValue)
 
@@ -243,6 +247,17 @@ class Globals private constructor(internal var statePtr: Long) : LuaTable(), Clo
         checkState()
         nativeGetGlobal(statePtr, key)
     }
+
+    /**
+     * Checks if a global variable exists in the Lua state without allocating a wrapper object or reference.
+     */
+    fun hasGlobal(name: String): Boolean = synchronized(this) {
+        if (statePtr == 0L) false
+        else nativeHasGlobal(statePtr, name)
+    }
+
+    val isNativeEngine: Boolean
+        get() = statePtr != 0L
 
     override operator fun set(key: LuaValue, value: LuaValue) = synchronized(this) {
         checkState()

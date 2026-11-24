@@ -30,10 +30,7 @@ import org.yaml.snakeyaml.Yaml
 import androidx.core.os.ConfigurationCompat
 import timber.log.Timber
 import my.noveldokusha.core.atomicWrite
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.StringReader
 import java.net.InetAddress
 import java.net.URI
 import java.security.MessageDigest
@@ -256,34 +253,35 @@ class LuaEngine @Inject constructor(
         g.set("get_preference",         GetPreferenceFunction()        as LuaValue)
         g.set("set_preference",         SetPreferenceFunction()        as LuaValue)
         g.set("get_localStorage",       GetLocalStorageFunction()      as LuaValue)
-        // Crypto (native C util fallback)
-        if (g.get("aes_decrypt").isnil()) g.set("aes_decrypt", AesDecryptFunction() as LuaValue)
-        if (g.get("base64_decode").isnil()) g.set("base64_decode", Base64DecodeFunction() as LuaValue)
-        if (g.get("base64_encode").isnil()) g.set("base64_encode", Base64EncodeFunction() as LuaValue)
-        // HTML (native Lexbor C parser fallback)
-        if (g.get("html_parse").isnil()) g.set("html_parse", HtmlParseFunction() as LuaValue)
-        if (g.get("html_select").isnil()) g.set("html_select", HtmlSelectFunction() as LuaValue)
-        if (g.get("html_select_first").isnil()) g.set("html_select_first", HtmlSelectFirstFunction() as LuaValue)
-        if (g.get("html_attr").isnil()) g.set("html_attr", HtmlAttrFunction() as LuaValue)
-        if (g.get("html_text").isnil()) g.set("html_text", HtmlTextFunction() as LuaValue)
-        if (g.get("html_remove").isnil()) g.set("html_remove", HtmlRemoveFunction() as LuaValue)
         // URL
-        if (g.get("url_encode").isnil()) g.set("url_encode", UrlEncodeFunction() as LuaValue)
-        if (g.get("url_encode_charset").isnil()) g.set("url_encode_charset", UrlEncodeCharsetFunction() as LuaValue)
-        if (g.get("url_resolve").isnil()) g.set("url_resolve", UrlResolveFunction() as LuaValue)
-        // String utils
-        if (g.get("regex_match").isnil()) g.set("regex_match", RegexMatchFunction() as LuaValue)
-        if (g.get("regex_replace").isnil()) g.set("regex_replace", RegexReplaceFunction() as LuaValue)
-        if (g.get("string_normalize").isnil()) g.set("string_normalize", StringNormalizeFunction() as LuaValue)
-        if (g.get("string_split").isnil()) g.set("string_split", StringSplitFunction() as LuaValue)
-        if (g.get("string_trim").isnil()) g.set("string_trim", StringTrimFunction() as LuaValue)
-        if (g.get("string_starts_with").isnil()) g.set("string_starts_with", StringStartsWithFunction() as LuaValue)
-        if (g.get("string_ends_with").isnil()) g.set("string_ends_with", StringEndsWithFunction() as LuaValue)
-        if (g.get("string_clean").isnil()) g.set("string_clean", StringCleanFunction() as LuaValue)
-        if (g.get("unescape_unicode").isnil()) g.set("unescape_unicode", UnescapeUnicodeFunction() as LuaValue)
-        // JSON
-        if (g.get("json_parse").isnil()) g.set("json_parse", JsonParseFunction() as LuaValue)
-        if (g.get("json_stringify").isnil()) g.set("json_stringify", JsonStringifyFunction() as LuaValue)
+        g.set("url_resolve", UrlResolveFunction() as LuaValue)
+
+        // Native C extensions are preloaded by linit.c.
+        // Fallback to pure Kotlin implementations only if running without native state (e.g. JVM unit tests).
+        if (!g.isNativeEngine) {
+            g.set("aes_decrypt",            AesDecryptFunction()           as LuaValue)
+            g.set("base64_decode",          Base64DecodeFunction()         as LuaValue)
+            g.set("base64_encode",          Base64EncodeFunction()         as LuaValue)
+            g.set("html_parse",             HtmlParseFunction()            as LuaValue)
+            g.set("html_select",            HtmlSelectFunction()           as LuaValue)
+            g.set("html_select_first",      HtmlSelectFirstFunction()      as LuaValue)
+            g.set("html_attr",              HtmlAttrFunction()             as LuaValue)
+            g.set("html_text",              HtmlTextFunction()             as LuaValue)
+            g.set("html_remove",            HtmlRemoveFunction()           as LuaValue)
+            g.set("url_encode",             UrlEncodeFunction()            as LuaValue)
+            g.set("url_encode_charset",     UrlEncodeCharsetFunction()     as LuaValue)
+            g.set("regex_match",            RegexMatchFunction()           as LuaValue)
+            g.set("regex_replace",          RegexReplaceFunction()         as LuaValue)
+            g.set("string_normalize",       StringNormalizeFunction()      as LuaValue)
+            g.set("string_split",           StringSplitFunction()          as LuaValue)
+            g.set("string_trim",            StringTrimFunction()           as LuaValue)
+            g.set("string_starts_with",     StringStartsWithFunction()     as LuaValue)
+            g.set("string_ends_with",       StringEndsWithFunction()       as LuaValue)
+            g.set("string_clean",           StringCleanFunction()          as LuaValue)
+            g.set("unescape_unicode",       UnescapeUnicodeFunction()      as LuaValue)
+            g.set("json_parse",             JsonParseFunction()            as LuaValue)
+            g.set("json_stringify",         JsonStringifyFunction()        as LuaValue)
+        }
         // Misc
         g.set("detect_pagination",      DetectPaginationFunction()     as LuaValue)
         g.set("sleep",                  SleepFunction()                as LuaValue)
@@ -1246,14 +1244,12 @@ internal fun createLuaSandboxGlobals(): Globals {
 }
 
 /** Компилирует Lua-текст в сериализованный байткод (тело .lbc-кэша). */
-internal fun compileLuaBytecode(globals: Globals, luaCode: String, chunkName: String): ByteArray {
-    val proto = globals.compilePrototype(StringReader(luaCode), chunkName)
-    return ByteArrayOutputStream().also { DumpState.dump(proto, it, false) }.toByteArray()
-}
+internal fun compileLuaBytecode(globals: Globals, luaCode: String, chunkName: String): ByteArray =
+    globals.compileBytecode(luaCode, chunkName)
 
 /** Загружает сериализованный байткод как chunk-функцию (режим "b"). */
 internal fun loadLuaBytecodeChunk(globals: Globals, bytes: ByteArray, chunkName: String): LuaValue =
-    globals.load(ByteArrayInputStream(bytes), chunkName, "b", globals)
+    globals.load(bytes, chunkName)
 
 
 // =============================================================================

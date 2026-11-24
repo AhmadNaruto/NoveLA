@@ -111,6 +111,9 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -fvisibility=hidden
     $<$<CONFIG:Release>:-O3>
     $<$<CONFIG:Release>:-flto=thin>
+    $<$<CONFIG:Release>:-fno-semantic-interposition>
+    $<$<CONFIG:Release>:-fomit-frame-pointer>
+    $<$<CONFIG:Release>:-fno-math-errno>
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE

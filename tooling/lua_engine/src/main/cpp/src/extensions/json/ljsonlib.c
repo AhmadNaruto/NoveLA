@@ -35,7 +35,8 @@ static void cjson_to_lua(lua_State *L, const cJSON *item) {
             lua_rawseti(L, -2, idx++);
         }
     } else if (cJSON_IsObject(item)) {
-        lua_newtable(L);
+        int count = cJSON_GetArraySize((cJSON *)item);
+        lua_createtable(L, 0, count);
         const cJSON *child = NULL;
         cJSON_ArrayForEach(child, item) {
             if (child->string != NULL) {

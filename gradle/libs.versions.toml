@@ -56,8 +56,7 @@ jsoup = "1.23.1"
 room = "2.8.5"
 junit = "4.13.2"
 
-# Lua and YAML dependencies
-luajvm = "3.0.1"
+# YAML dependencies
 snakeyaml = "2.7"
 
 okhttp = "5.5.0"
@@ -109,8 +108,7 @@ gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 
-# Lua and YAML dependencies
-luajvm = { module = "org.luaj:luaj-jse", version.ref = "luajvm" }
+# YAML dependencies
 snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
 
 # Text extractors

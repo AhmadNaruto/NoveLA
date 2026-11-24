@@ -23,22 +23,25 @@ typedef struct {
 
 static regex_cache_entry_t s_regex_cache[REGEX_CACHE_SIZE];
 static int s_cache_head = 0;
-static pthread_mutex_t s_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t s_cache_rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
 static pcre2_code *get_cached_regex(const char *pat, size_t pat_len) {
     if (!pat || pat_len == 0) return NULL;
 
-    pthread_mutex_lock(&s_cache_mutex);
+    // Fast-path: read-lock for concurrent cache hits without serialization
+    pthread_rwlock_rdlock(&s_cache_rwlock);
     for (int i = 0; i < REGEX_CACHE_SIZE; i++) {
         if (s_regex_cache[i].code &&
             s_regex_cache[i].pat_len == pat_len &&
             memcmp(s_regex_cache[i].pattern, pat, pat_len) == 0) {
             pcre2_code *cached = s_regex_cache[i].code;
-            pthread_mutex_unlock(&s_cache_mutex);
+            pthread_rwlock_unlock(&s_cache_rwlock);
             return cached;
         }
     }
+    pthread_rwlock_unlock(&s_cache_rwlock);
 
+    // Compile regex outside of locks to avoid stalling other reader threads
     int errornumber = 0;
     PCRE2_SIZE erroroffset = 0;
     pcre2_code *re = pcre2_compile(
@@ -50,9 +53,20 @@ static pcre2_code *get_cached_regex(const char *pat, size_t pat_len) {
         NULL
     );
 
-    if (!re) {
-        pthread_mutex_unlock(&s_cache_mutex);
-        return NULL;
+    if (!re) return NULL;
+
+    // Write-lock: store compiled pattern into LRU cache slot
+    pthread_rwlock_wrlock(&s_cache_rwlock);
+    // Double-check if another thread inserted it while compiling
+    for (int i = 0; i < REGEX_CACHE_SIZE; i++) {
+        if (s_regex_cache[i].code &&
+            s_regex_cache[i].pat_len == pat_len &&
+            memcmp(s_regex_cache[i].pattern, pat, pat_len) == 0) {
+            pcre2_code *cached = s_regex_cache[i].code;
+            pthread_rwlock_unlock(&s_cache_rwlock);
+            pcre2_code_free(re);
+            return cached;
+        }
     }
 
     int slot = s_cache_head;
@@ -73,7 +87,7 @@ static pcre2_code *get_cached_regex(const char *pat, size_t pat_len) {
         s_regex_cache[slot].code = re;
     }
 
-    pthread_mutex_unlock(&s_cache_mutex);
+    pthread_rwlock_unlock(&s_cache_rwlock);
     return re;
 }
 
