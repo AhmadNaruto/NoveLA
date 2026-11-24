@@ -5,7 +5,7 @@ package com.github.anaruto.lua
  *
  * Provides polymorphic type checking, conversions, table operations, and function execution.
  */
-abstract class LuaValue : Comparable<LuaValue> {
+abstract class LuaValue : Varargs(), Comparable<LuaValue> {
 
     companion object {
         const val TNONE = -1
@@ -139,6 +139,15 @@ abstract class LuaValue : Comparable<LuaValue> {
     open fun isuserdata(c: Class<*>): Boolean = isuserdata() && (touserdata() != null && c.isAssignableFrom(touserdata()!!.javaClass))
     open fun isnoneornil(): Boolean = isnil()
 
+    // --- Varargs Implementation (single-value Varargs) ---
+    override fun narg(): Int = 1
+    override fun arg(i: Int): LuaValue = if (i == 1) this else NIL
+    override fun arg1(): LuaValue = this
+    override fun subargs(start: Int): Varargs = if (start <= 1) this else EMPTY
+    override fun toArray(): Array<LuaValue> = arrayOf(this)
+    override fun toList(): List<LuaValue> = listOf(this)
+    override fun iterator(): Iterator<LuaValue> = listOf(this).iterator()
+
     // --- Value Conversions ---
 
     /**
@@ -154,8 +163,11 @@ abstract class LuaValue : Comparable<LuaValue> {
     open fun optint(default: Int): Int = if (isnoneornil()) default else toint()
     open fun optlong(default: Long): Long = if (isnoneornil()) default else tolong()
     open fun optdouble(default: Double): Double = if (isnoneornil()) default else todouble()
+    open fun optjstring(default: String): String = if (isnoneornil()) default else tojstring()
     open fun optjstring(default: String?): String? = if (isnoneornil()) default else tojstring()
+    open fun opttable(default: LuaTable): LuaTable = if (isnoneornil()) default else checktable()
     open fun opttable(default: LuaTable?): LuaTable? = if (isnoneornil()) default else checktable()
+    open fun optfunction(default: LuaFunction): LuaFunction = if (isnoneornil()) default else checkfunction()
     open fun optfunction(default: LuaFunction?): LuaFunction? = if (isnoneornil()) default else checkfunction()
 
     open fun checkboolean(): Boolean = throw LuaError("expected boolean, got " + typename())
