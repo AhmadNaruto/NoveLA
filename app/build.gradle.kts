@@ -36,13 +36,6 @@ android {
     val hasDefaultSigningConfigData = defaultSigningConfigData.containsKey("storeFile")
     println("hasDefaultSigningConfigData: $hasDefaultSigningConfigData")
 
-    if (cliCustomSettings.splitByAbi) splits {
-        abi {
-            isEnable = true
-            isUniversalApk = cliCustomSettings.splitByAbiDoUniversal
-        }
-    }
-
     defaultConfig {
         applicationId = "my.novela.native"
         versionCode = 39
@@ -50,7 +43,8 @@ android {
         base.archivesName.set("NoveLA_Native_v$versionName")
         manifestPlaceholders["appLabel"] = "NoveLA Native"
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+            abiFilters.clear()
+            abiFilters += "arm64-v8a"
         }
 
         val gitCommitHash = providers.exec {
@@ -90,6 +84,15 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
     }
     namespace = "my.noveldokusha"
 }

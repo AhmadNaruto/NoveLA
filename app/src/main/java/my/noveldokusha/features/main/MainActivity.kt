@@ -286,11 +286,6 @@ open class MainActivity : BaseActivity() {
     }
 
     private fun requestPushNotificationPermission() {
-        // check if sdk level is more than 33
-        if (VERSION.SDK_INT < VERSION_CODES.TIRAMISU) {
-            return
-        }
-
         val result = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
         if (result != PackageManager.PERMISSION_GRANTED) {
             requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)

@@ -69,16 +69,20 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     LUA_USE_LINUX
 )
 
-# Compiler & Linker optimizations (dead-code elimination and symbol visibility)
+# Compiler & Linker optimizations for ARM64 (high-performance vectorization, LTO, 16KB page alignment)
 target_compile_options(${PROJECT_NAME} PRIVATE
     -ffunction-sections
     -fdata-sections
     -fvisibility=hidden
-    $<$<CONFIG:Release>:-Os>
+    $<$<CONFIG:Release>:-O3>
+    $<$<CONFIG:Release>:-flto=thin>
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE
     -Wl,--gc-sections
+    -Wl,-z,max-page-size=16384
+    $<$<CONFIG:Release>:-flto=thin>
+    $<$<CONFIG:Release>:-Wl,--strip-all>
 )
 
 find_library(LIBDL dl)

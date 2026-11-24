@@ -7,5 +7,5 @@ internal object appConfig {
     const val JAVA_VERSION_STRING = "21"
     const val COMPILE_SDK = 37
     const val TARGET_SDK = COMPILE_SDK
-    const val MIN_SDK = 26
+    const val MIN_SDK = 33
 }

@@ -8,7 +8,8 @@ android {
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
         ndk {
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+            abiFilters.clear()
+            abiFilters += "arm64-v8a"
         }
     }
 
