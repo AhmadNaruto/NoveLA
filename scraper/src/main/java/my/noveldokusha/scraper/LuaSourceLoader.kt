@@ -286,6 +286,7 @@ class LuaEngine @Inject constructor(
         g.set("detect_pagination",      DetectPaginationFunction()     as LuaValue)
         g.set("sleep",                  SleepFunction()                as LuaValue)
         g.set("log_info",               LogInfoFunction()              as LuaValue)
+        g.set("print",                  LogInfoFunction()              as LuaValue)
         g.set("log_error",              LogErrorFunction()             as LuaValue)
         g.set("os_time",                OsTimeFunction()               as LuaValue)
         // Plugin error signaling
@@ -384,6 +385,7 @@ class LuaEngine @Inject constructor(
                 // OkHttp и так не отдаёт тело у HEAD, но читать его не нужно
                 // и здесь: проба живости возвращает пустой body по определению.
                 val bytes = if (isHead) ByteArray(0) else r.body.bytes()
+                Timber.d("${params.logTag} [${params.method}] ${params.url} -> ${r.code} (${bytes.size} bytes)")
                 if (params.binary) {
                     responseTableBinary(bytes, r.code, r.headers.toMultimap())
                 } else {
@@ -475,6 +477,7 @@ class LuaEngine @Inject constructor(
                     networkClient.call(builder).use { r ->
                         val bytes = r.body.bytes()
                         val s     = String(bytes, java.nio.charset.Charset.forName(charset))
+                        Timber.d("http_post $url -> ${r.code} (${bytes.size} bytes)")
                         responseTable(r.isSuccessful, s, r.code, r.headers.toMultimap())
                     }
                 }

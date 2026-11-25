@@ -109,6 +109,7 @@ fun SettingsScreen(
                 onAutoBackupIncludeSettingsChange = viewModel::onAutoBackupIncludeSettingsChange,
                 onAutoBackupIncludePluginsChange = viewModel::onAutoBackupIncludePluginsChange,
                 onDeleteNovelPrompt = viewModel::onDeleteNovelPrompt,
+                onVerboseLoggingChange = viewModel::onVerboseLoggingChange,
                 onExportLogs = viewModel::exportLogs,
                 modifier = Modifier.padding(innerPadding),
             )

@@ -423,6 +423,10 @@ class AppPreferences @Inject constructor(
             )
         }
 
+    val VERBOSE_LOGGING_ENABLED = object : Preference<Boolean>("VERBOSE_LOGGING_ENABLED") {
+        override var value by SharedPreference_Boolean(name, preferences, false)
+    }
+
     val FLOATING_TTS_ENABLED = object : Preference<Boolean>("FLOATING_TTS_ENABLED") {
         override var value by SharedPreference_Boolean(name, preferences, false)
     }

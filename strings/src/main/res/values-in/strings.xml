@@ -832,6 +832,8 @@
 
     <!-- Support & About -->
     <string name="support">Dukungan</string>
+    <string name="verbose_logging">Log diagnostik terperinci</string>
+    <string name="verbose_logging_description">Catat detail jaringan, engine Lua, dan parser ke app.log</string>
     <string name="export_logs">Ekspor log</string>
     <string name="export_logs_description">Bagikan file log untuk pemecahan masalah</string>
     <string name="no_logs_available">Tidak ada log yang tersedia</string>

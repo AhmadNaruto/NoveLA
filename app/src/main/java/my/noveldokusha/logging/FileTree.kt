@@ -9,13 +9,16 @@ import java.util.Locale
 
 /**
  * Timber.Tree that appends logs to a file.
- * Only logs at or above [minPriority] are written.
+ * Only logs at or above effective priority are written.
+ * When [isVerboseEnabled] returns true, priority threshold drops to [Log.DEBUG].
+ * Otherwise, [defaultMinPriority] ([Log.WARN]) is used.
  * On overflow the current file is kept as `<name>.1` (one previous copy),
  * so crash reports from the session before rotation are not lost.
  */
 class FileTree(
     private val file: File,
-    private val minPriority: Int = Log.WARN,
+    private val isVerboseEnabled: () -> Boolean = { false },
+    private val defaultMinPriority: Int = Log.WARN,
     private val maxFileSizeBytes: Long = MAX_FILE_SIZE
 ) : Timber.Tree() {
 
@@ -24,7 +27,10 @@ class FileTree(
         rotateIfNeeded()
     }
 
-    override fun isLoggable(tag: String?, priority: Int): Boolean = priority >= minPriority
+    override fun isLoggable(tag: String?, priority: Int): Boolean {
+        val min = if (isVerboseEnabled()) Log.DEBUG else defaultMinPriority
+        return priority >= min
+    }
 
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         val level = when (priority) {

@@ -867,6 +867,8 @@
 
     <!-- Support & About -->
     <string name="support">Support</string>
+    <string name="verbose_logging">Verbose diagnostic logging</string>
+    <string name="verbose_logging_description">Log detailed network, Lua engine, and parser events to app.log</string>
     <string name="export_logs">Export logs</string>
     <string name="export_logs_description">Share log file for troubleshooting</string>
     <string name="no_logs_available">No logs available</string>

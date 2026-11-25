@@ -251,6 +251,7 @@ open class LuaSourceAdapter(
                 withSourceContext {
                     luaEngine.resetShowError()
                     try {
+                        Timber.d("LuaSource[${metadata.id}].getCatalogList(index=$index)")
                         // Fresh-network scope: lua http_* go with no-cache, past both the
                         // memory TTL cache and the OkHttp disk cache. Set/restore happens
                         // on this very thread — the lua call below is synchronous.
@@ -274,6 +275,7 @@ open class LuaSourceAdapter(
                 withSourceContext {
                     luaEngine.resetShowError()
                     try {
+                        Timber.d("LuaSource[${metadata.id}].getCatalogSearch(index=$index, input='$input')")
                         val result = luaScript.get("getCatalogSearch").call(
                             LuaValue.valueOf(index),
                             LuaValue.valueOf(input)
@@ -433,6 +435,7 @@ open class LuaSourceAdapter(
                 withSourceContext {
                     luaEngine.resetShowError()
                     try {
+                        Timber.d("LuaSource[${metadata.id}].getChapterList(bookUrl=$bookUrl)")
                         val result = luaScript.get("getChapterList").call(LuaValue.valueOf(bookUrl))
                         checkShowError() ?: run {
                             val chapters = mutableListOf<ChapterResult>()
@@ -573,6 +576,7 @@ open class LuaSourceAdapter(
                     val fn = luaScript.get("getVideoList")
                     if (fn.isnil()) return@withSourceContext null
                     try {
+                        Timber.d("LuaSource[${metadata.id}].getVideoList(episodeUrl=$episodeUrl)")
                         val result = fn.call(LuaValue.valueOf(episodeUrl))
                         checkShowError() ?: convertLuaVideoList(result)
                     } catch (e: Exception) {

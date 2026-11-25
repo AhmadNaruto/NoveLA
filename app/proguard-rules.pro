@@ -93,11 +93,12 @@
     public static int i(...);
 }
 
--assumenosideeffects class timber.log.Timber* {
-    public static *** d(...);
-    public static *** v(...);
-    public static *** i(...);
-}
+# Timber calls are retained for runtime diagnostic logging (filtered dynamically by FileTree)
+# -assumenosideeffects class timber.log.Timber* {
+#     public static *** d(...);
+#     public static *** v(...);
+#     public static *** i(...);
+# }
 
 -keep class my.noveldokusha.logging.FileTree { *; }
 

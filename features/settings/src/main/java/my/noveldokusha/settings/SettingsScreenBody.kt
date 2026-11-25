@@ -105,6 +105,7 @@ internal fun SettingsScreenBody(
     onAutoBackupIncludeImagesChange: (Boolean) -> Unit,
     onAutoBackupIncludeSettingsChange: (Boolean) -> Unit,
     onAutoBackupIncludePluginsChange: (Boolean) -> Unit,
+    onVerboseLoggingChange: (Boolean) -> Unit = {},
     onExportLogs: () -> Unit = {},
 ) {
     // Refresh size displays every time the user navigates to this screen
@@ -236,6 +237,8 @@ internal fun SettingsScreenBody(
         )
         HorizontalDivider()
         SettingsSupport(
+            verboseLoggingEnabled = state.verboseLoggingEnabled.value,
+            onVerboseLoggingChange = onVerboseLoggingChange,
             onExportLogs = onExportLogs,
         )
         HorizontalDivider()

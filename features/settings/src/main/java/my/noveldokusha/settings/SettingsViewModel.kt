@@ -132,6 +132,7 @@ internal class SettingsViewModel @Inject constructor(
         isCleaningMangaCache = isCleaningMangaCache,
         isCleaningOfflineVideo = isCleaningOfflineVideo,
         cleanConfirmationType = mutableStateOf(null),
+        verboseLoggingEnabled = appPreferences.VERBOSE_LOGGING_ENABLED.state(viewModelScope),
         appVersion = appRemoteRepository.getDisplayVersion(),
     )
 
@@ -477,6 +478,15 @@ internal class SettingsViewModel @Inject constructor(
         if (BuildConfig.DEBUG) {
             MemoryDiagnostics.logMemoryStats("SettingsViewModel")
             toasty.show("Memory stats logged to logcat")
+        }
+    }
+
+    fun onVerboseLoggingChange(enabled: Boolean) {
+        state.verboseLoggingEnabled.value = enabled
+        if (enabled) {
+            Timber.i("Verbose diagnostic logging enabled by user")
+        } else {
+            Timber.i("Verbose diagnostic logging disabled by user")
         }
     }
 

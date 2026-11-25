@@ -153,7 +153,7 @@ class App : Application(), SingletonImageLoader.Factory, WorkConfiguration.Provi
 
         // File tree for log export — all build types
         val logFile = File(filesDir, "logs/app.log")
-        Timber.plant(FileTree(logFile))
+        Timber.plant(FileTree(logFile, isVerboseEnabled = { appPreferences.VERBOSE_LOGGING_ENABLED.value }))
 
         // Заголовок сессии: к какому билду относится лог.
         // Пишем напрямую в файл — Timber.i вырезается R8 из релизного dex.
