@@ -37,11 +37,11 @@ android {
     println("hasDefaultSigningConfigData: $hasDefaultSigningConfigData")
 
     defaultConfig {
-        applicationId = "my.novela.native"
-        versionCode = 39
-        versionName = "1.6.1"
-        base.archivesName.set("NoveLA_Native_v$versionName")
-        manifestPlaceholders["appLabel"] = "NoveLA Native"
+        applicationId = "my.novela"
+        versionCode = 40
+        versionName = "1.6.2"
+        base.archivesName.set("NoveLA_v$versionName")
+        manifestPlaceholders["appLabel"] = "NoveLA"
         ndk {
             abiFilters.clear()
             abiFilters += "arm64-v8a"
@@ -67,7 +67,7 @@ android {
         named("debug") {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            manifestPlaceholders["appLabel"] = "NoveLA Native Debug"
+            manifestPlaceholders["appLabel"] = "NoveLA Debug"
         }
 
         named("release") {
