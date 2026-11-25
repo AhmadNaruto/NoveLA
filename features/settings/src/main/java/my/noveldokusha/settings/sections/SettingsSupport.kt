@@ -19,9 +19,9 @@ import my.noveldokusha.settings.R
 
 @Composable
 internal fun SettingsSupport(
-    verboseLoggingEnabled: Boolean,
-    onVerboseLoggingChange: (Boolean) -> Unit,
-    onExportLogs: () -> Unit,
+    verboseLoggingEnabled: Boolean = false,
+    onVerboseLoggingChange: (Boolean) -> Unit = {},
+    onExportLogs: () -> Unit = {},
 ) {
     Text(
         text = stringResource(R.string.support),

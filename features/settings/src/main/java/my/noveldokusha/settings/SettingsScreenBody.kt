@@ -385,6 +385,7 @@ private fun Preview() {
                     autoBackupLastTimestamp = remember { derivedStateOf { 0L } },
                     translationNovelPrompts = remember { derivedStateOf { emptyMap<String, NovelPromptData>() } },
                     cleanConfirmationType = remember { mutableStateOf(null) },
+                    verboseLoggingEnabled = remember { mutableStateOf(false) },
                 ),
                 onRefreshSizes = { },
                 onRequestCleanDatabase = { },

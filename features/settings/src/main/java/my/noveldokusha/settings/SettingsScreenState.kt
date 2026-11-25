@@ -64,7 +64,7 @@ data class SettingsScreenState(
     val isCleaningMangaCache: State<Boolean>,
     val isCleaningOfflineVideo: State<Boolean>,
     val cleanConfirmationType: MutableState<CleanConfirmationType?>,
-    val verboseLoggingEnabled: MutableState<Boolean>,
+    val verboseLoggingEnabled: MutableState<Boolean> = mutableStateOf(false),
     val appVersion: String = "",
 ) {
     data class UpdateApp(
