@@ -19,6 +19,7 @@ import my.noveldokusha.core.appPreferences.TranslationSettingsResolver
 import my.noveldokusha.features.reader.ReaderRepository
 import my.noveldokusha.features.reader.decodeLastReadPosition
 import my.noveldokusha.features.reader.domain.ChapterState
+import my.noveldokusha.features.reader.domain.ReaderState
 import my.noveldokusha.features.reader.domain.ReadingChapterPosStats
 import my.noveldokusha.features.reader.domain.chapterReadPercentage
 import my.noveldokusha.features.reader.features.ReaderChaptersLoader
@@ -98,15 +99,23 @@ internal class ReaderSession(
         translatorSourceLanguageOrNull = { readerLiveTranslation.translatorState?.sourceLocale?.language },
         translatorTargetLanguageOrNull = { readerLiveTranslation.translatorState?.targetLocale?.language },
         translatorProvider = {
+            // Определяем провайдер по настройке, а не по флагу isUsingOnlineTranslation
             when (appPreferences.TRANSLATION_PROVIDER.value) {
                 "GEMINI" -> "gemini"
+                "OPENAI" -> "openai"
+                "GOOGLE_FREE" -> "google_free"
                 else -> "google"
             }
         },
-        orderedChapters = orderedChapters,
-        readerViewHandlersActions = readerViewHandlersActions,
+        translatorIsOnline = { readerLiveTranslation.isUsingOnlineTranslation() },
+        translatorBatchTranslateOrNull = { readerLiveTranslation.getBatchTranslator() },
+        translatorTranslateTitleOrNull = { title, sourceLang, targetLang ->
+            translationManager.translateTitle(title, sourceLang, targetLang)
+        },
         bookUrl = bookUrl,
-        initialChapterUrl = initialChapterUrl,
+        orderedChapters = orderedChapters,
+        readerState = ReaderState.INITIAL_LOAD,
+        readerViewHandlersActions = readerViewHandlersActions,
         chapterTranslationDao = chapterTranslationDao,
         regexRulesProvider = { appPreferences.effectiveRegexRules(bookUrl) },
         sentenceSplittingEnabledProvider = { appPreferences.READER_SENTENCE_SPLITTING.value },
@@ -143,27 +152,41 @@ internal class ReaderSession(
     private fun initLoadData() {
         scope.launch {
             val book = async(Dispatchers.IO) { appRepository.libraryBooks.get(bookUrl) }
-            val (cover, title) = book.await()?.let { it.coverUrl to it.title } ?: (null to null)
-            bookCoverUrl = cover
-            bookTitle = title
-
-            orderedChapters.addAll(readerRepository.getChapters(bookUrl))
-            val initialIndex = orderedChapters.indexOfFirst { it.url == chapterUrl }
-                .takeIf { it != -1 } ?: 0
-
-            val chapterIndex = async(Dispatchers.IO) {
-                val lastReadData = appRepository.libraryBooks.getLastRead(bookUrl)
-                val chapterState = lastReadData?.let { decodeLastReadPosition(it) }
-
-                if (chapterState != null) {
-                    val matchingIndex = orderedChapters.indexOfFirst { it.url == chapterState.chapterUrl }
-                    if (matchingIndex != -1) matchingIndex else initialIndex
-                } else {
-                    initialIndex
+            val chapter = async(Dispatchers.IO) { appRepository.bookChapters.get(chapterUrl) }
+            val chaptersList = async(Dispatchers.IO) {
+                orderedChapters.also { it.addAll(appRepository.bookChapters.chapters(bookUrl)) }
+            }
+            val chapterIndex = async(Dispatchers.Default) {
+                val list = chaptersList.await()
+                Timber.d("ReaderLoad: initialChapterUrl=$chapterUrl chapters=${list.size}")
+                val foundIndex = list.indexOfFirst { it.url == chapterUrl }
+                Timber.d("ReaderLoad: initial chapterIndex=$foundIndex")
+                if (foundIndex == -1) {
+                    Timber.w("ReaderLoad: chapterUrl НЕ НАЙДЕН в списке глав, fallback на первую главу! requested=$chapterUrl")
                 }
+                foundIndex
             }
 
-            readerLiveTranslation.init(this)
+            chaptersList.await()
+
+            // ВАЖНО: translator должен быть готов ДО первой загрузки главы.
+            // Иначе getBatchTranslator() вернёт null (translatorState ещё не создан)
+            // и онлайн-провайдер (Gemini/OpenAI) упадёт в поабзацный перевод или ошибку.
+            readerLiveTranslation.init()
+
+            bookCoverUrl = book.await()?.coverImageUrl
+            bookTitle = book.await()?.title
+            readerLiveTranslation.bookTitle = bookTitle ?: ""
+            // Позиция из БД может быть закодирована знаком (гранулярность сплита), декодируем.
+            val savedPosition = decodeLastReadPosition(chapter.await()?.lastReadPosition ?: 0)
+            currentChapter = ChapterState(
+                chapterUrl = chapterUrl,
+                chapterItemPosition = savedPosition.position,
+                offset = chapter.await()?.lastReadOffset ?: 0,
+                savedWithSplit = savedPosition.savedWithSplit,
+            )
+
+            // Загружаем главу только после того как translatorState готов
             readerChaptersLoader.tryLoadInitial(chapterIndex = chapterIndex.await())
         }
     }
