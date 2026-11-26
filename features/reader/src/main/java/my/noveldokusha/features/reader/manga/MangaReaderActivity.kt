@@ -46,7 +46,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Remove
@@ -897,7 +897,7 @@ internal class MangaReaderActivity : ComponentActivity() {
                         modifier = Modifier.size(36.dp),
                     ) {
                         Icon(
-                            Icons.Filled.List,
+                            Icons.AutoMirrored.Filled.List,
                             contentDescription = stringResource(R.string.manga_reader_chapter_list),
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,

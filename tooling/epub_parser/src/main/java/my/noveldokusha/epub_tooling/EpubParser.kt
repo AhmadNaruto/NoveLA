@@ -227,7 +227,7 @@ private suspend fun parseEpub(zip: ZipFile): EpubBook {
 
     // Add the last chapter if any content remains
     if (currentTOC != null && currentChapterBody.isNotEmpty()) {
-        chapters.add(Chapter(currentTOC!!.chapterLink, currentTOC!!.chapterTitle, currentChapterBody.toString()))
+        chapters.add(Chapter(currentTOC.chapterLink, currentTOC.chapterTitle, currentChapterBody.toString()))
     }
 
 
