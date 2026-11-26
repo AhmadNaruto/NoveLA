@@ -146,15 +146,15 @@
     <string name="unread_chapters">Chương chưa đọc</string>
     <string name="last_update">Cập nhật lần cuối</string>
     <string name="date_added">Ngày thêm</string>
-    <string name="voices">Giọng đọc</string>
-    <string name="search_voice_by_language">Tìm giọng đọc theo ngôn ngữ</string>
+
+
     <string name="needs_internet">Cần Internet</string>
     <string name="no_matches">Không có kết quả</string>
     <string name="start_here">Bắt đầu tại đây</string>
     <string name="focus">Tập trung</string>
-    <string name="voice_pitch">Cao độ giọng</string>
-    <string name="voice_speed">Tốc độ giọng</string>
-    <string name="original_voice">Giọng gốc</string>
+
+
+
     <string name="not_set">Chưa đặt</string>
     <string name="chapter_x_over_n">Chương: %1$d/%2$d</string>
     <string name="progress_x_percentage">Tiến trình: %1$.0f%%</string>
@@ -163,36 +163,36 @@
     <string name="paragraph_spacing">Khoảng cách đoạn</string>
     <string name="letter_spacing">Khoảng cách chữ cái</string>
     <string name="name">Tên</string>
-    <string name="save_current_voice">Lưu giọng đọc hiện tại</string>
-    <string name="save_current_voice_parameters">Lưu giọng đọc và thông số hiện tại</string>
+
+
     <string name="layout">Bố cục</string>
     <string name="new_chapters">Chương mới</string>
     <string name="update_error">Lỗi cập nhật</string>
     <string name="update_cancelled">Đã hủy cập nhật</string>
-    <string name="tts_estimated_time_left">Thời gian dự kiến còn lại</string>
-    <string name="tts_total_chapter">Tổng số chương</string>
-    <string name="tts_hours_abbr">giờ</string>
-    <string name="tts_minutes_abbr">phút</string>
-    <string name="tts_seconds_abbr">giây</string>
-    <string name="media_control_previous">trước</string>
-    <string name="media_control_rewind">lùi</string>
-    <string name="media_control_play">phát</string>
-    <string name="media_control_pause">tạm dừng</string>
-    <string name="media_control_fast_forward">tua nhanh</string>
-    <string name="media_control_next">tiếp</string>
-    <string name="tts_floating">TTS nổi</string>
-    <string name="tts_floating_channel_description">Điều khiển lớp phủ TTS nổi</string>
-    <string name="tts_floating_overlay_active">Lớp phủ TTS đang hoạt động</string>
-    <string name="tts_floating_show_outside_app">Hiển thị trên ứng dụng khác</string>
-    <string name="tts_floating_opacity">Độ mờ</string>
-    <string name="tts_floating_width">Chiều rộng</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_overlay_permission_title">Quyền lớp phủ</string>
-    <string name="tts_floating_overlay_permission_message">Trình phát nổi cần quyền để hiển thị trên các ứng dụng khác.</string>
-    <string name="tts_floating_open_settings">Mở cài đặt</string>
+
+
+
+
     <string name="delete">Xóa</string>
     <string name="english">Tiếng Anh</string>
     <string name="filter_title">Tựa đề</string>
@@ -278,14 +278,14 @@
     <string name="gemini_api_description_enabled">Khi được bật, sử dụng Google Gemini API cho các bản dịch chất lượng cao hơn. Khi tắt hoặc nếu khóa API không được đặt, sẽ sử dụng Google Dịch miễn phí.</string>
     <string name="gemini_api_description_disabled">Cấu hình khóa API Gemini ở trên để bật tùy chọn này. Hiện đang sử dụng Google Dịch (Miễn phí) — không yêu cầu khóa API.</string>
     <string name="translator">Trình dịch</string>
-    <string name="voice_reader">Đọc giọng</string>
+
     <string name="more">Thêm</string>
     <string name="style">Kiểu</string>
-    <string name="saved_voices">Giọng đã lưu</string>
-    <string name="no_voices_saved">Chưa lưu giọng nào</string>
+
+
     <string name="cancel">Hủy</string>
-    <string name="save_voice">Lưu giọng</string>
-    <string name="delete_voice">Xóa giọng</string>
+
+
     <string name="translate">Dịch</string>
     <string name="size">Kích thước</string>
     <string name="add_local_directory">Thêm thư mục cục bộ</string>
@@ -323,7 +323,7 @@
     <string name="language_japanese">Tiếng Nhật</string>
     <string name="language_korean">Tiếng Hàn</string>
     <string name="updating_library">Đang cập nhật thư viện (%1$d/%2$d)</string>
-    <string name="notification_channel_name_reader_narrator">Trình đọc truyện</string>
+
     <string name="notification_channel_name_library_update">Cập nhật thư viện</string>
     <string name="notification_channel_name_new_chapters">Chương mới</string>
     <string name="notification_channel_name_failed_updates">Cập nhật thất bại</string>
@@ -727,16 +727,16 @@
     <string name="translation_mode_settings_description">Cặp ngôn ngữ theo từng truyện hoặc một cặp cho tất cả truyện</string>
     <string name="translation_mode_per_novel">Cuốn truyện này</string>
     <string name="translation_mode_global">Tất cả truyện</string>
-    <string name="tts_highlight">Đánh dấu TTS</string>
+
     <string name="manual_highlight">Đánh dấu thủ công</string>
     <string name="manual_highlight_start">Bắt đầu đánh dấu thủ công</string>
     <string name="manual_highlight_previous">Đoạn trước</string>
     <string name="manual_highlight_next">Đoạn tiếp theo</string>
     <string name="manual_highlight_stop">Dừng đánh dấu thủ công</string>
-    <string name="tts_floating_glow">Phát sáng</string>
-    <string name="tts_glow_auto">Tự động</string>
-    <string name="tts_glow_on">Bật</string>
-    <string name="tts_glow_off">Tắt</string>
+
+
+
+
     <string name="regex_cleanup_novel_rules">Quy tắc regex (cuốn truyện này)</string>
     <string name="regex_cleanup_novel_title_format">Truyện: %s</string>
     <string name="regex_cleanup_move_to_global">Chuyển sang quy tắc chung</string>

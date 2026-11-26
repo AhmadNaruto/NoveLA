@@ -146,15 +146,15 @@
     <string name="unread_chapters">Bab belum dibaca</string>
     <string name="last_update">Pembaruan terakhir</string>
     <string name="date_added">Tanggal ditambahkan</string>
-    <string name="voices">Suara</string>
-    <string name="search_voice_by_language">Cari suara berdasarkan bahasa</string>
+
+
     <string name="needs_internet">Membutuhkan Internet</string>
     <string name="no_matches">Tidak ada kecocokan</string>
     <string name="start_here">Mulai di sini</string>
     <string name="focus">Fokus</string>
-    <string name="voice_pitch">Nada suara</string>
-    <string name="voice_speed">Kecepatan suara</string>
-    <string name="original_voice">Suara asli</string>
+
+
+
     <string name="not_set">Belum diatur</string>
     <string name="chapter_x_over_n">Bab: %1$d/%2$d</string>
     <string name="progress_x_percentage">Kemajuan: %1$.0f%%</string>
@@ -163,36 +163,36 @@
     <string name="paragraph_spacing">Spasi paragraf</string>
     <string name="letter_spacing">Spasi huruf</string>
     <string name="name">Nama</string>
-    <string name="save_current_voice">Simpan suara saat ini</string>
-    <string name="save_current_voice_parameters">Simpan suara dan parameter saat ini</string>
+
+
     <string name="layout">Tata letak</string>
     <string name="new_chapters">Bab baru</string>
     <string name="update_error">Galat pembaruan</string>
     <string name="update_cancelled">Pembaruan dibatalkan</string>
-    <string name="tts_estimated_time_left">Perkiraan Waktu Tersisa</string>
-    <string name="tts_total_chapter">Total Bab</string>
-    <string name="tts_hours_abbr">j</string>
-    <string name="tts_minutes_abbr">m</string>
-    <string name="tts_seconds_abbr">d</string>
-    <string name="media_control_previous">sebelumnya</string>
-    <string name="media_control_rewind">mundur</string>
-    <string name="media_control_play">putar</string>
-    <string name="media_control_pause">jeda</string>
-    <string name="media_control_fast_forward">maju_cepat</string>
-    <string name="media_control_next">berikutnya</string>
-    <string name="tts_floating">TTS Mengambang</string>
-    <string name="tts_floating_channel_description">Kontrol overlay TTS mengambang</string>
-    <string name="tts_floating_overlay_active">Overlay TTS aktif</string>
-    <string name="tts_floating_show_outside_app">Tampilkan di atas aplikasi lain</string>
-    <string name="tts_floating_opacity">Opacity</string>
-    <string name="tts_floating_width">Lebar</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_overlay_permission_title">Izin overlay</string>
-    <string name="tts_floating_overlay_permission_message">Pemutar mengambang perlu izin untuk ditampilkan di atas aplikasi lain.</string>
-    <string name="tts_floating_open_settings">Buka pengaturan</string>
+
+
+
+
     <string name="delete">Hapus</string>
     <string name="english">Inggris</string>
     <string name="filter_title">Judul</string>
@@ -278,14 +278,14 @@
     <string name="gemini_api_description_enabled">Jika diaktifkan, menggunakan Google Gemini API untuk terjemahan berkualitas lebih tinggi. Jika dinonaktifkan atau kunci API tidak diatur, menggunakan Google Translate gratis.</string>
     <string name="gemini_api_description_disabled">Konfigurasikan kunci API Gemini di atas untuk mengaktifkan opsi ini. Saat ini menggunakan Google Translate (Gratis) - tidak perlu kunci API.</string>
     <string name="translator">Penerjemah</string>
-    <string name="voice_reader">Pembaca suara</string>
+
     <string name="more">Lainnya</string>
     <string name="style">Gaya</string>
-    <string name="saved_voices">Suara tersimpan</string>
-    <string name="no_voices_saved">Tidak ada suara tersimpan</string>
+
+
     <string name="cancel">Batal</string>
-    <string name="save_voice">Simpan suara</string>
-    <string name="delete_voice">Hapus suara</string>
+
+
     <string name="translate">Terjemahkan</string>
     <string name="size">Ukuran</string>
     <string name="add_local_directory">Tambah direktori lokal</string>
@@ -323,7 +323,7 @@
     <string name="language_japanese">Jepang</string>
     <string name="language_korean">Korea</string>
     <string name="updating_library">Memperbarui perpustakaan (%1$d/%2$d)</string>
-    <string name="notification_channel_name_reader_narrator">Narator pembaca</string>
+
     <string name="notification_channel_name_library_update">Pembaruan perpustakaan</string>
     <string name="notification_channel_name_new_chapters">Bab baru</string>
     <string name="notification_channel_name_failed_updates">Pembaruan gagal</string>
@@ -727,16 +727,16 @@
 <string name="translation_mode_per_novel">Novel ini</string>
 <string name="translation_mode_global">Semua novel</string>
 <string name="translation_select_pair_to_enable">Pilih bahasa sumber dan target untuk mulai menerjemahkan</string>
-<string name="tts_highlight">Sorotan TTS</string>
+
 <string name="manual_highlight">Sorotan manual</string>
 <string name="manual_highlight_start">Mulai sorotan manual</string>
 <string name="manual_highlight_previous">Paragraf sebelumnya</string>
 <string name="manual_highlight_next">Paragraf berikutnya</string>
 <string name="manual_highlight_stop">Hentikan sorotan manual</string>
-<string name="tts_floating_glow">Cahaya</string>
-<string name="tts_glow_auto">Otomatis</string>
-<string name="tts_glow_on">Aktif</string>
-<string name="tts_glow_off">Nonaktif</string>
+
+
+
+
 <string name="regex_cleanup_novel_rules">Aturan regex (novel ini)</string>
 <string name="regex_cleanup_novel_title_format">Novel: %s</string>
 <string name="regex_cleanup_move_to_global">Pindahkan ke global</string>

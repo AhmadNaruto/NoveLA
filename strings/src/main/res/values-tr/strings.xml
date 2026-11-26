@@ -146,15 +146,15 @@
     <string name="unread_chapters">Okunmamış bölümler</string>
     <string name="last_update">Son güncelleme</string>
     <string name="date_added">Eklenme tarihi</string>
-    <string name="voices">Sesler</string>
-    <string name="search_voice_by_language">Dile göre ses ara</string>
+
+
     <string name="needs_internet">İnternet gerekli</string>
     <string name="no_matches">Eşleşme yok</string>
     <string name="start_here">Buradan başla</string>
     <string name="focus">Odak</string>
-    <string name="voice_pitch">Ses perdesi</string>
-    <string name="voice_speed">Ses hızı</string>
-    <string name="original_voice">Orijinal ses</string>
+
+
+
     <string name="not_set">Ayarlanmadı</string>
     <string name="chapter_x_over_n">Bölüm: %1$d/%2$d</string>
     <string name="progress_x_percentage">İlerleme: %1$.0f%%</string>
@@ -163,36 +163,36 @@
     <string name="paragraph_spacing">Paragraf aralığı</string>
     <string name="letter_spacing">Harf aralığı</string>
     <string name="name">İsim</string>
-    <string name="save_current_voice">Geçerli sesi kaydet</string>
-    <string name="save_current_voice_parameters">Geçerli sesi ve parametreleri kaydet</string>
+
+
     <string name="layout">Düzen</string>
     <string name="new_chapters">Yeni bölümler</string>
     <string name="update_error">Güncelleme hatası</string>
     <string name="update_cancelled">Güncelleme iptal edildi</string>
-    <string name="tts_estimated_time_left">Tahmini Kalan Süre</string>
-    <string name="tts_total_chapter">Toplam Bölüm</string>
-    <string name="tts_hours_abbr">s</string>
-    <string name="tts_minutes_abbr">d</string>
-    <string name="tts_seconds_abbr">sn</string>
-    <string name="media_control_previous">önceki</string>
-    <string name="media_control_rewind">geri sar</string>
-    <string name="media_control_play">oynat</string>
-    <string name="media_control_pause">duraklat</string>
-    <string name="media_control_fast_forward">hızlı ileri sar</string>
-    <string name="media_control_next">sonraki</string>
-    <string name="tts_floating">Yüzen TTS</string>
-    <string name="tts_floating_channel_description">Yüzen TTS kaplama kontrolleri</string>
-    <string name="tts_floating_overlay_active">TTS kaplaması aktif</string>
-    <string name="tts_floating_show_outside_app">Diğer uygulamaların üstünde göster</string>
-    <string name="tts_floating_opacity">Opaklık</string>
-    <string name="tts_floating_width">Genişlik</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_overlay_permission_title">Kaplama izni</string>
-    <string name="tts_floating_overlay_permission_message">Yüzen oynatıcının diğer uygulamaların üzerinde görüntülenmek için izne ihtiyacı var.</string>
-    <string name="tts_floating_open_settings">Ayarları aç</string>
+
+
+
+
     <string name="delete">Sil</string>
     <string name="english">İngilizce</string>
     <string name="filter_title">Başlık</string>
@@ -278,14 +278,14 @@
     <string name="gemini_api_description_enabled">Etkinleştirildiğinde, daha kaliteli çeviriler için Google Gemini API kullanır. Devre dışı bırakıldığında veya API anahtarı ayarlanmadığında, bunun yerine ücretsiz Google Translate kullanır.</string>
     <string name="gemini_api_description_disabled">Bu seçeneği etkinleştirmek için yukarıdaki Gemini API anahtarını yapılandırın. Şu anda Google Translate (Ücretsiz) kullanılıyor - API anahtarı gerekmez.</string>
     <string name="translator">Çevirmen</string>
-    <string name="voice_reader">Sesli okuyucu</string>
+
     <string name="more">Daha fazla</string>
     <string name="style">Stil</string>
-    <string name="saved_voices">Kaydedilmiş sesler</string>
-    <string name="no_voices_saved">Kaydedilmiş ses yok</string>
+
+
     <string name="cancel">İptal</string>
-    <string name="save_voice">Sesi kaydet</string>
-    <string name="delete_voice">Sesi sil</string>
+
+
     <string name="translate">Çevir</string>
     <string name="size">Boyut</string>
     <string name="add_local_directory">Yerel dizin ekle</string>
@@ -323,7 +323,7 @@
     <string name="language_japanese">Japonca</string>
     <string name="language_korean">Korece</string>
     <string name="updating_library">Kütüphane güncelleniyor (%1$d/%2$d)</string>
-    <string name="notification_channel_name_reader_narrator">Okuyucu anlatıcı</string>
+
     <string name="notification_channel_name_library_update">Kütüphane güncellemesi</string>
     <string name="notification_channel_name_new_chapters">Yeni bölümler</string>
     <string name="notification_channel_name_failed_updates">Başarısız güncellemeler</string>
@@ -727,16 +727,16 @@
     <string name="translation_mode_settings_description">Romana özel dil çifti veya tüm romanlar için tek çift</string>
     <string name="translation_mode_per_novel">Bu roman</string>
     <string name="translation_mode_global">Tüm romanlar</string>
-    <string name="tts_highlight">TTS Vurgusu</string>
+
     <string name="manual_highlight">Manuel vurgu</string>
     <string name="manual_highlight_start">Manuel vurguyu başlat</string>
     <string name="manual_highlight_previous">Önceki paragraf</string>
     <string name="manual_highlight_next">Sonraki paragraf</string>
     <string name="manual_highlight_stop">Manuel vurguyu durdur</string>
-    <string name="tts_floating_glow">Parlama</string>
-    <string name="tts_glow_auto">Otomatik</string>
-    <string name="tts_glow_on">Açık</string>
-    <string name="tts_glow_off">Kapalı</string>
+
+
+
+
     <string name="regex_cleanup_novel_rules">Regex kuralları (bu roman)</string>
     <string name="regex_cleanup_novel_title_format">Roman: %s</string>
     <string name="regex_cleanup_move_to_global">Genel kurallara taşı</string>

@@ -146,15 +146,15 @@
     <string name="unread_chapters">บทที่ยังไม่ได้อ่าน</string>
     <string name="last_update">อัปเดตล่าสุด</string>
     <string name="date_added">วันที่เพิ่ม</string>
-    <string name="voices">เสียง</string>
-    <string name="search_voice_by_language">ค้นหาเสียงตามภาษา</string>
+
+
     <string name="needs_internet">ต้องการอินเทอร์เน็ต</string>
     <string name="no_matches">ไม่ตรงกัน</string>
     <string name="start_here">เริ่มที่นี่</string>
     <string name="focus">โฟกัส</string>
-    <string name="voice_pitch">ระดับเสียง</string>
-    <string name="voice_speed">ความเร็วเสียง</string>
-    <string name="original_voice">เสียงต้นฉบับ</string>
+
+
+
     <string name="not_set">ไม่ได้ตั้งค่า</string>
     <string name="chapter_x_over_n">บทที่: %1$d/%2$d</string>
     <string name="progress_x_percentage">ความคืบหน้า: %1$.0f%%</string>
@@ -163,36 +163,36 @@
     <string name="paragraph_spacing">ระยะห่างย่อหน้า</string>
     <string name="letter_spacing">ระยะห่างตัวอักษร</string>
     <string name="name">ชื่อ</string>
-    <string name="save_current_voice">บันทึกเสียงปัจจุบัน</string>
-    <string name="save_current_voice_parameters">บันทึกเสียงและพารามิเตอร์ปัจจุบัน</string>
+
+
     <string name="layout">เค้าโครง</string>
     <string name="new_chapters">บทใหม่</string>
     <string name="update_error">ข้อผิดพลาดในการอัปเดต</string>
     <string name="update_cancelled">ยกเลิกการอัปเดต</string>
-    <string name="tts_estimated_time_left">เวลาที่เหลือโดยประมาณ</string>
-    <string name="tts_total_chapter">บททั้งหมด</string>
-    <string name="tts_hours_abbr">ชม.</string>
-    <string name="tts_minutes_abbr">น.</string>
-    <string name="tts_seconds_abbr">วิ.</string>
-    <string name="media_control_previous">ก่อนหน้า</string>
-    <string name="media_control_rewind">กรอกลับ</string>
-    <string name="media_control_play">เล่น</string>
-    <string name="media_control_pause">หยุดชั่วคราว</string>
-    <string name="media_control_fast_forward">กรอไปข้างหน้า</string>
-    <string name="media_control_next">ถัดไป</string>
-    <string name="tts_floating">TTS ลอย</string>
-    <string name="tts_floating_channel_description">การควบคุมซ้อนทับ TTS ลอย</string>
-    <string name="tts_floating_overlay_active">การซ้อนทับ TTS ทำงานอยู่</string>
-    <string name="tts_floating_show_outside_app">แสดงเหนือแอปอื่น</string>
-    <string name="tts_floating_opacity">ความทึบ</string>
-    <string name="tts_floating_width">ความกว้าง</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_overlay_permission_title">สิทธิ์การซ้อนทับ</string>
-    <string name="tts_floating_overlay_permission_message">โปรแกรมเล่นลอยต้องได้รับสิทธิ์ในการแสดงเหนือแอปอื่น</string>
-    <string name="tts_floating_open_settings">เปิดการตั้งค่า</string>
+
+
+
+
     <string name="delete">ลบ</string>
     <string name="english">อังกฤษ</string>
     <string name="filter_title">ชื่อเรื่อง</string>
@@ -278,14 +278,14 @@
     <string name="gemini_api_description_enabled">เมื่อเปิดใช้งาน จะใช้ Google Gemini API เพื่อการแปลคุณภาพสูงขึ้น เมื่อปิดใช้งานหรือไม่ได้ตั้งคีย์ API จะใช้ Google Translate (ฟรี) แทน</string>
     <string name="gemini_api_description_disabled">กำหนดค่าคีย์ Gemini API ด้านบนเพื่อเปิดใช้งานตัวเลือกนี้ ขณะนี้ใช้ Google Translate (ฟรี) - ไม่ต้องใช้คีย์ API</string>
     <string name="translator">นักแปล</string>
-    <string name="voice_reader">โปรแกรมอ่านเสียง</string>
+
     <string name="more">เพิ่มเติม</string>
     <string name="style">สไตล์</string>
-    <string name="saved_voices">เสียงที่บันทึกไว้</string>
-    <string name="no_voices_saved">ไม่มีเสียงที่บันทึกไว้</string>
+
+
     <string name="cancel">ยกเลิก</string>
-    <string name="save_voice">บันทึกเสียง</string>
-    <string name="delete_voice">ลบเสียง</string>
+
+
     <string name="translate">แปล</string>
     <string name="size">ขนาด</string>
     <string name="add_local_directory">เพิ่มไดเรกทอรีในเครื่อง</string>
@@ -323,7 +323,7 @@
     <string name="language_japanese">ญี่ปุ่น</string>
     <string name="language_korean">เกาหลี</string>
     <string name="updating_library">กำลังอัปเดตห้องสมุด (%1$d/%2$d)</string>
-    <string name="notification_channel_name_reader_narrator">ผู้บรรยายการอ่าน</string>
+
     <string name="notification_channel_name_library_update">อัปเดตห้องสมุด</string>
     <string name="notification_channel_name_new_chapters">บทใหม่</string>
     <string name="notification_channel_name_failed_updates">อัปเดตล้มเหลว</string>
@@ -727,16 +727,16 @@
     <string name="translation_mode_settings_description">คู่ภาษาเฉพาะนิยาย หรือหนึ่งคู่สำหรับนิยายทั้งหมด</string>
     <string name="translation_mode_per_novel">นิยายเรื่องนี้</string>
     <string name="translation_mode_global">นิยายทั้งหมด</string>
-    <string name="tts_highlight">ไฮไลต์ TTS</string>
+
     <string name="manual_highlight">ไฮไลต์ด้วยตนเอง</string>
     <string name="manual_highlight_start">เริ่มไฮไลต์ด้วยตนเอง</string>
     <string name="manual_highlight_previous">ย่อหน้าก่อนหน้า</string>
     <string name="manual_highlight_next">ย่อหน้าถัดไป</string>
     <string name="manual_highlight_stop">หยุดไฮไลต์ด้วยตนเอง</string>
-    <string name="tts_floating_glow">เรืองแสง</string>
-    <string name="tts_glow_auto">อัตโนมัติ</string>
-    <string name="tts_glow_on">เปิด</string>
-    <string name="tts_glow_off">ปิด</string>
+
+
+
+
     <string name="regex_cleanup_novel_rules">กฎ regex (นิยายเรื่องนี้)</string>
     <string name="regex_cleanup_novel_title_format">นิยาย: %s</string>
     <string name="regex_cleanup_move_to_global">ย้ายไปกฎทั่วไป</string>

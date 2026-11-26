@@ -18,7 +18,6 @@ import my.noveldokusha.coreui.theme.DarkMode
 import my.noveldokusha.features.reader.ui.settingDialogs.MoreSettingDialog
 import my.noveldokusha.features.reader.ui.settingDialogs.StyleSettingDialog
 import my.noveldokusha.features.reader.ui.settingDialogs.TranslatorSettingDialog
-import my.noveldokusha.features.reader.ui.settingDialogs.VoiceReaderSettingDialog
 import my.noveldokusha.settings.RegexCleanupSettingsScreen
 import my.noveldokusha.settings.RegexCleanupSettingsViewModel
 
@@ -53,8 +52,6 @@ internal fun ReaderScreenBottomBarDialogs(
     onKeepScreenOn: (Boolean) -> Unit,
     onFullScreen: (Boolean) -> Unit,
     onSingleTapToOpenSettingsChange: (Boolean) -> Unit,
-    onTtsHighlightEnabledChange: (Boolean) -> Unit,
-    onTtsHighlightColorChange: (String) -> Unit,
     onManualHighlightEnabledChange: (Boolean) -> Unit = {},
     onTextDefaultsReset: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -73,11 +70,6 @@ internal fun ReaderScreenBottomBarDialogs(
                 when (target) {
                     ReaderScreenState.Settings.Type.LiveTranslation -> TranslatorSettingDialog(
                         state = settings.liveTranslation
-                    )
-                    ReaderScreenState.Settings.Type.TextToSpeech -> VoiceReaderSettingDialog(
-                        state = settings.textToSpeech,
-                        floatingTtsState = settings.floatingTts,
-                        parallelEnabled = settings.liveTranslation.parallelEnabled,
                     )
                     ReaderScreenState.Settings.Type.Style -> {
                         StyleSettingDialog(
@@ -109,10 +101,6 @@ internal fun ReaderScreenBottomBarDialogs(
                         )
                     }
                     ReaderScreenState.Settings.Type.More -> MoreSettingDialog(
-                        ttsHighlightEnabled = settings.ttsHighlight.isEnabled.value,
-                        onTtsHighlightEnabledChange = onTtsHighlightEnabledChange,
-                        ttsHighlightColor = settings.ttsHighlight.highlightColor.value,
-                        onTtsHighlightColorChange = onTtsHighlightColorChange,
                         manualHighlightEnabled = settings.manualHighlightEnabled.value,
                         onManualHighlightEnabledChange = onManualHighlightEnabledChange,
                     )

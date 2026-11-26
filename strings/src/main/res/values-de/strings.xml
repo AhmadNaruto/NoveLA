@@ -146,15 +146,15 @@
     <string name="unread_chapters">Ungelesene Kapitel</string>
     <string name="last_update">Letzte Aktualisierung</string>
     <string name="date_added">Hinzugefügt am</string>
-    <string name="voices">Stimmen</string>
-    <string name="search_voice_by_language">Stimme nach Sprache suchen</string>
+
+
     <string name="needs_internet">Benötigt Internet</string>
     <string name="no_matches">Keine Übereinstimmungen</string>
     <string name="start_here">Hier beginnen</string>
     <string name="focus">Fokus</string>
-    <string name="voice_pitch">Stimmtonhöhe</string>
-    <string name="voice_speed">Sprechgeschwindigkeit</string>
-    <string name="original_voice">Originalsprache</string>
+
+
+
     <string name="not_set">Nicht festgelegt</string>
     <string name="chapter_x_over_n">Kapitel: %1$d/%2$d</string>
     <string name="progress_x_percentage">Fortschritt: %1$.0f%%</string>
@@ -163,36 +163,36 @@
     <string name="paragraph_spacing">Absatzabstand</string>
     <string name="letter_spacing">Zeichenabstand</string>
     <string name="name">Name</string>
-    <string name="save_current_voice">Aktuelle Stimme speichern</string>
-    <string name="save_current_voice_parameters">Aktuelle Stimme und Parameter speichern</string>
+
+
     <string name="layout">Layout</string>
     <string name="new_chapters">Neue Kapitel</string>
     <string name="update_error">Aktualisierungsfehler</string>
     <string name="update_cancelled">Aktualisierung abgebrochen</string>
-    <string name="tts_estimated_time_left">Verbleibende Zeit</string>
-    <string name="tts_total_chapter">Gesamtkapitel</string>
-    <string name="tts_hours_abbr">Std.</string>
-    <string name="tts_minutes_abbr">Min.</string>
-    <string name="tts_seconds_abbr">Sek.</string>
-    <string name="media_control_previous">vorherige</string>
-    <string name="media_control_rewind">zurückspulen</string>
-    <string name="media_control_play">abspielen</string>
-    <string name="media_control_pause">pausieren</string>
-    <string name="media_control_fast_forward">vorspulen</string>
-    <string name="media_control_next">nächste</string>
-    <string name="tts_floating">Floating TTS</string>
-    <string name="tts_floating_channel_description">Floating TTS Overlay-Steuerung</string>
-    <string name="tts_floating_overlay_active">TTS-Overlay ist aktiv</string>
-    <string name="tts_floating_show_outside_app">Über anderen Apps anzeigen</string>
-    <string name="tts_floating_opacity">Deckkraft</string>
-    <string name="tts_floating_width">Breite</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_overlay_permission_title">Overlay-Berechtigung</string>
-    <string name="tts_floating_overlay_permission_message">Der Floating-Player benötigt die Berechtigung, über anderen Apps angezeigt zu werden.</string>
-    <string name="tts_floating_open_settings">Einstellungen öffnen</string>
+
+
+
+
     <string name="delete">Löschen</string>
     <string name="english">Englisch</string>
     <string name="filter_title">Titel</string>
@@ -278,14 +278,14 @@
     <string name="gemini_api_description_enabled">Wenn aktiviert, wird die Google Gemini API für hochwertigere Übersetzungen verwendet. Wenn deaktiviert oder kein API-Schlüssel gesetzt ist, wird stattdessen das kostenlose Google Translate verwendet.</string>
     <string name="gemini_api_description_disabled">Konfiguriere oben den Gemini API-Schlüssel, um diese Option zu aktivieren. Derzeit wird Google Translate (Kostenlos) verwendet – kein API-Schlüssel erforderlich.</string>
     <string name="translator">Übersetzer</string>
-    <string name="voice_reader">Vorleser</string>
+
     <string name="more">Mehr</string>
     <string name="style">Stil</string>
-    <string name="saved_voices">Gespeicherte Stimmen</string>
-    <string name="no_voices_saved">Keine Stimmen gespeichert</string>
+
+
     <string name="cancel">Abbrechen</string>
-    <string name="save_voice">Stimme speichern</string>
-    <string name="delete_voice">Stimme löschen</string>
+
+
     <string name="translate">Übersetzen</string>
     <string name="size">Größe</string>
     <string name="add_local_directory">Lokales Verzeichnis hinzufügen</string>
@@ -323,7 +323,7 @@
     <string name="language_japanese">Japanisch</string>
     <string name="language_korean">Koreanisch</string>
     <string name="updating_library">Bibliothek wird aktualisiert (%1$d/%2$d)</string>
-    <string name="notification_channel_name_reader_narrator">Vorleser</string>
+
     <string name="notification_channel_name_library_update">Bibliotheksaktualisierung</string>
     <string name="notification_channel_name_new_chapters">Neue Kapitel</string>
     <string name="notification_channel_name_failed_updates">Fehlgeschlagene Aktualisierungen</string>
@@ -737,16 +737,16 @@
     <string name="translation_mode_settings_description">Sprachpaar pro Roman oder ein Paar für alle Romane</string>
     <string name="translation_mode_per_novel">Dieser Roman</string>
     <string name="translation_mode_global">Alle Romane</string>
-    <string name="tts_highlight">TTS-Markierung</string>
+
     <string name="manual_highlight">Manuelle Markierung</string>
     <string name="manual_highlight_start">Manuelle Markierung starten</string>
     <string name="manual_highlight_previous">Vorheriger Absatz</string>
     <string name="manual_highlight_next">Nächster Absatz</string>
     <string name="manual_highlight_stop">Manuelle Markierung beenden</string>
-    <string name="tts_floating_glow">Leuchten</string>
-    <string name="tts_glow_auto">Automatisch</string>
-    <string name="tts_glow_on">Ein</string>
-    <string name="tts_glow_off">Aus</string>
+
+
+
+
     <string name="regex_cleanup_novel_rules">Regex-Regeln (dieser Roman)</string>
     <string name="regex_cleanup_novel_title_format">Roman: %s</string>
     <string name="regex_cleanup_move_to_global">Zu global verschieben</string>

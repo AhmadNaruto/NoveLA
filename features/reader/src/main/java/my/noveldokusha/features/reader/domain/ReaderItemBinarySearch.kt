@@ -22,7 +22,7 @@ internal fun indexOfReaderItem(
     }
     if (chapterIndex < 0) {
         if (debugSource != null) {
-            Timber.w("TTS-JUMP indexOfReaderItem[$debugSource]: NEGATIVE chapterIndex seek=($chapterIndex,$chapterItemPosition) result=$result")
+            Timber.w("READER-JUMP indexOfReaderItem[$debugSource]: NEGATIVE chapterIndex seek=($chapterIndex,$chapterItemPosition) result=$result")
         }
         return result
     }
@@ -30,7 +30,7 @@ internal fun indexOfReaderItem(
     if (debugSource != null) {
         val found = list.getOrNull(result)
         Timber.d(
-            "TTS-JUMP indexOfReaderItem[$debugSource]: seek=($chapterIndex,$chapterItemPosition) list.size=${list.size} result=$result" +
+            "READER-JUMP indexOfReaderItem[$debugSource]: seek=($chapterIndex,$chapterItemPosition) list.size=${list.size} result=$result" +
                 (found?.let {
                     " found=${it.chapterIndex}," +
                         if (it is ReaderItem.Position) "${it.chapterItemPosition}" else "non-pos(${it::class.simpleName})"
@@ -41,7 +41,7 @@ internal fun indexOfReaderItem(
     if (list.size >= 128) {
         val linear = indexOfReaderItemLinearSearch(list, chapterIndex, chapterItemPosition)
         if (result != linear) {
-            Timber.w("TTS-JUMP indexOfReaderItem MISMATCH: binary=$result linear=$linear seek=($chapterIndex,$chapterItemPosition)")
+            Timber.w("READER-JUMP indexOfReaderItem MISMATCH: binary=$result linear=$linear seek=($chapterIndex,$chapterItemPosition)")
         }
     }
     return result

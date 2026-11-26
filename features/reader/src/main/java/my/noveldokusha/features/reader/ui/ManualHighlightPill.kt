@@ -175,9 +175,7 @@ internal fun ManualHighlightPill(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    // Цвет и прозрачность как у буббла FloatingTTS (primary + onPrimary,
-                    // alpha 0.5) без обводки: рамка secondaryContainer+primary бросалась
-                    // в глаза, когда включены обе плавающие фичи.
+                    // Цвет и прозрачность: primary + onPrimary, alpha 0.5 без обводки.
                     .alpha(0.5f)
                     .background(MaterialTheme.colorScheme.primary)
                     .clickable(onClick = onStart),

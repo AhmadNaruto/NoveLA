@@ -1,13 +1,8 @@
 package my.noveldokusha.features.reader.ui
 
-import android.content.Intent
 import android.content.res.Configuration
-import android.net.Uri
 import android.os.Build
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -37,7 +32,6 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.TouchApp
@@ -103,18 +97,11 @@ import my.noveldokusha.coreui.theme.rememberMutableStateOf
 import my.noveldokusha.features.reader.domain.ReaderItem
 import my.noveldokusha.features.reader.features.LiveTranslationSettingData
 import my.noveldokusha.features.reader.features.ManualHighlightSettingData
-import my.noveldokusha.features.reader.features.TextSynthesis
-import my.noveldokusha.features.reader.features.TextToSpeechSettingData
 import my.noveldokusha.features.reader.ui.ReaderScreenState.Settings.Type
 import my.noveldokusha.reader.R
 import my.noveldokusha.settings.RegexCleanupSettingsViewModel
-import my.noveldokusha.text_to_speech.Utterance
-import my.noveldokusha.text_to_speech.VoiceData
-import my.noveldokusha.features.reader.services.FloatingTtsService
 import my.noveldokusha.features.reader.tools.BackgroundImageLoader
 import my.noveldokusha.text_translator.domain.TranslationModelState
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -151,8 +138,6 @@ internal fun ReaderScreen(
     onPressBack: () -> Unit,
     onOpenChapterInWeb: () -> Unit,
     regexCleanupViewModel: RegexCleanupSettingsViewModel? = null,
-    onTtsHighlightEnabledChange: (Boolean) -> Unit,
-    onTtsHighlightColorChange: (String) -> Unit,
     onManualHighlightEnabledChange: (Boolean) -> Unit = {},
     onTextDefaultsReset: () -> Unit = {},
     manualHighlight: ManualHighlightSettingData? = null,
@@ -268,9 +253,6 @@ internal fun ReaderScreen(
                                         Icon(Icons.Outlined.Translate, stringResource(R.string.translator), modifier = Modifier.size(20.dp), tint = if (selectedSetting == Type.LiveTranslation) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                                     }
                                 }
-                                IconButton(onClick = { toggleOrSet(Type.TextToSpeech) }, modifier = Modifier.size(36.dp)) {
-                                    Icon(Icons.Filled.RecordVoiceOver, stringResource(R.string.voice_reader), modifier = Modifier.size(20.dp), tint = if (selectedSetting == Type.TextToSpeech) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
-                                }
                                 IconButton(onClick = { toggleOrSet(Type.Style) }, modifier = Modifier.size(36.dp)) {
                                     Icon(Icons.Outlined.ColorLens, stringResource(R.string.style), modifier = Modifier.size(20.dp), tint = if (selectedSetting == Type.Style) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                                 }
@@ -379,8 +361,6 @@ internal fun ReaderScreen(
                         onMarginRightChange = onMarginRightChange,
                         onMarginTopChange = onMarginTopChange,
                         onMarginBottomChange = onMarginBottomChange,
-                        onTtsHighlightEnabledChange = onTtsHighlightEnabledChange,
-                        onTtsHighlightColorChange = onTtsHighlightColorChange,
                         onManualHighlightEnabledChange = onManualHighlightEnabledChange,
                         onTextDefaultsReset = onTextDefaultsReset,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -519,145 +499,12 @@ internal fun ReaderScreen(
         }
         )
 
-        var showOverlayPermissionDialog by remember { mutableStateOf(false) }
-
-        val overlayPermissionLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.StartActivityForResult()
-        ) {
-            if (Settings.canDrawOverlays(context)) {
-                my.noveldokusha.features.reader.services.FloatingTtsService.activityWindowToken =
-                    windowToken
-                my.noveldokusha.features.reader.services.FloatingTtsService.ttsState.value =
-                    state.settings.textToSpeech
-                my.noveldokusha.features.reader.services.FloatingTtsService.showOutsideApp.value =
-                    state.settings.floatingTts.showOutsideApp.value
-                my.noveldokusha.features.reader.services.FloatingTtsService.opacity.value =
-                    state.settings.floatingTts.opacity.value
-                my.noveldokusha.features.reader.services.FloatingTtsService.start(context)
-            }
-        }
-
-        if (showOverlayPermissionDialog) {
-            AlertDialog(
-                onDismissRequest = { showOverlayPermissionDialog = false },
-                title = { Text(text = stringResource(R.string.tts_floating_overlay_permission_title)) },
-                text = {
-                    Text(text = stringResource(R.string.tts_floating_overlay_permission_message))
-                },
-                confirmButton = {
-                    Button(onClick = {
-                        showOverlayPermissionDialog = false
-                        val intent = Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            Uri.parse("package:${context.packageName}")
-                        )
-                        overlayPermissionLauncher.launch(intent)
-                    }) {
-                        Text(text = stringResource(R.string.tts_floating_open_settings))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showOverlayPermissionDialog = false }) {
-                        Text(text = stringResource(android.R.string.cancel))
-                    }
-                },
-            )
-        }
-
-        LaunchedEffect(
-            state.settings.floatingTts.isEnabled.value,
-        ) {
-            val floatingEnabled = state.settings.floatingTts.isEnabled.value
-            if (floatingEnabled) {
-                val hasPermission = Settings.canDrawOverlays(context)
-
-                if (hasPermission) {
-                    my.noveldokusha.features.reader.services.FloatingTtsService.activityWindowToken =
-                        windowToken
-                    my.noveldokusha.features.reader.services.FloatingTtsService.ttsState.value =
-                        state.settings.textToSpeech
-                    my.noveldokusha.features.reader.services.FloatingTtsService.showOutsideApp.value =
-                        state.settings.floatingTts.showOutsideApp.value
-                    my.noveldokusha.features.reader.services.FloatingTtsService.opacity.value =
-                        state.settings.floatingTts.opacity.value
-                    my.noveldokusha.features.reader.services.FloatingTtsService.ttsHighlightEnabled.value =
-                        state.settings.ttsHighlight.isEnabled.value
-                    my.noveldokusha.features.reader.services.FloatingTtsService.ttsHighlightColor.value =
-                        state.settings.ttsHighlight.highlightColor.value
-                    my.noveldokusha.features.reader.services.FloatingTtsService.start(context)
-                } else {
-                    showOverlayPermissionDialog = true
-                    state.settings.floatingTts.isEnabled.value = false
-                }
-            } else {
-                my.noveldokusha.features.reader.services.FloatingTtsService.stop(context)
-            }
-        }
-
-        LaunchedEffect(
-            state.settings.floatingTts.showOutsideApp.value,
-            state.settings.floatingTts.opacity.value,
-            state.settings.ttsHighlight.isEnabled.value,
-            state.settings.ttsHighlight.highlightColor.value,
-        ) {
-            my.noveldokusha.features.reader.services.FloatingTtsService.showOutsideApp.value =
-                state.settings.floatingTts.showOutsideApp.value
-            my.noveldokusha.features.reader.services.FloatingTtsService.opacity.value =
-                state.settings.floatingTts.opacity.value
-            my.noveldokusha.features.reader.services.FloatingTtsService.ttsHighlightEnabled.value =
-                state.settings.ttsHighlight.isEnabled.value
-            my.noveldokusha.features.reader.services.FloatingTtsService.ttsHighlightColor.value =
-                state.settings.ttsHighlight.highlightColor.value
-        }
-
-        LaunchedEffect(
-            state.settings.floatingTts.showOutsideApp.value,
-        ) {
-            if (FloatingTtsService.isRunning(context)) {
-                FloatingTtsService.activityWindowToken =
-                    windowToken
-                FloatingTtsService.recreateOverlay()
-            }
-        }
-
-        val lifecycle = LocalLifecycleOwner.current.lifecycle
-
-        DisposableEffect(
-            lifecycle,
-            state.settings.selectedSetting.value,
-            state.settings.floatingTts.showOutsideApp.value,
-        ) {
-            val selectedSetting = state.settings.selectedSetting.value
-            val showOutsideApp = state.settings.floatingTts.showOutsideApp.value
-
-            val observer = LifecycleEventObserver { _, event ->
-                if (!FloatingTtsService.isRunning(context)) return@LifecycleEventObserver
-                when (event) {
-                    Lifecycle.Event.ON_RESUME -> {
-                        FloatingTtsService.setOverlayHidden(selectedSetting != Type.None)
-                    }
-                    Lifecycle.Event.ON_PAUSE -> {
-                        FloatingTtsService.setOverlayHidden(!showOutsideApp)
-                    }
-                    else -> {}
-                }
-            }
-            lifecycle.addObserver(observer)
-
-            if (FloatingTtsService.isRunning(context)) {
-                FloatingTtsService.setOverlayHidden(selectedSetting != Type.None)
-            }
-
-            onDispose { lifecycle.removeObserver(observer) }
-        }
-
-        // Плавающая кнопка ручной подсветки: скрывается при открытых настройках,
-        // при активном TTS и при выключенной настройке.
+        // Плавающая кнопка ручной подсветки: скрывается при открытых настройках
+        // и при выключенной настройке.
         val manual = manualHighlight
         val manualHighlightVisible = manual != null &&
             manualHighlightEnabled &&
-            selectedSetting == Type.None &&
-            !state.settings.textToSpeech.isPlaying.value
+            selectedSetting == Type.None
 
         if (manualHighlightVisible) {
             ManualHighlightPill(
@@ -739,62 +586,6 @@ private fun ViewsPreview(
         onTranslationGlobalModeChange = {},
     )
 
-    val textToSpeechSettingData = TextToSpeechSettingData(
-        isPlaying = rememberMutableStateOf(false),
-        isLoadingChapter = rememberMutableStateOf(false),
-        voicePitch = rememberMutableStateOf(1f),
-        voiceSpeed = rememberMutableStateOf(1f),
-        availableVoices = remember { mutableStateListOf() },
-        activeVoice = remember {
-            mutableStateOf(
-                VoiceData(
-                    id = "",
-                    language = "",
-                    quality = 100,
-                    needsInternet = true,
-                    enginePackage = "",
-                )
-            )
-        },
-        currentActiveItemState = remember {
-            mutableStateOf(
-                TextSynthesis(
-                    playState = Utterance.PlayState.PLAYING,
-                    itemPos = ReaderItem.Title(
-                        chapterUrl = "",
-                        chapterIndex = 0,
-                        chapterItemPosition = 1,
-                        text = ""
-                    )
-                )
-            )
-        },
-        isThereActiveItem = rememberMutableStateOf(true),
-        setPlaying = {},
-        playPreviousItem = {},
-        playPreviousChapter = {},
-        playNextItem = {},
-        playNextChapter = {},
-        setVoiceId = {},
-        playFirstVisibleItem = {},
-        scrollToActiveItem = {},
-        setVoiceSpeed = {},
-        setVoicePitch = {},
-        setCustomSavedVoices = {},
-        customSavedVoices = rememberMutableStateOf(value = listOf()),
-        chapterWordCount = remember { mutableStateOf(0) },
-        remainingWordCount = remember { mutableStateOf(0) },
-        estimatedWpm = remember { mutableStateOf(0) },
-        estimatedTotalSeconds = remember { mutableStateOf(0) },
-        estimatedRemainingSeconds = remember { mutableStateOf(0) },
-        currentParagraphText = remember { mutableStateOf("") },
-        alternateParagraphText = remember { mutableStateOf("") },
-        parallelEnabled = remember { mutableStateOf(false) },
-        originalVoiceId = remember { mutableStateOf("") },
-        setOriginalVoiceId = {},
-        spokenWordRange = remember { mutableStateOf(null) },
-    )
-
     val style = ReaderScreenState.Settings.StyleSettingsData(
         currentDarkMode = remember { mutableStateOf(DarkMode.DARK) },
         currentAppTheme = remember { mutableStateOf(AppTheme.DEFAULT) },
@@ -834,21 +625,11 @@ private fun ViewsPreview(
                     settings = ReaderScreenState.Settings(
                         isTextSelectable = remember { mutableStateOf(false) },
                         keepScreenOn = remember { mutableStateOf(false) },
-                        textToSpeech = textToSpeechSettingData,
                         liveTranslation = liveTranslationSettingData,
                         style = style,
                         selectedSetting = remember { mutableStateOf(data.selectedSetting) },
                         fullScreen = remember { mutableStateOf(false) },
                         isSingleTapToOpenSettings = remember { mutableStateOf(false) },
-                        floatingTts = ReaderScreenState.Settings.FloatingTtsSettingsData(
-                            isEnabled = remember { mutableStateOf(false) },
-                            showOutsideApp = remember { mutableStateOf(true) },
-                            opacity = remember { mutableFloatStateOf(0.6f) },
-                        ),
-                        ttsHighlight = ReaderScreenState.Settings.TtsHighlightSettingsData(
-                            isEnabled = remember { mutableStateOf(false) },
-                            highlightColor = remember { mutableStateOf("FFFF6D00") },
-                        ),
                         manualHighlight = ManualHighlightSettingData(
                             highlightedItem = remember { mutableStateOf(null) },
                             next = {},
@@ -889,8 +670,6 @@ private fun ViewsPreview(
                 onMarginRightChange = {},
                 onMarginTopChange = {},
                 onMarginBottomChange = {},
-                onTtsHighlightEnabledChange = {},
-                onTtsHighlightColorChange = {},
                 onTextDefaultsReset = {},
             )
         }
@@ -905,7 +684,6 @@ private class PreviewDataProvider : PreviewParameterProvider<PreviewDataProvider
     override val values = sequenceOf(
         Data(selectedSetting = Type.None),
         Data(selectedSetting = Type.LiveTranslation),
-        Data(selectedSetting = Type.TextToSpeech),
         Data(selectedSetting = Type.Style),
         Data(selectedSetting = Type.More),
     )

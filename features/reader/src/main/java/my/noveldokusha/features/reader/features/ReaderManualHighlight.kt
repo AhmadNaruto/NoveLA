@@ -23,12 +23,11 @@ internal data class ManualHighlightSettingData(
 
 /**
  * Ручная подсветка абзацев: пользователь сам переключает текущий абзац
- * кнопками вперёд/назад, в отличие от автоматической подсветки TTS.
+ * кнопками вперёд/назад.
  */
 internal class ReaderManualHighlight(
     private val items: List<ReaderItem>,
     private val scope: CoroutineScope,
-    private val stopTextToSpeech: () -> Unit,
 ) {
     private val _highlightedItem = mutableStateOf<HighlightPosition?>(null)
     val highlightedItem: State<HighlightPosition?> = _highlightedItem
@@ -45,12 +44,11 @@ internal class ReaderManualHighlight(
 
     /**
      * Подсвечивает первый абзац с [itemIndex] включительно (пропуская нетекстовые
-     * элементы) и останавливает TTS, чтобы режимы не пересекались.
+     * элементы).
      */
     fun startFromItemIndex(itemIndex: Int) {
         val targetIndex = firstHighlightItemIndexAtOrAfter(items, itemIndex) ?: return
         setHighlight(targetIndex)
-        stopTextToSpeech()
     }
 
     fun next() {

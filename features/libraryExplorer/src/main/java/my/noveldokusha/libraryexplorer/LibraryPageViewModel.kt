@@ -168,7 +168,7 @@ internal class LibraryPageViewModel @Inject constructor(
     // → потом Room отвечает → книги появляются.
     private val sharedBooksFlow = appRepository.libraryBooks
         .getBooksInLibraryWithContextFlow
-        // ponytail: TTS обновляет Book.lastReadChapter каждые ~5-10с, но библиотека
+        // ponytail: читалка обновляет Book.lastReadChapter при чтении, но библиотека
         // не использует это поле (сортировка LAST_READ → lastReadEpochTimeMilli,
         // фильтр категорий → category). Room InvalidationTracker — table-level,
         // поэтому любая запись в Book/Chapter инвалидирует Flow → каскад 8+ downstream.

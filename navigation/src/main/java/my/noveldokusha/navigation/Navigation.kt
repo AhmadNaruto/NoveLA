@@ -19,7 +19,6 @@ interface NavigationRoutes {
         context: Context,
         bookUrl: String,
         chapterUrl: String,
-        scrollToSpeakingItem: Boolean = false
     ): Intent
 
     fun databaseSearch(

@@ -146,15 +146,15 @@
     <string name="unread_chapters">Nieprzeczytane rozdziały</string>
     <string name="last_update">Ostatnia aktualizacja</string>
     <string name="date_added">Data dodania</string>
-    <string name="voices">Głosy</string>
-    <string name="search_voice_by_language">Szukaj głosu według języka</string>
+
+
     <string name="needs_internet">Wymaga Internetu</string>
     <string name="no_matches">Brak dopasowań</string>
     <string name="start_here">Zaczynaj tutaj</string>
     <string name="focus">Skupienie</string>
-    <string name="voice_pitch">Wysokość głosu</string>
-    <string name="voice_speed">Szybkość głosu</string>
-    <string name="original_voice">Głos oryginału</string>
+
+
+
     <string name="not_set">Nie ustawiono</string>
     <string name="chapter_x_over_n">Rozdział: %1$d/%2$d</string>
     <string name="progress_x_percentage">Postęp: %1$.0f%%</string>
@@ -163,36 +163,36 @@
     <string name="paragraph_spacing">Odstęp między akapitami</string>
     <string name="letter_spacing">Odstępy między literami</string>
     <string name="name">Nazwa</string>
-    <string name="save_current_voice">Zapisz bieżący głos</string>
-    <string name="save_current_voice_parameters">Zapisz bieżący głos i parametry</string>
+
+
     <string name="layout">Układ</string>
     <string name="new_chapters">Nowe rozdziały</string>
     <string name="update_error">Błąd aktualizacji</string>
     <string name="update_cancelled">Aktualizacja anulowana</string>
-    <string name="tts_estimated_time_left">Szacowany pozostały czas</string>
-    <string name="tts_total_chapter">Całkowity rozdział</string>
-    <string name="tts_hours_abbr">h</string>
-    <string name="tts_minutes_abbr">m</string>
-    <string name="tts_seconds_abbr">s</string>
-    <string name="media_control_previous">poprzedni</string>
-    <string name="media_control_rewind">przewiń wstecz</string>
-    <string name="media_control_play">odtwórz</string>
-    <string name="media_control_pause">pauza</string>
-    <string name="media_control_fast_forward">przewiń do przodu</string>
-    <string name="media_control_next">następny</string>
-    <string name="tts_floating">Pływający TTS</string>
-    <string name="tts_floating_channel_description">Kontrolki nakładki pływającego TTS</string>
-    <string name="tts_floating_overlay_active">Nakładka TTS jest aktywna</string>
-    <string name="tts_floating_show_outside_app">Pokaż nad innymi aplikacjami</string>
-    <string name="tts_floating_opacity">Przezroczystość</string>
-    <string name="tts_floating_width">Szerokość</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_overlay_permission_title">Zezwolenie na nakładkę</string>
-    <string name="tts_floating_overlay_permission_message">Pływający odtwarzacz potrzebuje zezwolenia, aby wyświetlać się nad innymi aplikacjami.</string>
-    <string name="tts_floating_open_settings">Otwórz ustawienia</string>
+
+
+
+
     <string name="delete">Usuń</string>
     <string name="english">Angielski</string>
     <string name="filter_title">Tytuł</string>
@@ -278,14 +278,14 @@
     <string name="gemini_api_description_enabled">Po włączeniu używa Google Gemini API do wyższej jakości tłumaczeń. Po wyłączeniu lub bez klucza API używa darmowego Google Translate.</string>
     <string name="gemini_api_description_disabled">Skonfiguruj klucz API Gemini powyżej, aby włączyć tę opcję. Obecnie używany jest Google Translate (Free) — nie wymaga klucza API.</string>
     <string name="translator">Tłumacz</string>
-    <string name="voice_reader">Czytnik głosowy</string>
+
     <string name="more">Więcej</string>
     <string name="style">Styl</string>
-    <string name="saved_voices">Zapisane głosy</string>
-    <string name="no_voices_saved">Nie zapisano żadnych głosów</string>
+
+
     <string name="cancel">Anuluj</string>
-    <string name="save_voice">Zapisz głos</string>
-    <string name="delete_voice">Usuń głos</string>
+
+
     <string name="translate">Tłumacz</string>
     <string name="size">Rozmiar</string>
     <string name="add_local_directory">Dodaj katalog lokalny</string>
@@ -323,7 +323,7 @@
     <string name="language_japanese">Japoński</string>
     <string name="language_korean">Koreański</string>
     <string name="updating_library">Aktualizowanie biblioteki (%1$d/%2$d)</string>
-    <string name="notification_channel_name_reader_narrator">Lektor czytnika</string>
+
     <string name="notification_channel_name_library_update">Aktualizacja biblioteki</string>
     <string name="notification_channel_name_new_chapters">Nowe rozdziały</string>
     <string name="notification_channel_name_failed_updates">Nieudane aktualizacje</string>
@@ -737,16 +737,16 @@
     <string name="translation_mode_settings_description">Para językowa dla powieści lub jedna para dla wszystkich powieści</string>
     <string name="translation_mode_per_novel">Ta powieść</string>
     <string name="translation_mode_global">Wszystkie powieści</string>
-    <string name="tts_highlight">Podświetlanie TTS</string>
+
     <string name="manual_highlight">Podświetlanie ręczne</string>
     <string name="manual_highlight_start">Rozpocznij podświetlanie ręczne</string>
     <string name="manual_highlight_previous">Poprzedni akapit</string>
     <string name="manual_highlight_next">Następny akapit</string>
     <string name="manual_highlight_stop">Zatrzymaj podświetlanie ręczne</string>
-    <string name="tts_floating_glow">Poświata</string>
-    <string name="tts_glow_auto">Automatycznie</string>
-    <string name="tts_glow_on">Włączone</string>
-    <string name="tts_glow_off">Wyłączone</string>
+
+
+
+
     <string name="regex_cleanup_novel_rules">Reguły wyrażeń regularnych (ta powieść)</string>
     <string name="regex_cleanup_novel_title_format">Powieść: %s</string>
     <string name="regex_cleanup_move_to_global">Przenieś do globalnych</string>

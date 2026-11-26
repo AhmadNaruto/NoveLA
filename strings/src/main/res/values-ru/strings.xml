@@ -323,10 +323,6 @@
 
     <string name="date_added">Дата добавления</string>
 
-    <string name="voices">Голоса</string>
-
-    <string name="search_voice_by_language">Поиск голоса по языку</string>
-
     <string name="needs_internet">Требует интернет</string>
 
     <string name="no_matches">Совпадений нет</string>
@@ -335,10 +331,7 @@
 
     <string name="focus">Фокус</string>
 
-    <string name="voice_pitch">Высота голоса</string>
 
-    <string name="voice_speed">Скорость голоса</string>
-    <string name="original_voice">Голос оригинала</string>
     <string name="not_set">Не задано</string>
 
     <string name="chapter_x_over_n">Глава: %1$d/%2$d</string>
@@ -349,10 +342,6 @@
 
     <string name="name">Имя</string>
 
-    <string name="save_current_voice">Сохранить текущий голос</string>
-
-    <string name="save_current_voice_parameters">Сохранить текущий голос и параметры</string>
-
     <string name="layout">Макет</string>
 
     <string name="new_chapters">Новые главы</string>
@@ -362,40 +351,19 @@
     <string name="update_cancelled">Обновление отменено</string>
     <string name="book_fix">Починить книгу</string>
 
-    <string name="tts_estimated_time_left">Осталось</string>
 
-    <string name="tts_total_chapter">Всего глава</string>
 
-    <string name="tts_hours_abbr">ч</string>
 
-    <string name="tts_minutes_abbr">мин</string>
 
-    <string name="tts_seconds_abbr">с</string>
 
-    <string name="media_control_previous">предыдущий</string>
 
-    <string name="media_control_rewind">перемотка назад</string>
 
-    <string name="media_control_play">воспроизведение</string>
 
-    <string name="media_control_pause">пауза</string>
-
-    <string name="media_control_fast_forward">перемотка вперед</string>
-
-    <string name="media_control_next">следующий</string>
-    <string name="tts_floating">Плавающий TTS</string>
-    <string name="tts_floating_channel_description">Элементы управления плавающим TTS</string>
-    <string name="tts_floating_overlay_active">Плавающий TTS плеер активен</string>
-    <string name="tts_floating_show_outside_app">Поверх других приложений</string>
-    <string name="tts_floating_opacity">Прозрачность</string>
-    <string name="tts_floating_width">Ширина</string>
-    <string name="tts_floating_paragraph">Параграф</string>
-    <string name="tts_voice">Голос TTS</string>
     <string name="inverse">Обратный</string>
-    <string name="tts_both">Оба</string>
-    <string name="tts_floating_overlay_permission_title">Разрешение оверлея</string>
-    <string name="tts_floating_overlay_permission_message">Плавающему плееру нужно разрешение на отображение поверх других приложений.</string>
-    <string name="tts_floating_open_settings">Открыть настройки</string>
+
+
+
+
     <string name="delete">Удалить</string>
     <string name="filter_title">Название</string>
 
@@ -453,21 +421,11 @@
 
     <string name="translator">Переводчик</string>
 
-    <string name="voice_reader">Озвучка текста</string>
-
     <string name="more">Больше</string>
 
     <string name="style">Стиль</string>
 
-    <string name="saved_voices">Сохраненные голоса</string>
-
-    <string name="no_voices_saved">Нет сохраненных голосов</string>
-
     <string name="cancel">Отмена</string>
-
-    <string name="save_voice">Сохранить голос</string>
-
-    <string name="delete_voice">Удалить голос</string>
 
     <string name="translate">Перевести</string>
 
@@ -530,8 +488,6 @@
     <string name="mark_all_chapters_read">Отметить все главы как прочитанные</string>
 
     <string name="mark_all_chapters_unread">Отметить все главы как непрочитанные</string>
-
-    <string name="notification_channel_name_reader_narrator">Читатель-рассказчик</string>
 
     <string name="notification_channel_name_library_update">Обновление библиотеки</string>
 
@@ -1275,11 +1231,11 @@
 
     <!-- machine-translated, manual review required -->
     <string name="type">Тип</string>
-    <string name="tts_highlight">Подсветка TTS</string>
-    <string name="tts_floating_glow">Свечение</string>
-    <string name="tts_glow_auto">Авто</string>
-    <string name="tts_glow_on">Вкл</string>
-    <string name="tts_glow_off">Выкл</string>
+
+
+
+
+
     <string name="wtr_lab_lang_id">Индонезийский</string>
     <string name="wtr_lab_lang_tr">Турецкий</string>
     <string name="wtr_lab_lang_none">Нет</string>

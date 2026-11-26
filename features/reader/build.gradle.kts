@@ -19,12 +19,10 @@ dependencies {
     implementation(projects.features.settings)
     implementation(projects.navigation)
     implementation(projects.tooling.localDatabase)
-    implementation(projects.tooling.textToSpeech)
     implementation(projects.tooling.textTranslator.domain)
     implementation(projects.networking)
 
     implementation(libs.material)
-    implementation(libs.androidx.media)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.exoplayer.dash)

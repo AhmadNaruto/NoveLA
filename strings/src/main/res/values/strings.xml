@@ -191,7 +191,7 @@
     <string name="loading_data">Loading data</string>
     <string name="pin_or_unpin_source">Pin or unpin source</string>
     <string name="allow_text_selection">Text selection</string>
-    <string name="tts_highlight">TTS Highlight</string>
+
     <string name="manual_highlight">Manual highlight</string>
     <string name="manual_highlight_start">Start manual highlight</string>
     <string name="manual_highlight_previous">Previous paragraph</string>
@@ -202,15 +202,15 @@
     <string name="unread_chapters">Unread chapters</string>
     <string name="last_update">Last update</string>
     <string name="date_added">Date added</string>
-    <string name="voices">Voices</string>
-    <string name="search_voice_by_language">Search voice by language</string>
+
+
     <string name="needs_internet">Needs Internet</string>
     <string name="no_matches">No matches</string>
     <string name="start_here">Start here</string>
     <string name="focus">Focus</string>
-    <string name="voice_pitch">Voice pitch</string>
-    <string name="voice_speed">Voice speed</string>
-    <string name="original_voice">Original voice</string>
+
+
+
     <string name="not_set">Not set</string>
     <string name="chapter_x_over_n">Chapter: %1$d/%2$d</string>
     <string name="progress_x_percentage">Progress: %1$.0f%%</string>
@@ -219,41 +219,41 @@
     <string name="paragraph_spacing">Paragraph spacing</string>
     <string name="letter_spacing">Letter spacing</string>
     <string name="name">Name</string>
-    <string name="save_current_voice">Save current voice</string>
-    <string name="save_current_voice_parameters">Save current voice and parameters</string>
+
+
     <string name="layout">Layout</string>
     <string name="new_chapters">New chapters</string>
     <string name="update_error">Update error</string>
     <string name="update_cancelled">Update cancelled</string>
     <string name="book_fix">Fix book</string>
-    <string name="tts_estimated_time_left">Estimated Time Left</string>
-    <string name="tts_total_chapter">Total Chapter</string>
-    <string name="tts_hours_abbr">h</string>
-    <string name="tts_minutes_abbr">m</string>
-    <string name="tts_seconds_abbr">s</string>
-    <string name="media_control_previous">previous</string>
-    <string name="media_control_rewind">rewind</string>
-    <string name="media_control_play">play</string>
-    <string name="media_control_pause">pause</string>
-    <string name="media_control_fast_forward">fast_forward</string>
-    <string name="media_control_next">next</string>
-    <string name="tts_floating">Floating TTS</string>
-    <string name="tts_floating_channel_description">Floating TTS overlay controls</string>
-    <string name="tts_floating_overlay_active">TTS overlay is active</string>
-    <string name="tts_floating_show_outside_app">Show outside app</string>
-    <string name="tts_floating_opacity">Opacity</string>
-    <string name="tts_floating_width">Width</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_glow">Glow</string>
-    <string name="tts_glow_auto">Auto</string>
-    <string name="tts_glow_on">On</string>
-    <string name="tts_glow_off">Off</string>
-    <string name="tts_floating_overlay_permission_title">Overlay permission</string>
-    <string name="tts_floating_overlay_permission_message">Floating player needs permission to display over other apps.</string>
-    <string name="tts_floating_open_settings">Open settings</string>
+
+
+
+
+
+
+
+
     <string name="delete">Delete</string>
     <string name="english">English</string>
     <string name="filter_title">Title</string>
@@ -356,14 +356,14 @@
     <string name="gemini_api_description_enabled">When enabled, uses Google Gemini API for higher quality translations. When disabled or if API key is not set, uses free Google Translate instead.</string>
     <string name="gemini_api_description_disabled">Configure Gemini API key above to enable this option. Currently using Google Translate (Free) - no API key required.</string>
     <string name="translator">Translator</string>
-    <string name="voice_reader">Voice reader</string>
+
     <string name="more">More</string>
     <string name="style">Style</string>
-    <string name="saved_voices">Saved voices</string>
-    <string name="no_voices_saved">No voices saved</string>
+
+
     <string name="cancel">Cancel</string>
-    <string name="save_voice">Save voice</string>
-    <string name="delete_voice">Delete voice</string>
+
+
     <string name="translate">Translate</string>
     <string name="size">Size</string>
     <string name="add_local_directory">Add local directory</string>
@@ -402,7 +402,7 @@
     <string name="language_japanese">Japanese</string>
     <string name="language_korean">Korean</string>
     <string name="updating_library">Updating library (%1$d/%2$d)</string>
-    <string name="notification_channel_name_reader_narrator">Reader narrator</string>
+
     <string name="notification_channel_name_library_update">Library update</string>
     <string name="notification_channel_name_new_chapters">New chapters</string>
     <string name="notification_channel_name_failed_updates">Failed updates</string>

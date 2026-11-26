@@ -1,8 +1,7 @@
 package my.noveldokusha.features.reader.ui
+
 import androidx.compose.runtime.Immutable
-
 import androidx.compose.runtime.MutableState
-
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
@@ -10,7 +9,6 @@ import my.noveldokusha.coreui.theme.AppTheme
 import my.noveldokusha.coreui.theme.DarkMode
 import my.noveldokusha.features.reader.features.LiveTranslationSettingData
 import my.noveldokusha.features.reader.features.ManualHighlightSettingData
-import my.noveldokusha.features.reader.features.TextToSpeechSettingData
 
 @Stable
 internal data class ReaderScreenState(
@@ -34,12 +32,9 @@ internal data class ReaderScreenState(
         val keepScreenOn: State<Boolean>,
         val fullScreen: State<Boolean>,
         val isSingleTapToOpenSettings: State<Boolean>,
-        val textToSpeech: TextToSpeechSettingData,
         val liveTranslation: LiveTranslationSettingData,
         val style: StyleSettingsData,
         val selectedSetting: MutableState<Type>,
-        val floatingTts: FloatingTtsSettingsData,
-        val ttsHighlight: TtsHighlightSettingsData,
         val manualHighlight: ManualHighlightSettingData,
         val manualHighlightEnabled: State<Boolean>,
     ) {
@@ -72,22 +67,9 @@ internal data class ReaderScreenState(
             val sentenceSplitting: State<Boolean> = mutableStateOf(false),
         )
 
-        @Stable
-        data class FloatingTtsSettingsData(
-            val isEnabled: MutableState<Boolean>,
-            val showOutsideApp: MutableState<Boolean>,
-            val opacity: MutableState<Float>,
-        )
-
-        @Stable
-        data class TtsHighlightSettingsData(
-            val isEnabled: MutableState<Boolean>,
-            val highlightColor: MutableState<String>,
-        )
-
         @Immutable
         enum class Type {
-            None, LiveTranslation, TextToSpeech, Style, More, RegexRules
+            None, LiveTranslation, Style, More, RegexRules
         }
     }
 }

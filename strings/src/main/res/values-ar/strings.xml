@@ -146,15 +146,15 @@
     <string name="unread_chapters">الفصول غير المقروءة</string>
     <string name="last_update">آخر تحديث</string>
     <string name="date_added">تاريخ الإضافة</string>
-    <string name="voices">الأصوات</string>
-    <string name="search_voice_by_language">بحث عن صوت حسب اللغة</string>
+
+
     <string name="needs_internet">يحتاج إلى إنترنت</string>
     <string name="no_matches">لا توجد مطابقات</string>
     <string name="start_here">ابدأ هنا</string>
     <string name="focus">تركيز</string>
-    <string name="voice_pitch">درجة الصوت</string>
-    <string name="voice_speed">سرعة الصوت</string>
-    <string name="original_voice">الصوت الأصلي</string>
+
+
+
     <string name="not_set">غير مضبوط</string>
     <string name="chapter_x_over_n">الفصل: %1$d/%2$d</string>
     <string name="progress_x_percentage">التقدم: %1$.0f%%</string>
@@ -163,36 +163,36 @@
     <string name="paragraph_spacing">تباعد الفقرات</string>
     <string name="letter_spacing">تباعد الأحرف</string>
     <string name="name">الاسم</string>
-    <string name="save_current_voice">حفظ الصوت الحالي</string>
-    <string name="save_current_voice_parameters">حفظ الصوت الحالي والمعلمات</string>
+
+
     <string name="layout">التخطيط</string>
     <string name="new_chapters">فصول جديدة</string>
     <string name="update_error">خطأ في التحديث</string>
     <string name="update_cancelled">تم إلغاء التحديث</string>
-    <string name="tts_estimated_time_left">الوقت المتبقي المقدر</string>
-    <string name="tts_total_chapter">إجمالي الفصل</string>
-    <string name="tts_hours_abbr">س</string>
-    <string name="tts_minutes_abbr">د</string>
-    <string name="tts_seconds_abbr">ث</string>
-    <string name="media_control_previous">سابق</string>
-    <string name="media_control_rewind">إرجاع</string>
-    <string name="media_control_play">تشغيل</string>
-    <string name="media_control_pause">إيقاف مؤقت</string>
-    <string name="media_control_fast_forward">تقديم سريع</string>
-    <string name="media_control_next">تالي</string>
-    <string name="tts_floating">TTS عائم</string>
-    <string name="tts_floating_channel_description">عناصر تحكم التراكب TTS العائم</string>
-    <string name="tts_floating_overlay_active">تراكب TTS نشط</string>
-    <string name="tts_floating_show_outside_app">عرض فوق التطبيقات الأخرى</string>
-    <string name="tts_floating_opacity">الشفافية</string>
-    <string name="tts_floating_width">العرض</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_overlay_permission_title">إذن التراكب</string>
-    <string name="tts_floating_overlay_permission_message">المشغل العائم يحتاج إلى إذن للعرض فوق التطبيقات الأخرى.</string>
-    <string name="tts_floating_open_settings">فتح الإعدادات</string>
+
+
+
+
     <string name="delete">حذف</string>
     <string name="english">الإنجليزية</string>
     <string name="filter_title">العنوان</string>
@@ -278,14 +278,14 @@
     <string name="gemini_api_description_enabled">عند التفعيل، يستخدم Google Gemini API للترجمات عالية الجودة. عند التعطيل أو إذا لم يتم تعيين مفتاح API، يستخدم Google Translate المجاني بدلاً من ذلك.</string>
     <string name="gemini_api_description_disabled">قم بتكوين مفتاح Gemini API أعلاه لتفعيل هذا الخيار. يستخدم حالياً Google Translate (المجاني) - لا حاجة لمفتاح API.</string>
     <string name="translator">المترجم</string>
-    <string name="voice_reader">قارئ صوتي</string>
+
     <string name="more">المزيد</string>
     <string name="style">النمط</string>
-    <string name="saved_voices">الأصوات المحفوظة</string>
-    <string name="no_voices_saved">لم يتم حفظ أي أصوات</string>
+
+
     <string name="cancel">إلغاء</string>
-    <string name="save_voice">حفظ الصوت</string>
-    <string name="delete_voice">حذف الصوت</string>
+
+
     <string name="translate">ترجمة</string>
     <string name="size">الحجم</string>
     <string name="add_local_directory">إضافة مجلد محلي</string>
@@ -323,7 +323,7 @@
     <string name="language_japanese">اليابانية</string>
     <string name="language_korean">الكورية</string>
     <string name="updating_library">جاري تحديث المكتبة (%1$d/%2$d)</string>
-    <string name="notification_channel_name_reader_narrator">قارئ الراوي</string>
+
     <string name="notification_channel_name_library_update">تحديث المكتبة</string>
     <string name="notification_channel_name_new_chapters">فصول جديدة</string>
     <string name="notification_channel_name_failed_updates">تحديثات فاشلة</string>
@@ -727,16 +727,16 @@
     <string name="translation_mode_settings_description">زوج لغات لكل رواية، أو زوج واحد لجميع الروايات</string>
     <string name="translation_mode_per_novel">هذه الرواية</string>
     <string name="translation_mode_global">جميع الروايات</string>
-    <string name="tts_highlight">تمييز النطق الصوتي (TTS)</string>
+
     <string name="manual_highlight">تمييز يدوي</string>
     <string name="manual_highlight_start">بدء التمييز اليدوي</string>
     <string name="manual_highlight_previous">الفقرة السابقة</string>
     <string name="manual_highlight_next">الفقرة التالية</string>
     <string name="manual_highlight_stop">إيقاف التمييز اليدوي</string>
-    <string name="tts_floating_glow">توهج</string>
-    <string name="tts_glow_auto">تلقائي</string>
-    <string name="tts_glow_on">مفعّل</string>
-    <string name="tts_glow_off">معطّل</string>
+
+
+
+
     <string name="regex_cleanup_novel_rules">قواعد التعبير النمطي (هذه الرواية)</string>
     <string name="regex_cleanup_novel_title_format">رواية: %s</string>
     <string name="regex_cleanup_move_to_global">نقل إلى العامة</string>

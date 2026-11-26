@@ -146,15 +146,15 @@
     <string name="unread_chapters">未読チャプター</string>
     <string name="last_update">最終更新</string>
     <string name="date_added">追加日</string>
-    <string name="voices">音声</string>
-    <string name="search_voice_by_language">言語で音声を検索</string>
+
+
     <string name="needs_internet">インターネットが必要</string>
     <string name="no_matches">一致なし</string>
     <string name="start_here">ここから開始</string>
     <string name="focus">フォーカス</string>
-    <string name="voice_pitch">音声のピッチ</string>
-    <string name="voice_speed">音声の速度</string>
-    <string name="original_voice">原文の音声</string>
+
+
+
     <string name="not_set">未設定</string>
     <string name="chapter_x_over_n">チャプター：%1$d/%2$d</string>
     <string name="progress_x_percentage">進捗：%1$.0f%%</string>
@@ -163,36 +163,36 @@
     <string name="paragraph_spacing">段落間隔</string>
     <string name="letter_spacing">文字間隔</string>
     <string name="name">名前</string>
-    <string name="save_current_voice">現在の音声を保存</string>
-    <string name="save_current_voice_parameters">現在の音声とパラメータを保存</string>
+
+
     <string name="layout">レイアウト</string>
     <string name="new_chapters">新しいチャプター</string>
     <string name="update_error">更新エラー</string>
     <string name="update_cancelled">更新がキャンセルされました</string>
-    <string name="tts_estimated_time_left">推定残り時間</string>
-    <string name="tts_total_chapter">合計チャプター</string>
-    <string name="tts_hours_abbr">時間</string>
-    <string name="tts_minutes_abbr">分</string>
-    <string name="tts_seconds_abbr">秒</string>
-    <string name="media_control_previous">前へ</string>
-    <string name="media_control_rewind">巻き戻し</string>
-    <string name="media_control_play">再生</string>
-    <string name="media_control_pause">一時停止</string>
-    <string name="media_control_fast_forward">早送り</string>
-    <string name="media_control_next">次へ</string>
-    <string name="tts_floating">フローティングTTS</string>
-    <string name="tts_floating_channel_description">フローティングTTSオーバーレイコントロール</string>
-    <string name="tts_floating_overlay_active">TTSオーバーレイがアクティブです</string>
-    <string name="tts_floating_show_outside_app">他のアプリの上に表示</string>
-    <string name="tts_floating_opacity">透明度</string>
-    <string name="tts_floating_width">幅</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_overlay_permission_title">オーバーレイ許可</string>
-    <string name="tts_floating_overlay_permission_message">フローティングプレーヤーが他のアプリの上に表示するには許可が必要です。</string>
-    <string name="tts_floating_open_settings">設定を開く</string>
+
+
+
+
     <string name="delete">削除</string>
     <string name="english">英語</string>
     <string name="filter_title">タイトル</string>
@@ -278,14 +278,14 @@
     <string name="gemini_api_description_enabled">有効にすると、高品質な翻訳にGoogle Gemini APIを使用します。無効にするかAPIキーが設定されていない場合は、無料のGoogle翻訳を使用します。</string>
     <string name="gemini_api_description_disabled">このオプションを有効にするには、上記でGemini APIキーを設定してください。現在はGoogle翻訳（無料）を使用しています — APIキーは不要です。</string>
     <string name="translator">翻訳者</string>
-    <string name="voice_reader">音声読み上げ</string>
+
     <string name="more">もっと</string>
     <string name="style">スタイル</string>
-    <string name="saved_voices">保存済み音声</string>
-    <string name="no_voices_saved">保存された音声はありません</string>
+
+
     <string name="cancel">キャンセル</string>
-    <string name="save_voice">音声を保存</string>
-    <string name="delete_voice">音声を削除</string>
+
+
     <string name="translate">翻訳</string>
     <string name="size">サイズ</string>
     <string name="add_local_directory">ローカルディレクトリを追加</string>
@@ -323,7 +323,7 @@
     <string name="language_japanese">日本語</string>
     <string name="language_korean">韓国語</string>
     <string name="updating_library">ライブラリを更新中（%1$d/%2$d）</string>
-    <string name="notification_channel_name_reader_narrator">リーダー読み上げ</string>
+
     <string name="notification_channel_name_library_update">ライブラリ更新</string>
     <string name="notification_channel_name_new_chapters">新しいチャプター</string>
     <string name="notification_channel_name_failed_updates">更新失敗</string>
@@ -739,16 +739,16 @@
 <string name="translation_mode_per_novel">この小説</string>
 <string name="translation_mode_global">すべての小説</string>
 <string name="translation_select_pair_to_enable">翻訳を開始するにはソース言語とターゲット言語を選択してください</string>
-<string name="tts_highlight">TTSハイライト</string>
+
 <string name="manual_highlight">手動ハイライト</string>
 <string name="manual_highlight_start">手動ハイライトを開始</string>
 <string name="manual_highlight_previous">前の段落</string>
 <string name="manual_highlight_next">次の段落</string>
 <string name="manual_highlight_stop">手動ハイライトを停止</string>
-<string name="tts_floating_glow">グロー</string>
-<string name="tts_glow_auto">自動</string>
-<string name="tts_glow_on">オン</string>
-<string name="tts_glow_off">オフ</string>
+
+
+
+
 <string name="regex_cleanup_novel_rules">正規表現ルール（この小説）</string>
 <string name="regex_cleanup_novel_title_format">小説: %s</string>
 <string name="regex_cleanup_move_to_global">グローバルへ移動</string>

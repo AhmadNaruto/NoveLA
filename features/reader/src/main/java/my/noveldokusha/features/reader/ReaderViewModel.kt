@@ -15,7 +15,6 @@ import timber.log.Timber
 import my.noveldokusha.coreui.theme.AppTheme
 import my.noveldokusha.coreui.theme.DarkMode
 import my.noveldokusha.core.appPreferences.AppPreferences
-import my.noveldokusha.core.utils.StateExtra_Boolean
 import my.noveldokusha.core.utils.StateExtra_String
 import my.noveldokusha.features.reader.manager.ReaderManager
 import my.noveldokusha.features.reader.ui.ReaderScreenState
@@ -27,7 +26,6 @@ import kotlin.properties.Delegates
 interface ReaderStateBundle {
     var bookUrl: String
     var chapterUrl: String
-    var introScrollToSpeaker: Boolean
 }
 
 @HiltViewModel
@@ -40,7 +38,6 @@ internal class ReaderViewModel @Inject constructor(
 
     override var bookUrl by StateExtra_String(stateHandler)
     override var chapterUrl by StateExtra_String(stateHandler)
-    override var introScrollToSpeaker by StateExtra_Boolean(stateHandler)
 
     private val readerSession = run {
         Timber.d("ReaderStart: initiating session bookUrl=$bookUrl chapterUrl=$chapterUrl")
@@ -69,19 +66,9 @@ internal class ReaderViewModel @Inject constructor(
             selectedSetting = mutableStateOf(ReaderScreenState.Settings.Type.None),
             isTextSelectable = appPreferences.READER_SELECTABLE_TEXT.state(viewModelScope),
             keepScreenOn = appPreferences.READER_KEEP_SCREEN_ON.state(viewModelScope),
-            textToSpeech = readerSession.readerTextToSpeech.state,
             liveTranslation = readerSession.readerLiveTranslation.state,
             fullScreen = appPreferences.READER_FULL_SCREEN.state(viewModelScope),
             isSingleTapToOpenSettings = appPreferences.READER_SINGLE_TAP_TO_OPEN_SETTINGS.state(viewModelScope),
-            floatingTts = ReaderScreenState.Settings.FloatingTtsSettingsData(
-                isEnabled = appPreferences.FLOATING_TTS_ENABLED.state(viewModelScope),
-                showOutsideApp = appPreferences.FLOATING_TTS_SHOW_OUTSIDE_APP.state(viewModelScope),
-                opacity = appPreferences.FLOATING_TTS_OPACITY.state(viewModelScope),
-            ),
-            ttsHighlight = ReaderScreenState.Settings.TtsHighlightSettingsData(
-                isEnabled = appPreferences.TTS_HIGHLIGHT_ENABLED.state(viewModelScope),
-                highlightColor = appPreferences.TTS_HIGHLIGHT_COLOR.state(viewModelScope),
-            ),
             manualHighlight = readerSession.readerManualHighlight.state,
             manualHighlightEnabled = appPreferences.MANUAL_HIGHLIGHT_ENABLED.state(viewModelScope),
             style = ReaderScreenState.Settings.StyleSettingsData(
@@ -146,32 +133,20 @@ internal class ReaderViewModel @Inject constructor(
                     }
                 }
         }
-
     }
 
     val items = readerSession.items
     val chaptersLoader = readerSession.readerChaptersLoader
-    val readerSpeaker = readerSession.readerTextToSpeech
     var readingCurrentChapter by Delegates.observable(readerSession.currentChapter) { _, _, new ->
         readerSession.currentChapter = new
     }
     val onTranslatorChanged = readerSession.readerLiveTranslation.onTranslatorChanged
     val onDisplaySettingsChanged = readerSession.readerLiveTranslation.onDisplaySettingsChanged
-    val ttsScrolledToTheTop = readerSession.readerTextToSpeech.scrolledToTheTop
-    val ttsScrolledToTheBottom = readerSession.readerTextToSpeech.scrolledToTheBottom
     val manualHighlightScrollToItem = readerSession.readerManualHighlight.scrollToItem
 
     fun onCloseManually() {
-        Timber.d("onCloseManually: isActive=${readerSession.readerTextToSpeech.isActive.value} isSpeaking=${readerSession.readerTextToSpeech.isSpeaking.value}")
-        if (readerSession.readerTextToSpeech.isActive.value) {
-            readerManager.detachSession()
-        } else {
-            readerManager.close()
-        }
+        readerManager.close()
     }
-
-    fun startSpeaker(itemIndex: Int) =
-        readerSession.startSpeaker(itemIndex = itemIndex)
 
     fun startManualHighlightAt(itemIndex: Int) =
         readerSession.startManualHighlight(itemIndex = itemIndex)

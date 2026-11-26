@@ -30,13 +30,11 @@ class AppNavigationRoutes @Inject constructor() : NavigationRoutes {
         context: Context,
         bookUrl: String,
         chapterUrl: String,
-        scrollToSpeakingItem: Boolean
     ): Intent {
         return ReaderActivity.IntentData(
             context,
             bookUrl = bookUrl,
             chapterUrl = chapterUrl,
-            scrollToSpeakingItem = scrollToSpeakingItem
         )
     }
 

@@ -146,15 +146,15 @@
     <string name="unread_chapters">अपठित अध्याय</string>
     <string name="last_update">अंतिम अपडेट</string>
     <string name="date_added">जोड़ने की तिथि</string>
-    <string name="voices">आवाज़ें</string>
-    <string name="search_voice_by_language">भाषा के अनुसार आवाज़ खोजें</string>
+
+
     <string name="needs_internet">इंटरनेट आवश्यक</string>
     <string name="no_matches">कोई मिलान नहीं</string>
     <string name="start_here">यहाँ से शुरू करें</string>
     <string name="focus">फ़ोकस</string>
-    <string name="voice_pitch">आवाज़ की पिच</string>
-    <string name="voice_speed">आवाज़ की गति</string>
-    <string name="original_voice">मूल आवाज़</string>
+
+
+
     <string name="not_set">सेट नहीं है</string>
     <string name="chapter_x_over_n">अध्याय: %1$d/%2$d</string>
     <string name="progress_x_percentage">प्रगति: %1$.0f%%</string>
@@ -163,36 +163,36 @@
     <string name="paragraph_spacing">अनुच्छेद अंतराल</string>
     <string name="letter_spacing">अक्षर अंतराल</string>
     <string name="name">नाम</string>
-    <string name="save_current_voice">वर्तमान आवाज़ सहेजें</string>
-    <string name="save_current_voice_parameters">वर्तमान आवाज़ और पैरामीटर सहेजें</string>
+
+
     <string name="layout">लेआउट</string>
     <string name="new_chapters">नए अध्याय</string>
     <string name="update_error">अपडेट त्रुटि</string>
     <string name="update_cancelled">अपडेट रद्द</string>
-    <string name="tts_estimated_time_left">अनुमानित शेष समय</string>
-    <string name="tts_total_chapter">कुल अध्याय</string>
-    <string name="tts_hours_abbr">घं</string>
-    <string name="tts_minutes_abbr">मि</string>
-    <string name="tts_seconds_abbr">से</string>
-    <string name="media_control_previous">पिछला</string>
-    <string name="media_control_rewind">रिवाइंड</string>
-    <string name="media_control_play">चलाएं</string>
-    <string name="media_control_pause">रोकें</string>
-    <string name="media_control_fast_forward">तेज़ आगे</string>
-    <string name="media_control_next">अगला</string>
-    <string name="tts_floating">फ्लोटिंग TTS</string>
-    <string name="tts_floating_channel_description">फ्लोटिंग TTS ओवरले नियंत्रण</string>
-    <string name="tts_floating_overlay_active">TTS ओवरले सक्रिय है</string>
-    <string name="tts_floating_show_outside_app">अन्य ऐप्स के ऊपर दिखाएं</string>
-    <string name="tts_floating_opacity">अपारदर्शिता</string>
-    <string name="tts_floating_width">चौड़ाई</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_overlay_permission_title">ओवरले अनुमति</string>
-    <string name="tts_floating_overlay_permission_message">फ्लोटिंग प्लेयर को अन्य ऐप्स के ऊपर प्रदर्शित होने के लिए अनुमति चाहिए।</string>
-    <string name="tts_floating_open_settings">सेटिंग खोलें</string>
+
+
+
+
     <string name="delete">हटाएं</string>
     <string name="english">अंग्रेज़ी</string>
     <string name="filter_title">शीर्षक</string>
@@ -278,14 +278,14 @@
     <string name="gemini_api_description_enabled">सक्षम होने पर, उच्च गुणवत्ता वाले अनुवादों के लिए Google Gemini API का उपयोग करता है। अक्षम होने पर या API कुंजी सेट न होने पर, इसके बजाय निःशुल्क Google Translate का उपयोग करता है।</string>
     <string name="gemini_api_description_disabled">इस विकल्प को सक्षम करने के लिए ऊपर Gemini API कुंजी कॉन्फ़िगर करें। वर्तमान में Google Translate (निःशुल्क) का उपयोग कर रहा है — किसी API कुंजी की आवश्यकता नहीं है।</string>
     <string name="translator">अनुवादक</string>
-    <string name="voice_reader">आवाज़ वाचक</string>
+
     <string name="more">और</string>
     <string name="style">शैली</string>
-    <string name="saved_voices">सहेजी गई आवाज़ें</string>
-    <string name="no_voices_saved">कोई आवाज़ सहेजी नहीं गई</string>
+
+
     <string name="cancel">रद्द करें</string>
-    <string name="save_voice">आवाज़ सहेजें</string>
-    <string name="delete_voice">आवाज़ हटाएं</string>
+
+
     <string name="translate">अनुवाद करें</string>
     <string name="size">आकार</string>
     <string name="add_local_directory">स्थानीय निर्देशिका जोड़ें</string>
@@ -323,7 +323,7 @@
     <string name="language_japanese">जापानी</string>
     <string name="language_korean">कोरियाई</string>
     <string name="updating_library">लाइब्रेरी अपडेट हो रही है (%1$d/%2$d)</string>
-    <string name="notification_channel_name_reader_narrator">रीडर वाचक</string>
+
     <string name="notification_channel_name_library_update">लाइब्रेरी अपडेट</string>
     <string name="notification_channel_name_new_chapters">नए अध्याय</string>
     <string name="notification_channel_name_failed_updates">विफल अपडेट</string>
@@ -727,16 +727,16 @@
 <string name="translation_mode_per_novel">यह उपन्यास</string>
 <string name="translation_mode_global">सभी उपन्यास</string>
 <string name="translation_select_pair_to_enable">अनुवाद शुरू करने के लिए स्रोत और लक्ष्य भाषा चुनें</string>
-<string name="tts_highlight">टीटीएस हाइलाइट</string>
+
 <string name="manual_highlight">मैन्युअल हाइलाइट</string>
 <string name="manual_highlight_start">मैन्युअल हाइलाइट शुरू करें</string>
 <string name="manual_highlight_previous">पिछला पैराग्राफ</string>
 <string name="manual_highlight_next">अगला पैराग्राफ</string>
 <string name="manual_highlight_stop">मैन्युअल हाइलाइट बंद करें</string>
-<string name="tts_floating_glow">चमक</string>
-<string name="tts_glow_auto">स्वचालित</string>
-<string name="tts_glow_on">चालू</string>
-<string name="tts_glow_off">बंद</string>
+
+
+
+
 <string name="regex_cleanup_novel_rules">रेगेक्स नियम (यह उपन्यास)</string>
 <string name="regex_cleanup_novel_title_format">उपन्यास: %s</string>
 <string name="regex_cleanup_move_to_global">वैश्विक में ले जाएं</string>

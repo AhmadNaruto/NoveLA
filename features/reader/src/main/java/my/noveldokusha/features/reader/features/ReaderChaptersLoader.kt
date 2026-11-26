@@ -927,7 +927,7 @@ internal class ReaderChaptersLoader(
     }
 
     suspend fun pruneItems(currentChapterIndex: Int) = withContext(Dispatchers.Main.immediate) {
-        Timber.d("TTS-JUMP pruneItems: current=$currentChapterIndex itemsBefore=${items.size}")
+        Timber.d("READER-JUMP pruneItems: current=$currentChapterIndex itemsBefore=${items.size}")
         if (readerState == ReaderState.LOADING) {
             pendingPruneChapterIndex = currentChapterIndex
             return@withContext
@@ -948,7 +948,7 @@ internal class ReaderChaptersLoader(
 
         if (toRemoveItems.isEmpty()) return@withContext
         Timber.d(
-            "TTS-JUMP pruneItems: window=[$minKeep..$maxKeep] removing n=${toRemoveItems.size} " +
+            "READER-JUMP pruneItems: window=[$minKeep..$maxKeep] removing n=${toRemoveItems.size} " +
                 "chapters=${toRemoveChapterIndices.sorted()} itemsAfter=${items.size - toRemoveItems.size}"
         )
 

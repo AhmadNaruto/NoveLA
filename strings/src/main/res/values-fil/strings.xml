@@ -146,15 +146,15 @@
     <string name="unread_chapters">Hindi nabasang mga kabanata</string>
     <string name="last_update">Huling update</string>
     <string name="date_added">Petsa ng pagdagdag</string>
-    <string name="voices">Mga Boses</string>
-    <string name="search_voice_by_language">Maghanap ng boses ayon sa wika</string>
+
+
     <string name="needs_internet">Kailangan ng Internet</string>
     <string name="no_matches">Walang tugma</string>
     <string name="start_here">Magsimula dito</string>
     <string name="focus">Tumuon</string>
-    <string name="voice_pitch">Pitch ng boses</string>
-    <string name="voice_speed">Bilis ng boses</string>
-    <string name="original_voice">Orihinal na boses</string>
+
+
+
     <string name="not_set">Hindi nakatakda</string>
     <string name="chapter_x_over_n">Kabanata: %1$d/%2$d</string>
     <string name="progress_x_percentage">Progreso: %1$.0f%%</string>
@@ -163,36 +163,36 @@
     <string name="paragraph_spacing">Espasyo ng talata</string>
     <string name="letter_spacing">Espasyo ng titik</string>
     <string name="name">Pangalan</string>
-    <string name="save_current_voice">I-save ang kasalukuyang boses</string>
-    <string name="save_current_voice_parameters">I-save ang kasalukuyang boses at mga parameter</string>
+
+
     <string name="layout">Layout</string>
     <string name="new_chapters">Mga bagong kabanata</string>
     <string name="update_error">Error sa update</string>
     <string name="update_cancelled">Kinansela ang update</string>
-    <string name="tts_estimated_time_left">Tinatayang Natitirang Oras</string>
-    <string name="tts_total_chapter">Kabuuang Kabanata</string>
-    <string name="tts_hours_abbr">h</string>
-    <string name="tts_minutes_abbr">m</string>
-    <string name="tts_seconds_abbr">s</string>
-    <string name="media_control_previous">nauna</string>
-    <string name="media_control_rewind">rewind</string>
-    <string name="media_control_play">play</string>
-    <string name="media_control_pause">pause</string>
-    <string name="media_control_fast_forward">fast_forward</string>
-    <string name="media_control_next">susunod</string>
-    <string name="tts_floating">Lumulutang na TTS</string>
-    <string name="tts_floating_channel_description">Mga kontrol ng overlay ng lumulutang na TTS</string>
-    <string name="tts_floating_overlay_active">Aktibo ang overlay ng TTS</string>
-    <string name="tts_floating_show_outside_app">Ipakita sa itaas ng iba pang app</string>
-    <string name="tts_floating_opacity">Opacity</string>
-    <string name="tts_floating_width">Lapad</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_overlay_permission_title">Pahintulot sa overlay</string>
-    <string name="tts_floating_overlay_permission_message">Ang lumulutang na player ay nangangailangan ng pahintulot upang magpakita sa ibabaw ng iba pang mga application.</string>
-    <string name="tts_floating_open_settings">Buksan ang mga setting</string>
+
+
+
+
     <string name="delete">Tanggalin</string>
     <string name="english">Ingles</string>
     <string name="filter_title">Pamagat</string>
@@ -278,14 +278,14 @@
     <string name="gemini_api_description_enabled">Kapag naka-enable, ginagamit ang Google Gemini API para sa mas mataas na kalidad ng mga pagsasalin. Kapag naka-disable o walang API key, gumagamit ng libreng Google Translate.</string>
     <string name="gemini_api_description_disabled">I-configure ang Gemini API key sa itaas upang i-enable ang opsyong ito. Kasalukuyang gumagamit ng Google Translate (Libre) - walang kinakailangang API key.</string>
     <string name="translator">Tagasalin</string>
-    <string name="voice_reader">Boses na mambabasa</string>
+
     <string name="more">Higit pa</string>
     <string name="style">Estilo</string>
-    <string name="saved_voices">Mga naka-save na boses</string>
-    <string name="no_voices_saved">Walang naka-save na boses</string>
+
+
     <string name="cancel">Kanselahin</string>
-    <string name="save_voice">I-save ang boses</string>
-    <string name="delete_voice">Tanggalin ang boses</string>
+
+
     <string name="translate">Isalin</string>
     <string name="size">Laki</string>
     <string name="add_local_directory">Magdagdag ng lokal na direktoryo</string>
@@ -323,7 +323,7 @@
     <string name="language_japanese">Hapon</string>
     <string name="language_korean">Koreano</string>
     <string name="updating_library">Ina-update ang aklatan (%1$d/%2$d)</string>
-    <string name="notification_channel_name_reader_narrator">Narrator ng mambabasa</string>
+
     <string name="notification_channel_name_library_update">Update ng aklatan</string>
     <string name="notification_channel_name_new_chapters">Mga bagong kabanata</string>
     <string name="notification_channel_name_failed_updates">Mga nabigong update</string>
@@ -727,16 +727,16 @@
     <string name="translation_mode_settings_description">Pares ng wika kada nobela, o isang pares para sa lahat ng nobela</string>
     <string name="translation_mode_per_novel">Ang nobelang ito</string>
     <string name="translation_mode_global">Lahat ng nobela</string>
-    <string name="tts_highlight">Highlight ng TTS</string>
+
     <string name="manual_highlight">Manual na highlight</string>
     <string name="manual_highlight_start">Simulan ang manual na highlight</string>
     <string name="manual_highlight_previous">Naunang talata</string>
     <string name="manual_highlight_next">Susunod na talata</string>
     <string name="manual_highlight_stop">Ihinto ang manual na highlight</string>
-    <string name="tts_floating_glow">Kinang</string>
-    <string name="tts_glow_auto">Awtomatiko</string>
-    <string name="tts_glow_on">Naka-on</string>
-    <string name="tts_glow_off">Naka-off</string>
+
+
+
+
     <string name="regex_cleanup_novel_rules">Mga panuntunan ng regex (ang nobelang ito)</string>
     <string name="regex_cleanup_novel_title_format">Nobela: %s</string>
     <string name="regex_cleanup_move_to_global">Ilipat sa global</string>

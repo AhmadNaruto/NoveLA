@@ -146,15 +146,15 @@
     <string name="unread_chapters">未读章节</string>
     <string name="last_update">上次更新</string>
     <string name="date_added">添加日期</string>
-    <string name="voices">语音</string>
-    <string name="search_voice_by_language">按语言搜索语音</string>
+
+
     <string name="needs_internet">需要网络</string>
     <string name="no_matches">无匹配</string>
     <string name="start_here">从这里开始</string>
     <string name="focus">焦点</string>
-    <string name="voice_pitch">音调</string>
-    <string name="voice_speed">语速</string>
-    <string name="original_voice">原文语音</string>
+
+
+
     <string name="not_set">未设置</string>
     <string name="chapter_x_over_n">章节：%1$d/%2$d</string>
     <string name="progress_x_percentage">进度：%1$.0f%%</string>
@@ -163,36 +163,36 @@
     <string name="paragraph_spacing">段落间距</string>
     <string name="letter_spacing">字间距</string>
     <string name="name">名称</string>
-    <string name="save_current_voice">保存当前语音</string>
-    <string name="save_current_voice_parameters">保存当前语音和参数</string>
+
+
     <string name="layout">布局</string>
     <string name="new_chapters">新章节</string>
     <string name="update_error">更新错误</string>
     <string name="update_cancelled">更新已取消</string>
-    <string name="tts_estimated_time_left">预计剩余时间</string>
-    <string name="tts_total_chapter">总章节</string>
-    <string name="tts_hours_abbr">时</string>
-    <string name="tts_minutes_abbr">分</string>
-    <string name="tts_seconds_abbr">秒</string>
-    <string name="media_control_previous">上一个</string>
-    <string name="media_control_rewind">快退</string>
-    <string name="media_control_play">播放</string>
-    <string name="media_control_pause">暂停</string>
-    <string name="media_control_fast_forward">快进</string>
-    <string name="media_control_next">下一个</string>
-    <string name="tts_floating">浮动TTS</string>
-    <string name="tts_floating_channel_description">浮动TTS覆盖层控制</string>
-    <string name="tts_floating_overlay_active">TTS覆盖层已激活</string>
-    <string name="tts_floating_show_outside_app">在其他应用上方显示</string>
-    <string name="tts_floating_opacity">透明度</string>
-    <string name="tts_floating_width">宽度</string>
-    <string name="tts_floating_paragraph">Paragraph</string>
-    <string name="tts_voice">TTS voice</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="inverse">Inverse</string>
-    <string name="tts_both">Both</string>
-    <string name="tts_floating_overlay_permission_title">覆盖层权限</string>
-    <string name="tts_floating_overlay_permission_message">浮动播放器需要权限才能在其他应用上方显示。</string>
-    <string name="tts_floating_open_settings">打开设置</string>
+
+
+
+
     <string name="delete">删除</string>
     <string name="english">英语</string>
     <string name="filter_title">标题</string>
@@ -278,14 +278,14 @@
     <string name="gemini_api_description_enabled">启用后，使用 Google Gemini API 进行更高质量的翻译。禁用或未设置 API 密钥时，将使用免费的 Google 翻译。</string>
     <string name="gemini_api_description_disabled">请在上方配置 Gemini API 密钥以启用此选项。当前使用 Google 翻译（免费）- 无需 API 密钥。</string>
     <string name="translator">翻译</string>
-    <string name="voice_reader">语音朗读</string>
+
     <string name="more">更多</string>
     <string name="style">样式</string>
-    <string name="saved_voices">已保存的语音</string>
-    <string name="no_voices_saved">未保存语音</string>
+
+
     <string name="cancel">取消</string>
-    <string name="save_voice">保存语音</string>
-    <string name="delete_voice">删除语音</string>
+
+
     <string name="translate">翻译</string>
     <string name="size">大小</string>
     <string name="add_local_directory">添加本地目录</string>
@@ -323,7 +323,7 @@
     <string name="language_japanese">日语</string>
     <string name="language_korean">韩语</string>
     <string name="updating_library">正在更新书库 (%1$d/%2$d)</string>
-    <string name="notification_channel_name_reader_narrator">朗读播报</string>
+
     <string name="notification_channel_name_library_update">书库更新</string>
     <string name="notification_channel_name_new_chapters">新章节</string>
     <string name="notification_channel_name_failed_updates">更新失败</string>
@@ -739,16 +739,16 @@
     <string name="translation_mode_settings_description">每本书单独的语言对，或所有书籍共用一个语言对</string>
     <string name="translation_mode_per_novel">本书</string>
     <string name="translation_mode_global">所有书籍</string>
-    <string name="tts_highlight">TTS 高亮</string>
+
     <string name="manual_highlight">手动高亮</string>
     <string name="manual_highlight_start">开始手动高亮</string>
     <string name="manual_highlight_previous">上一段</string>
     <string name="manual_highlight_next">下一段</string>
     <string name="manual_highlight_stop">停止手动高亮</string>
-    <string name="tts_floating_glow">发光</string>
-    <string name="tts_glow_auto">自动</string>
-    <string name="tts_glow_on">开</string>
-    <string name="tts_glow_off">关</string>
+
+
+
+
     <string name="regex_cleanup_novel_rules">正则规则（本书）</string>
     <string name="regex_cleanup_novel_title_format">小说：%s</string>
     <string name="regex_cleanup_move_to_global">移至全局规则</string>

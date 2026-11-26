@@ -388,83 +388,9 @@ class AppPreferences @Inject constructor(
     val READER_MARGIN_BOTTOM = object : Preference<Float>("READER_MARGIN_BOTTOM") {
         override var value by SharedPreference_Float(name, preferences, 0f)
     }
-    val READER_TEXT_TO_SPEECH_VOICE_ID =
-        object : Preference<String>("READER_TEXT_TO_SPEECH_VOICE_ID") {
-            override var value by SharedPreference_String(name, preferences, "")
-        }
-    val READER_TEXT_TO_SPEECH_VOICE_ID_ORIGINAL =
-        object : Preference<String>("READER_TEXT_TO_SPEECH_VOICE_ID_ORIGINAL") {
-            override var value by SharedPreference_String(name, preferences, "")
-        }
-    // Пакет TTS-движка, которому принадлежит сохранённый голос (например "com.rhvoice.android")
-    val READER_TEXT_TO_SPEECH_VOICE_ENGINE =
-        object : Preference<String>("READER_TEXT_TO_SPEECH_VOICE_ENGINE") {
-            override var value by SharedPreference_String(name, preferences, "")
-        }
-    val READER_TEXT_TO_SPEECH_VOICE_SPEED =
-        object : Preference<Float>("READER_TEXT_TO_SPEECH_VOICE_SPEED") {
-            override var value by SharedPreference_Float(name, preferences, 1f)
-        }
-    val READER_TEXT_TO_SPEECH_VOICE_PITCH =
-        object : Preference<Float>("READER_TEXT_TO_SPEECH_VOICE_PITCH") {
-            override var value by SharedPreference_Float(name, preferences, 1f)
-        }
-
-    val READER_TEXT_TO_SPEECH_SAVED_PREDEFINED_LIST =
-        object : Preference<List<VoicePredefineState>>(
-            "READER_TEXT_TO_SPEECH_SAVED_PREDEFINED_LIST"
-        ) {
-            override var value by SharedPreference_Serializable<List<VoicePredefineState>>(
-                name = name,
-                sharedPreferences = preferences,
-                defaultValue = listOf(),
-                encode = { Json.encodeToString(it) },
-                decode = { Json.decodeFromString(it) }
-            )
-        }
 
     val VERBOSE_LOGGING_ENABLED = object : Preference<Boolean>("VERBOSE_LOGGING_ENABLED") {
         override var value by SharedPreference_Boolean(name, preferences, false)
-    }
-
-    val FLOATING_TTS_ENABLED = object : Preference<Boolean>("FLOATING_TTS_ENABLED") {
-        override var value by SharedPreference_Boolean(name, preferences, false)
-    }
-
-    val FLOATING_TTS_SHOW_OUTSIDE_APP = object : Preference<Boolean>("FLOATING_TTS_SHOW_OUTSIDE_APP") {
-        override var value by SharedPreference_Boolean(name, preferences, true)
-    }
-
-    val FLOATING_TTS_OPACITY = object : Preference<Float>("FLOATING_TTS_OPACITY") {
-        override var value by SharedPreference_Float(name, preferences, 0.95f)
-    }
-
-    val FLOATING_TTS_POS_X = object : Preference<Float>("FLOATING_TTS_POS_X") {
-        override var value by SharedPreference_Float(name, preferences, -1f)
-    }
-
-    val FLOATING_TTS_POS_Y = object : Preference<Float>("FLOATING_TTS_POS_Y") {
-        override var value by SharedPreference_Float(name, preferences, -1f)
-    }
-
-    val FLOATING_TTS_PANEL_WIDTH = object : Preference<Float>("FLOATING_TTS_PANEL_WIDTH") {
-        override var value by SharedPreference_Float(name, preferences, 300f)
-    }
-
-    val FLOATING_TTS_PANEL_POS_X = object : Preference<Float>("FLOATING_TTS_PANEL_POS_X") {
-        override var value by SharedPreference_Float(name, preferences, -1f)
-    }
-
-    val FLOATING_TTS_PANEL_POS_Y = object : Preference<Float>("FLOATING_TTS_PANEL_POS_Y") {
-        override var value by SharedPreference_Float(name, preferences, -1f)
-    }
-
-    val FLOATING_TTS_PARAGRAPH_MODE = object : Preference<String>("FLOATING_TTS_PARAGRAPH_MODE") {
-        override var value by SharedPreference_String(name, preferences, "tts")
-    }
-
-    val FLOATING_TTS_GLOW_MODE = object : Preference<String>("FLOATING_TTS_GLOW_MODE") {
-        override var value by SharedPreference_String(name, preferences, "auto")
     }
 
     val READER_SELECTABLE_TEXT = object : Preference<Boolean>("READER_SELECTABLE_TEXT") {
@@ -481,14 +407,6 @@ class AppPreferences @Inject constructor(
 
     val READER_SINGLE_TAP_TO_OPEN_SETTINGS = object : Preference<Boolean>("READER_SINGLE_TAP_TO_OPEN_SETTINGS") {
         override var value by SharedPreference_Boolean(name, preferences, false)
-    }
-
-    val TTS_HIGHLIGHT_ENABLED = object : Preference<Boolean>("TTS_HIGHLIGHT_ENABLED") {
-        override var value by SharedPreference_Boolean(name, preferences, false)
-    }
-
-    val TTS_HIGHLIGHT_COLOR = object : Preference<String>("TTS_HIGHLIGHT_COLOR") {
-        override var value by SharedPreference_String(name, preferences, "FFFF6D00")
     }
 
     /**

@@ -5,17 +5,13 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
-import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.RectF
 import android.text.Layout
 import android.text.Spannable
-import android.text.SpannableString
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.LeadingMarginSpan
 import android.text.style.RelativeSizeSpan
-import android.text.style.ReplacementSpan
 import android.text.style.StyleSpan
 import android.view.MotionEvent
 import android.view.View
@@ -32,7 +28,6 @@ import coil3.network.httpHeaders
 import my.noveldokusha.core.AppFileResolver
 import my.noveldokusha.core.utils.inflater
 import my.noveldokusha.core.utils.refererFor
-import my.noveldokusha.features.reader.features.TextSynthesis
 import my.noveldokusha.reader.R
 import my.noveldokusha.reader.databinding.ActivityReaderListItemBodyBinding
 import my.noveldokusha.reader.databinding.ActivityReaderListItemDividerBinding
@@ -45,13 +40,11 @@ import my.noveldokusha.reader.databinding.ActivityReaderListItemSpecialTitleBind
 import my.noveldokusha.reader.databinding.ActivityReaderListItemTitleBinding
 import my.noveldokusha.reader.databinding.ActivityReaderListItemTranslateAttributionBinding
 import my.noveldokusha.reader.databinding.ActivityReaderListItemTranslatingBinding
-import my.noveldokusha.text_to_speech.Utterance
 
 internal class ReaderItemAdapter(
     private val ctx: Context,
     list: List<ReaderItem>,
     private val bookUrl: String,
-    private val currentSpeakerActiveItem: () -> TextSynthesis,
     private val currentTextSelectability: () -> Boolean,
     private val currentFontSize: () -> Float,
     private val currentLineHeight: () -> Float,
@@ -80,10 +73,7 @@ internal class ReaderItemAdapter(
     private val onRetryChapter: (chapterIndex: Int) -> Unit,
     private val onOpenChapterInBrowser: (url: String) -> Unit,
     private val onClick: () -> Unit,
-    private val currentTtsHighlightEnabled: () -> Boolean = { false },
-    private val currentTtsHighlightColor: () -> String = { "FFFF6D00" },
     private val currentTextColor: () -> String = { "" },
-    private val currentSpokenWordRange: () -> IntRange? = { null },
     private val currentManualHighlight: () -> HighlightPosition? = { null },
 ) : ArrayAdapter<ReaderItem>(ctx, 0, list) {
     private val appFileResolver = AppFileResolver(ctx)
@@ -179,11 +169,6 @@ internal class ReaderItemAdapter(
 
         val parallelEnabled = currentParallelEnabled() && item.textTranslated != null
 
-        val isTtsActiveItem =
-                currentSpeakerActiveItem().itemPos.chapterIndex == item.chapterIndex &&
-                currentSpeakerActiveItem().itemPos.chapterItemPosition == item.chapterItemPosition &&
-                currentSpeakerActiveItem().playState == Utterance.PlayState.PLAYING
-
         // ponytail: helper — apply 6 text-formatting features to a TextView
         fun applyBodyFormatting(textView: TextView) {
             val base = currentTypeface()
@@ -235,13 +220,7 @@ internal class ReaderItemAdapter(
             val primaryText = if (orderTranslationFirst) item.textTranslated ?: item.text else item.text
             val secondaryText = if (orderTranslationFirst) item.text else item.textTranslated ?: item.text
 
-            val displayPrimary = if (isTtsActiveItem && currentTtsHighlightEnabled()) {
-                applyWordHighlight(primaryText, currentTtsHighlightColor())
-            } else {
-                primaryText
-            }
-
-            bind.bodyTranslated.text = displayPrimary
+            bind.bodyTranslated.text = primaryText
             bind.bodyTranslated.textSize = currentFontSize()
             applyBodyFormatting(bind.bodyTranslated)
             bind.bodyTranslated.updateTextSelectability()
@@ -258,13 +237,7 @@ internal class ReaderItemAdapter(
             applyTextColor(bind.bodyOriginal, currentTextColor())
             bind.bodyOriginal.visibility = View.VISIBLE
         } else {
-            val displayText = if (isTtsActiveItem && currentTtsHighlightEnabled()) {
-                applyWordHighlight(item.textToDisplay, currentTtsHighlightColor())
-            } else {
-                item.textToDisplay
-            }
-
-            bind.bodyTranslated.text = displayText
+            bind.bodyTranslated.text = item.textToDisplay
             bind.bodyTranslated.textSize = currentFontSize()
             applyBodyFormatting(bind.bodyTranslated)
             bind.bodyTranslated.updateTextSelectability()
@@ -437,10 +410,6 @@ internal class ReaderItemAdapter(
         AppCompatResources.getDrawable(context, R.drawable.translucent_current_reading_text_background)
     }
 
-    private val currentReadingAloudLoadingDrawable by lazy {
-        AppCompatResources.getDrawable(context, R.drawable.translucent_current_reading_loading_text_background)
-    }
-
     private fun TextView.updateTextSelectability() {
         val selectableText = currentTextSelectability()
         setTextIsSelectable(selectableText)
@@ -496,43 +465,7 @@ internal class ReaderItemAdapter(
         }
     }
 
-    private fun applyWordHighlight(text: String, highlightColorHex: String): CharSequence {
-        if (!currentTtsHighlightEnabled() || text.isBlank()) return text
-        val range = currentSpokenWordRange()
-        if (range == null || range.first >= text.length) return text
-        val color = try {
-            android.graphics.Color.parseColor("#$highlightColorHex")
-        } catch (_: Exception) {
-            android.graphics.Color.parseColor("#FFFF6D00")
-        }
-        val spannable = SpannableString(text)
-        val start = range.first.coerceIn(0, text.length)
-        val end = (range.last + 1).coerceIn(0, text.length)
-        if (start < end) {
-            spannable.setSpan(
-                RoundedBackgroundSpan(color),
-                start, end,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
-        return spannable
-    }
-
     private fun getItemReadingStateBackground(item: ReaderItem): Drawable? {
-        val textSynthesis = currentSpeakerActiveItem()
-        val isReadingItem = item is ReaderItem.Position &&
-                textSynthesis.itemPos.chapterIndex == item.chapterIndex &&
-                textSynthesis.itemPos.chapterItemPosition == item.chapterItemPosition
-
-        if (isReadingItem) {
-            return when (textSynthesis.playState) {
-                Utterance.PlayState.PLAYING -> currentReadingAloudDrawable
-                Utterance.PlayState.LOADING -> currentReadingAloudLoadingDrawable
-                Utterance.PlayState.FINISHED -> null
-            }
-        }
-
-        // Ручная подсветка абзаца: тот же фоновый drawable, что и у TTS-абзаца.
         val manualHighlight = currentManualHighlight()
         if (manualHighlight != null &&
             item is ReaderItem.Position &&
@@ -573,27 +506,5 @@ internal class ReaderItemAdapter(
 
     companion object {
         private const val MENU_ID_SEARCH_WEB = 9999
-    }
-}
-
-private class RoundedBackgroundSpan(private val color: Int) : ReplacementSpan() {
-    override fun getSize(paint: Paint, text: CharSequence, start: Int, end: Int, fm: Paint.FontMetricsInt?): Int {
-        return paint.measureText(text, start, end).toInt()
-    }
-
-    override fun draw(canvas: Canvas, text: CharSequence, start: Int, end: Int, x: Float, top: Int, y: Int, bottom: Int, paint: Paint) {
-        val textWidth = paint.measureText(text, start, end)
-        val fm = paint.fontMetricsInt
-        val pad = 3f
-        val rect = RectF(
-            x, (y + fm.ascent).toFloat() - pad,
-            x + textWidth, (y + fm.descent).toFloat() + pad
-        )
-        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = (this@RoundedBackgroundSpan.color and 0x00FFFFFF) or (0x80 shl 24)
-            style = Paint.Style.FILL
-        }
-        canvas.drawRoundRect(rect, 6f, 6f, bgPaint)
-        canvas.drawText(text, start, end, x, y.toFloat(), paint)
     }
 }
