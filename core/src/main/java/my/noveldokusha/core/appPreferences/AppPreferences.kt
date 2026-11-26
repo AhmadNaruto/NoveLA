@@ -969,7 +969,7 @@ class AppPreferences @Inject constructor(
         if (TRANSLATION_GLOBAL_MODE.value) {
             val pluginEnabled = sourceId?.let { TRANSLATION_PLUGIN_ENABLED_MAP.value[it] == true } ?: false
             if (pluginEnabled) {
-                return sourceId?.let { TRANSLATION_PLUGIN_PROVIDER.value[it]?.takeIf { s -> s.isNotBlank() } }
+                return TRANSLATION_PLUGIN_PROVIDER.value[sourceId]?.takeIf { s -> s.isNotBlank() }
             }
             return null
         }

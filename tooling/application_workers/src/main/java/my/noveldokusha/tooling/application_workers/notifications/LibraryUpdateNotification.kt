@@ -122,7 +122,6 @@ internal class LibraryUpdateNotification @Inject constructor(
                         context = context,
                         bookUrl = book.url,
                         chapterUrl = chapter.url,
-                        scrollToSpeakingItem = false
                     )
                 )
             }
