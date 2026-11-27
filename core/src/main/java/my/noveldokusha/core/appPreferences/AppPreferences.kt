@@ -1044,16 +1044,16 @@ class AppPreferences @Inject constructor(
     // Правила каскада: 1) включённый плагин отдаёт свой provider; 2) null — глобал
     // подхватит позже через TRANSLATION_PROVIDER; 3) выключенный плагин не протекает.
     fun translationProviderForBook(bookUrl: String, sourceId: String? = null): String? {
+        val pluginEnabled = sourceId != null && TRANSLATION_PLUGIN_ENABLED_MAP.value[sourceId] == true
         if (TRANSLATION_GLOBAL_MODE.value) {
-            val pluginEnabled = sourceId?.let { TRANSLATION_PLUGIN_ENABLED_MAP.value[it] == true } ?: false
             if (pluginEnabled) {
-                return sourceId?.let { TRANSLATION_PLUGIN_PROVIDER.value[it]?.takeIf { s -> s.isNotBlank() } }
+                return TRANSLATION_PLUGIN_PROVIDER.value[sourceId]?.takeIf { s -> s.isNotBlank() }
             }
             return null
         }
         // Вне глобального режима — провайдер плагина (sourceId), только если плагин
         // ВКЛЮЧЁН; выключенный плагин не протекает → null (глобальный возьмётся).
-        return if (sourceId != null && TRANSLATION_PLUGIN_ENABLED_MAP.value[sourceId] == true)
+        return if (pluginEnabled)
             TRANSLATION_PLUGIN_PROVIDER.value[sourceId]?.takeIf { s -> s.isNotBlank() }
         else null
     }

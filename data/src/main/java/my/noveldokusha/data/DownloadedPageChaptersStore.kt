@@ -142,7 +142,7 @@ class DownloadedPageChaptersStore @Inject constructor(
                 if (!response.isSuccessful) {
                     throw IOException("HTTP ${response.code} for $fetchUrl")
                 }
-                val bytes = response.body?.bytes()
+                val bytes = response.body.bytes()
                     ?: throw IOException("Empty body for $fetchUrl")
                 if (bytes.isEmpty()) throw IOException("Empty body for $fetchUrl")
                 file.writeBytes(bytes)

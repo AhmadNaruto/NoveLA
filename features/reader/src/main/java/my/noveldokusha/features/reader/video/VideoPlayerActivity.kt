@@ -37,12 +37,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Brightness6
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Speed
-import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -216,7 +216,7 @@ private fun GestureHudOverlay(state: ComposeState<GestureHud?>) {
                             )
                         }
                         is GestureHud.Volume -> {
-                            Icon(Icons.Rounded.VolumeUp, contentDescription = null)
+                            Icon(Icons.AutoMirrored.Rounded.VolumeUp, contentDescription = null)
                             Text(
                                 text = "${(shown.fraction * 100).toInt()}%",
                                 style = MaterialTheme.typography.titleMedium,

@@ -261,6 +261,7 @@ private fun PreviewMiscellaneous() {
                 navigationIcon = { Icon(Icons.Filled.Menu, null) },
                 actions = { Icon(Icons.Filled.Person, null) }
             )
+            @Suppress("DEPRECATION")
             TabRow(selectedTabIndex = 1) {
                 Tab(selected = true, onClick = {}) { Text(text = "1") }
                 Tab(selected = false, onClick = {}) { Text(text = "2") }

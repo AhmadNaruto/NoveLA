@@ -56,7 +56,7 @@ class CoverRepository @Inject constructor(
                             }
                             return@withLock false
                         }
-                        response.body?.bytes()
+                        response.body.bytes()
                     }
                 } catch (_: Exception) {
                     if (attempt < maxAttempts) {

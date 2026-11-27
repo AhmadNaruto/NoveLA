@@ -156,9 +156,9 @@ internal class ReaderSession(
 
     private var ttsCurrentChapterIndex: Int = -1
 
-    lateinit var readerTextToSpeech: ReaderTextToSpeech
+    var readerTextToSpeech: ReaderTextToSpeech
 
-    lateinit var readerManualHighlight: ReaderManualHighlight
+    var readerManualHighlight: ReaderManualHighlight
 
     init {
         readerTextToSpeech = ReaderTextToSpeech(

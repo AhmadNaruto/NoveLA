@@ -38,6 +38,7 @@ fun <T : Any, A : SnapshotStateList<T>> SavedStateHandle.asMutableListStateOf(
 
     // Hook up saving the state to the SavedStateHandle
     setSavedStateProvider(key) {
+        @Suppress("DEPRECATION")
         bundleOf("value" to with(saver) {
             SaverScope(Validators::validateValue).save(value)
         })

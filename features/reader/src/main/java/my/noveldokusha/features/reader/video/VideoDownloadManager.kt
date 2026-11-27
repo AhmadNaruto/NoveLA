@@ -71,6 +71,7 @@ class VideoDownloadManager @Inject constructor(
     @MediaHttpClient private val client: OkHttpClient,
     private val notificationsCenter: NotificationsCenter,
 ) : OfflineVideoCleaner {
+    @Suppress("DEPRECATION")
     private val databaseProvider = ExoDatabaseProvider(context)
 
     private val downloadCache = SimpleCache(
@@ -689,6 +690,7 @@ private class HeaderAwareDownloaderFactory(
             .setUpstreamDataSourceFactory(upstream)
         val mediaItem = request.toMediaItem()
         return if (request.mimeType == MimeTypes.APPLICATION_M3U8) {
+            @Suppress("DEPRECATION")
             HlsDownloader(mediaItem, dataSourceFactory)
         } else {
             ProgressiveDownloader(mediaItem, dataSourceFactory)

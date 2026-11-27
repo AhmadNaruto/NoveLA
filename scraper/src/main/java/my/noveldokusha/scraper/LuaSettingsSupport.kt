@@ -61,7 +61,7 @@ sealed class LuaSetting {
  */
 fun parseLuaSettingsSchema(luaScript: LuaValue): List<LuaSetting>? {
     val fn = try { luaScript.get("getSettingsSchema") } catch (_: Exception) { return null }
-    if (fn == null || fn.isnil()) return null
+    if (fn.isnil()) return null
 
     val result = try { fn.call() } catch (_: Exception) { return null }
     if (!result.istable()) return null

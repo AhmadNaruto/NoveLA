@@ -151,7 +151,10 @@ fun resolveLanguageName(langCode: String, useEnglish: Boolean): String {
     val locale = try {
         Locale.forLanguageTag(langCode)
     } catch (_: Exception) {
-        try { Locale(langCode) } catch (_: Exception) { null }
+        try {
+            @Suppress("DEPRECATION")
+            Locale(langCode)
+        } catch (_: Exception) { null }
     }
     val name = locale?.let {
         if (useEnglish) it.getDisplayLanguage(Locale.ENGLISH)

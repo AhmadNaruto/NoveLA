@@ -1,3 +1,5 @@
+@file:Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+
 package my.noveldokusha.scraper
 
 import android.content.Context
@@ -958,7 +960,7 @@ class LuaEngine @Inject constructor(
 // Эквивалент Kotlin: Clean() = normalizeUnicode().regexReplace("""\s+""", " ").trim()
     private inner class StringCleanFunction : OneArgFunction() {
         override fun call(arg: LuaValue): LuaValue {
-            val s = arg.optjstring("") ?: return LuaValue.valueOf("")
+            val s = arg.optjstring("")
             val normalized = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFKC)
             val collapsed  = normalized.replace(Regex("""\s+"""), " ").trim()
             return LuaValue.valueOf(collapsed)

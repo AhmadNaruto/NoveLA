@@ -111,7 +111,7 @@ class ScraperNetworkClient @Inject constructor(
         return OkHttpClient.Builder()
             .apply {
                 if (appInternalState.isDebugMode) {
-                    okhttpLoggingInterceptor?.let { addInterceptor(it) }
+                    addInterceptor(okhttpLoggingInterceptor)
                 }
                 addInterceptor(UserAgentInterceptor(appPreferences))
                 addInterceptor(DecodeResponseInterceptor())
