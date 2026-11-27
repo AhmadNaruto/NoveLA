@@ -32,7 +32,24 @@ import java.io.Closeable
  */
 class Globals private constructor(internal var statePtr: Long) : LuaTable(), Closeable {
 
+    private class StateCleaner(
+        @Volatile var ptr: Long
+    ) : Runnable {
+        override fun run() {
+            val p = ptr
+            if (p != 0L) {
+                ptr = 0L
+                activeGlobals.remove(p)
+                nativeClose(p)
+            }
+        }
+    }
+
+    private val stateCleaner = StateCleaner(statePtr)
+    private val cleanable = cleaner.register(this, stateCleaner)
+
     companion object {
+        private val cleaner = java.lang.ref.Cleaner.create()
         private val activeGlobals = java.util.concurrent.ConcurrentHashMap<Long, java.lang.ref.WeakReference<Globals>>()
 
         internal fun fromPointer(ptr: Long): Globals? = activeGlobals[ptr]?.get()
@@ -322,7 +339,7 @@ class Globals private constructor(internal var statePtr: Long) : LuaTable(), Clo
                 statePtr = 0L
                 activeGlobals.remove(ptr)
                 drainUnrefs()
-                nativeClose(ptr)
+                cleanable.clean()
             }
         }
     }

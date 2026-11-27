@@ -15,25 +15,27 @@
 
 #define REGEX_CACHE_SIZE 64
 
-typedef struct {
+typedef struct regex_cache_entry {
     char *pattern;
     size_t pat_len;
     pcre2_code *code;
+    int refcount;
 } regex_cache_entry_t;
 
-static regex_cache_entry_t s_regex_cache[REGEX_CACHE_SIZE];
+static regex_cache_entry_t *s_regex_cache[REGEX_CACHE_SIZE] = {NULL};
 static int s_cache_head = 0;
 static pthread_mutex_t s_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static pcre2_code *get_cached_regex(const char *pat, size_t pat_len) {
+static regex_cache_entry_t *acquire_cached_regex(const char *pat, size_t pat_len) {
     if (!pat || pat_len == 0) return NULL;
 
     pthread_mutex_lock(&s_cache_mutex);
     for (int i = 0; i < REGEX_CACHE_SIZE; i++) {
-        if (s_regex_cache[i].code &&
-            s_regex_cache[i].pat_len == pat_len &&
-            memcmp(s_regex_cache[i].pattern, pat, pat_len) == 0) {
-            pcre2_code *cached = s_regex_cache[i].code;
+        if (s_regex_cache[i] &&
+            s_regex_cache[i]->pat_len == pat_len &&
+            memcmp(s_regex_cache[i]->pattern, pat, pat_len) == 0) {
+            regex_cache_entry_t *cached = s_regex_cache[i];
+            cached->refcount++;
             pthread_mutex_unlock(&s_cache_mutex);
             return cached;
         }
@@ -55,26 +57,54 @@ static pcre2_code *get_cached_regex(const char *pat, size_t pat_len) {
         return NULL;
     }
 
+    regex_cache_entry_t *new_entry = (regex_cache_entry_t *)malloc(sizeof(regex_cache_entry_t));
+    if (!new_entry) {
+        pcre2_code_free(re);
+        pthread_mutex_unlock(&s_cache_mutex);
+        return NULL;
+    }
+    new_entry->pattern = (char *)malloc(pat_len + 1);
+    if (!new_entry->pattern) {
+        free(new_entry);
+        pcre2_code_free(re);
+        pthread_mutex_unlock(&s_cache_mutex);
+        return NULL;
+    }
+    memcpy(new_entry->pattern, pat, pat_len);
+    new_entry->pattern[pat_len] = '\0';
+    new_entry->pat_len = pat_len;
+    new_entry->code = re;
+    new_entry->refcount = 2; // 1 for cache slot, 1 for caller
+
     int slot = s_cache_head;
     s_cache_head = (s_cache_head + 1) % REGEX_CACHE_SIZE;
 
-    if (s_regex_cache[slot].code) {
-        pcre2_code_free(s_regex_cache[slot].code);
-        free(s_regex_cache[slot].pattern);
-        s_regex_cache[slot].code = NULL;
-        s_regex_cache[slot].pattern = NULL;
-    }
+    regex_cache_entry_t *old_entry = s_regex_cache[slot];
+    s_regex_cache[slot] = new_entry;
 
-    s_regex_cache[slot].pattern = (char *)malloc(pat_len + 1);
-    if (s_regex_cache[slot].pattern) {
-        memcpy(s_regex_cache[slot].pattern, pat, pat_len);
-        s_regex_cache[slot].pattern[pat_len] = '\0';
-        s_regex_cache[slot].pat_len = pat_len;
-        s_regex_cache[slot].code = re;
+    if (old_entry) {
+        old_entry->refcount--;
+        if (old_entry->refcount <= 0) {
+            pcre2_code_free(old_entry->code);
+            free(old_entry->pattern);
+            free(old_entry);
+        }
     }
 
     pthread_mutex_unlock(&s_cache_mutex);
-    return re;
+    return new_entry;
+}
+
+static void release_cached_regex(regex_cache_entry_t *entry) {
+    if (!entry) return;
+    pthread_mutex_lock(&s_cache_mutex);
+    entry->refcount--;
+    if (entry->refcount <= 0) {
+        pcre2_code_free(entry->code);
+        free(entry->pattern);
+        free(entry);
+    }
+    pthread_mutex_unlock(&s_cache_mutex);
 }
 
 /*
@@ -91,13 +121,15 @@ static int l_regex_match(lua_State *L) {
         return 1;
     }
 
-    pcre2_code *re = get_cached_regex(pat, pat_len);
-    if (!re) {
+    regex_cache_entry_t *entry = acquire_cached_regex(pat, pat_len);
+    if (!entry) {
         return 1; /* Return empty table on invalid regex */
     }
+    pcre2_code *re = entry->code;
 
     pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
     if (!match_data) {
+        release_cached_regex(entry);
         return 1;
     }
 
@@ -128,6 +160,7 @@ static int l_regex_match(lua_State *L) {
     }
 
     pcre2_match_data_free(match_data);
+    release_cached_regex(entry);
     return 1;
 }
 
@@ -146,15 +179,17 @@ static int l_regex_replace(lua_State *L) {
         return 1;
     }
 
-    pcre2_code *re = get_cached_regex(pat, pat_len);
-    if (!re) {
+    regex_cache_entry_t *entry = acquire_cached_regex(pat, pat_len);
+    if (!entry) {
         /* On invalid regex pattern, safely return original string unchanged */
         lua_pushvalue(L, 1);
         return 1;
     }
+    pcre2_code *re = entry->code;
 
     pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
     if (!match_data) {
+        release_cached_regex(entry);
         lua_pushvalue(L, 1);
         return 1;
     }
@@ -164,6 +199,7 @@ static int l_regex_replace(lua_State *L) {
     char *out_buf = (out_cap <= sizeof(stack_buf)) ? stack_buf : (char *)malloc(out_cap);
     if (!out_buf) {
         pcre2_match_data_free(match_data);
+        release_cached_regex(entry);
         lua_pushvalue(L, 1);
         return 1;
     }
@@ -215,6 +251,7 @@ static int l_regex_replace(lua_State *L) {
 
     if (out_buf && out_buf != stack_buf) free(out_buf);
     pcre2_match_data_free(match_data);
+    release_cached_regex(entry);
     return 1;
 }
 
@@ -231,20 +268,23 @@ static int l_regex_test(lua_State *L) {
         return 1;
     }
 
-    pcre2_code *re = get_cached_regex(pat, pat_len);
-    if (!re) {
+    regex_cache_entry_t *entry = acquire_cached_regex(pat, pat_len);
+    if (!entry) {
         lua_pushboolean(L, 0);
         return 1;
     }
+    pcre2_code *re = entry->code;
 
     pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
     if (!match_data) {
+        release_cached_regex(entry);
         lua_pushboolean(L, 0);
         return 1;
     }
 
     int rc = pcre2_match(re, (PCRE2_SPTR)text, text_len, 0, 0, match_data, NULL);
     pcre2_match_data_free(match_data);
+    release_cached_regex(entry);
 
     lua_pushboolean(L, rc >= 0);
     return 1;
@@ -270,14 +310,16 @@ static int l_regex_find(lua_State *L) {
         return 1;
     }
 
-    pcre2_code *re = get_cached_regex(pat, pat_len);
-    if (!re) {
+    regex_cache_entry_t *entry = acquire_cached_regex(pat, pat_len);
+    if (!entry) {
         lua_pushnil(L);
         return 1;
     }
+    pcre2_code *re = entry->code;
 
     pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
     if (!match_data) {
+        release_cached_regex(entry);
         lua_pushnil(L);
         return 1;
     }
@@ -289,10 +331,12 @@ static int l_regex_find(lua_State *L) {
         lua_pushinteger(L, (lua_Integer)(ovector[0] + 1));
         lua_pushinteger(L, (lua_Integer)ovector[1]);
         pcre2_match_data_free(match_data);
+        release_cached_regex(entry);
         return 2;
     }
 
     pcre2_match_data_free(match_data);
+    release_cached_regex(entry);
     lua_pushnil(L);
     return 1;
 }
@@ -318,15 +362,17 @@ static int l_regex_split(lua_State *L) {
         return 1;
     }
 
-    pcre2_code *re = get_cached_regex(pat, pat_len);
-    if (!re) {
+    regex_cache_entry_t *entry = acquire_cached_regex(pat, pat_len);
+    if (!entry) {
         lua_pushlstring(L, text, text_len);
         lua_rawseti(L, -2, 1);
         return 1;
     }
+    pcre2_code *re = entry->code;
 
     pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
     if (!match_data) {
+        release_cached_regex(entry);
         lua_pushlstring(L, text, text_len);
         lua_rawseti(L, -2, 1);
         return 1;
@@ -364,6 +410,7 @@ static int l_regex_split(lua_State *L) {
     lua_rawseti(L, -2, part_idx);
 
     pcre2_match_data_free(match_data);
+    release_cached_regex(entry);
     return 1;
 }
 

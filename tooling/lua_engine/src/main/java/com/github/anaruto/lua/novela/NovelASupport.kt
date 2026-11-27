@@ -56,6 +56,34 @@ object NovelASupport {
         }
     }
 
+    private const val RESPONSE_METATABLE_KEY = "__novela_response_mt"
+
+    private fun getOrCreateResponseMetatable(globals: Globals): LuaTable {
+        val existing = globals.get(RESPONSE_METATABLE_KEY)
+        if (existing.istable()) {
+            return existing.checktable()
+        }
+        val mt = globals.newTable()
+        val indexTable = globals.newTable()
+        val toHtmlFunc = object : TwoArgFunction() {
+            override fun call(arg1: LuaValue, arg2: LuaValue): LuaValue {
+                val parseFunc = globals.get("html_parse")
+                val bodyVal = arg1.get("body")
+                val reqUrl = if (!arg2.isnil()) arg2 else arg1.get("_request_url")
+                return if (!reqUrl.isnil()) {
+                    parseFunc.call(bodyVal, reqUrl)
+                } else {
+                    parseFunc.call(bodyVal)
+                }
+            }
+        }
+        indexTable.set("toHtml", toHtmlFunc)
+        indexTable.set("to_html", toHtmlFunc)
+        mt.set(LuaValue.INDEX, indexTable)
+        globals.set(RESPONSE_METATABLE_KEY, mt)
+        return mt
+    }
+
     /**
      * Builds a NoveLA-compliant HTTP response table with chaining capabilities (`toHtml`).
      */
@@ -64,6 +92,9 @@ object NovelASupport {
         table.set("success", LuaValue.valueOf(res.success))
         table.set("code", LuaValue.valueOf(res.code))
         table.set("body", LuaValue.valueOf(res.body))
+        if (requestUrl != null) {
+            table.set("_request_url", LuaValue.valueOf(requestUrl))
+        }
 
         val headersTable = globals.newTable()
         for ((k, v) in res.headers) {
@@ -71,20 +102,8 @@ object NovelASupport {
         }
         table.set("headers", headersTable)
 
-        // Method chaining: response:toHtml() / response:to_html()
-        val toHtmlFunc = object : OneArgFunction() {
-            override fun call(arg1: LuaValue): LuaValue {
-                val parseFunc = globals.get("html_parse")
-                val bodyVal = table.get("body")
-                return if (requestUrl != null) {
-                    parseFunc.call(bodyVal, LuaValue.valueOf(requestUrl))
-                } else {
-                    parseFunc.call(bodyVal)
-                }
-            }
-        }
-        table.set("toHtml", toHtmlFunc)
-        table.set("to_html", toHtmlFunc)
+        val mt = getOrCreateResponseMetatable(globals)
+        table.setmetatable(mt)
 
         return table
     }

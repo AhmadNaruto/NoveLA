@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdatomic.h>
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -76,6 +77,9 @@ static lua_State **g_active_states = NULL;
 static size_t g_active_states_count = 0;
 static size_t g_active_states_cap = 0;
 static pthread_mutex_t g_states_mutex = PTHREAD_MUTEX_INITIALIZER;
+static _Atomic uint64_t g_states_epoch = 1;
+static __thread lua_State *s_tls_cached_state = NULL;
+static __thread uint64_t s_tls_cached_epoch = 0;
 
 static int register_active_state(lua_State *L) {
     if (L == NULL) return 0;
@@ -89,12 +93,14 @@ static int register_active_state(lua_State *L) {
     for (size_t i = 0; i < g_active_states_count; i++) {
         if (g_active_states[i] == NULL) {
             g_active_states[i] = L;
+            atomic_fetch_add_explicit(&g_states_epoch, 1, memory_order_release);
             pthread_mutex_unlock(&g_states_mutex);
             return 1;
         }
     }
     if (g_active_states_count < g_active_states_cap) {
         g_active_states[g_active_states_count++] = L;
+        atomic_fetch_add_explicit(&g_states_epoch, 1, memory_order_release);
         pthread_mutex_unlock(&g_states_mutex);
         return 1;
     }
@@ -110,6 +116,7 @@ static int register_active_state(lua_State *L) {
     g_active_states = new_arr;
     g_active_states_cap = new_cap;
     g_active_states[g_active_states_count++] = L;
+    atomic_fetch_add_explicit(&g_states_epoch, 1, memory_order_release);
     pthread_mutex_unlock(&g_states_mutex);
     return 1;
 }
@@ -126,6 +133,7 @@ static void unregister_active_state(lua_State *L) {
     while (g_active_states_count > 0 && g_active_states[g_active_states_count - 1] == NULL) {
         g_active_states_count--;
     }
+    atomic_fetch_add_explicit(&g_states_epoch, 1, memory_order_release);
     pthread_mutex_unlock(&g_states_mutex);
 }
 
@@ -146,7 +154,18 @@ static int is_active_state(lua_State *L) {
 static lua_State *to_lua_state(jlong ptr) {
     if (ptr == 0) return NULL;
     lua_State *L = (lua_State *)(uintptr_t)ptr;
-    if (!is_active_state(L)) return NULL;
+    uint64_t current_epoch = atomic_load_explicit(&g_states_epoch, memory_order_acquire);
+    if (L == s_tls_cached_state && current_epoch == s_tls_cached_epoch) {
+        return L;
+    }
+    if (!is_active_state(L)) {
+        if (L == s_tls_cached_state) {
+            s_tls_cached_state = NULL;
+        }
+        return NULL;
+    }
+    s_tls_cached_state = L;
+    s_tls_cached_epoch = current_epoch;
     return L;
 }
 
@@ -928,6 +947,16 @@ Java_com_github_anaruto_lua_Globals_nativeLoadFile(JNIEnv *env, jclass clazz, jl
     return (jint)ref;
 }
 
+static int lua_error_traceback_handler(lua_State *L) {
+    const char *msg = lua_tostring(L, 1);
+    if (msg != NULL) {
+        luaL_traceback(L, L, msg, 1);
+    } else {
+        luaL_traceback(L, L, "(unknown error)", 1);
+    }
+    return 1;
+}
+
 JNIEXPORT jobjectArray JNICALL
 Java_com_github_anaruto_lua_Globals_nativeInvoke(JNIEnv *env, jclass clazz, jlong ptr, jint funcRef, jobjectArray jargs) {
     (void)clazz;
@@ -938,9 +967,12 @@ Java_com_github_anaruto_lua_Globals_nativeInvoke(JNIEnv *env, jclass clazz, jlon
     }
 
     int base = lua_gettop(L);
+    lua_pushcfunction(L, lua_error_traceback_handler);
+    int err_handler = base + 1;
+
     lua_rawgeti(L, LUA_REGISTRYINDEX, funcRef);
     if (!lua_isfunction(L, -1)) {
-        lua_pop(L, 1);
+        lua_pop(L, 2);
         throw_lua_error(env, "Referenced object is not a function");
         return NULL;
     }
@@ -952,22 +984,22 @@ Java_com_github_anaruto_lua_Globals_nativeInvoke(JNIEnv *env, jclass clazz, jlon
         (*env)->DeleteLocalRef(env, arg);
     }
 
-    int status = lua_pcall(L, (int)nargs, LUA_MULTRET, 0);
+    int status = lua_pcall(L, (int)nargs, LUA_MULTRET, err_handler);
     if (status != LUA_OK) {
         const char *err = lua_tostring(L, -1);
         throw_lua_error(env, err ? err : "Lua runtime execution error");
-        lua_pop(L, 1);
+        lua_pop(L, 2);
         return NULL;
     }
 
-    int nresults = lua_gettop(L) - base;
+    int nresults = lua_gettop(L) - err_handler;
     jobjectArray resArray = (*env)->NewObjectArray(env, nresults, g_class_LuaValue, NULL);
     for (int i = 0; i < nresults; i++) {
-        jobject val = lua_value_from_stack(env, L, base + 1 + i, ptr);
+        jobject val = lua_value_from_stack(env, L, err_handler + 1 + i, ptr);
         (*env)->SetObjectArrayElement(env, resArray, i, val);
         (*env)->DeleteLocalRef(env, val);
     }
-    lua_pop(L, nresults);
+    lua_pop(L, nresults + 1);
     return resArray;
 }
 
@@ -1139,32 +1171,35 @@ Java_com_github_anaruto_lua_Globals_nativeDoString(JNIEnv *env, jclass clazz, jl
 
     const char *script = (*env)->GetStringUTFChars(env, jscript, NULL);
     int base = lua_gettop(L);
+    lua_pushcfunction(L, lua_error_traceback_handler);
+    int err_handler = base + 1;
+
     int status = luaL_loadbuffer(L, script, strlen(script), "script");
     (*env)->ReleaseStringUTFChars(env, jscript, script);
 
     if (status != LUA_OK) {
         const char *err = lua_tostring(L, -1);
         throw_lua_error(env, err ? err : "Compilation error");
-        lua_pop(L, 1);
+        lua_pop(L, 2);
         return NULL;
     }
 
-    status = lua_pcall(L, 0, LUA_MULTRET, 0);
+    status = lua_pcall(L, 0, LUA_MULTRET, err_handler);
     if (status != LUA_OK) {
         const char *err = lua_tostring(L, -1);
         throw_lua_error(env, err ? err : "Execution error");
-        lua_pop(L, 1);
+        lua_pop(L, 2);
         return NULL;
     }
 
-    int nresults = lua_gettop(L) - base;
+    int nresults = lua_gettop(L) - err_handler;
     jobjectArray res = (*env)->NewObjectArray(env, nresults, g_class_LuaValue, NULL);
     for (int i = 0; i < nresults; i++) {
-        jobject v = lua_value_from_stack(env, L, base + 1 + i, ptr);
+        jobject v = lua_value_from_stack(env, L, err_handler + 1 + i, ptr);
         (*env)->SetObjectArrayElement(env, res, i, v);
         (*env)->DeleteLocalRef(env, v);
     }
-    lua_pop(L, nresults);
+    lua_pop(L, nresults + 1);
     return res;
 }
 
@@ -1179,32 +1214,35 @@ Java_com_github_anaruto_lua_Globals_nativeDoFile(JNIEnv *env, jclass clazz, jlon
 
     const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
     int base = lua_gettop(L);
+    lua_pushcfunction(L, lua_error_traceback_handler);
+    int err_handler = base + 1;
+
     int status = luaL_loadfile(L, path);
     (*env)->ReleaseStringUTFChars(env, jpath, path);
 
     if (status != LUA_OK) {
         const char *err = lua_tostring(L, -1);
         throw_lua_error(env, err ? err : "Failed to load script file");
-        lua_pop(L, 1);
+        lua_pop(L, 2);
         return NULL;
     }
 
-    status = lua_pcall(L, 0, LUA_MULTRET, 0);
+    status = lua_pcall(L, 0, LUA_MULTRET, err_handler);
     if (status != LUA_OK) {
         const char *err = lua_tostring(L, -1);
         throw_lua_error(env, err ? err : "Execution error");
-        lua_pop(L, 1);
+        lua_pop(L, 2);
         return NULL;
     }
 
-    int nresults = lua_gettop(L) - base;
+    int nresults = lua_gettop(L) - err_handler;
     jobjectArray res = (*env)->NewObjectArray(env, nresults, g_class_LuaValue, NULL);
     for (int i = 0; i < nresults; i++) {
-        jobject v = lua_value_from_stack(env, L, base + 1 + i, ptr);
+        jobject v = lua_value_from_stack(env, L, err_handler + 1 + i, ptr);
         (*env)->SetObjectArrayElement(env, res, i, v);
         (*env)->DeleteLocalRef(env, v);
     }
-    lua_pop(L, nresults);
+    lua_pop(L, nresults + 1);
     return res;
 }
 

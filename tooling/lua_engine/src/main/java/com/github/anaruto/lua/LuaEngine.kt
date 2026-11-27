@@ -20,7 +20,23 @@ import java.io.Closeable
  */
 class LuaEngine private constructor(private var statePtr: Long) : Closeable {
 
+    private class StateCleaner(
+        @Volatile var ptr: Long
+    ) : Runnable {
+        override fun run() {
+            val p = ptr
+            if (p != 0L) {
+                ptr = 0L
+                nativeClose(p)
+            }
+        }
+    }
+
+    private val stateCleaner = StateCleaner(statePtr)
+    private val cleanable = cleaner.register(this, stateCleaner)
+
     companion object {
+        private val cleaner = java.lang.ref.Cleaner.create()
         init {
             System.loadLibrary("lua")
         }
@@ -309,8 +325,8 @@ class LuaEngine private constructor(private var statePtr: Long) : Closeable {
      */
     override fun close() {
         if (statePtr != 0L) {
-            nativeClose(statePtr)
             statePtr = 0L
+            cleanable.clean()
         }
     }
 }
